@@ -1,0 +1,41 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {JSDOM} from 'jsdom';
+import {build} from 'esbuild';
+import {readFile} from 'node:fs/promises';
+const flush=()=>new Promise(resolve=>setTimeout(resolve,5));
+for(const base of ['https://example.test/','https://example.test/uno-club-tournament/']) test('practice interface and navigation at '+base,async()=>{
+  const html=await readFile(new URL('../src/index.html',import.meta.url),'utf8');
+  const dom=new JSDOM(html,{url:base,runScripts:'outside-only'});
+  const w=dom.window;
+  w.structuredClone=structuredClone;w.confirm=()=>true;
+  let opened='';w.open=url=>{opened=url;return {focus(){}};};
+  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+  w.HTMLDialogElement.prototype.close=function(){this.open=false;};
+  const stub=`export const createClient=()=>({auth:{getSession:async()=>({data:{session:null}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},removeChannel:async()=>{}});`;
+  const output=await build({entryPoints:['src/app.mjs'],bundle:true,write:false,format:'iife',plugins:[{name:'local-auth-fixture',setup(b){b.onResolve({filter:/^@supabase\/supabase-js$/},()=>({path:'auth-fixture',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:stub,loader:'js'}));}}]});
+  const errors=[];w.addEventListener('error',e=>errors.push(e.error));
+  const click=q=>{const el=w.document.querySelector(q);assert.ok(el,'Missing '+q);el.click();};
+  try{
+    w.eval(output.outputFiles[0].text);await flush();
+    assert.match(w.document.body.textContent,/Tournament Director/);
+    click('[data-action="practice-demo"]');await flush();
+    assert.match(w.document.querySelector('h1').textContent,/Tournament Management/);
+    assert.equal(w.document.querySelectorAll('[data-eliminate]').length,4);
+    click('[data-clock="start"]');await flush();assert.match(w.document.querySelector('#mini-time').textContent,/14:5|15:00/);
+    click('[data-action="open-clock"]');assert.match(opened,/view=clock&tournament=/);assert.ok(opened.startsWith(new URL(base).pathname+'?view=clock'));assert.equal(w.location.pathname,new URL(base).pathname);
+    click('[data-eliminate]');await flush();assert.equal(w.document.querySelectorAll('[data-eliminate]').length,3);
+    click('[data-action="undo-elimination"]');await flush();assert.equal(w.document.querySelectorAll('[data-eliminate]').length,4);
+    click('[data-go="setup"]');click('[data-edit-template]');
+    const form=w.document.querySelector('#structure-form');assert.ok(form);assert.equal(form.querySelectorAll('[data-level]').length,31);
+    assert.equal(form.elements.buyIn.value,'50.00');assert.equal(form.elements.dealerToke.value,'10.00');assert.equal(form.elements.housePercent.value,'20');assert.equal(form.elements.tableCount,undefined);
+    form.elements.buyIn.value='75.00';form.elements.buyIn.dispatchEvent(new w.Event('input',{bubbles:true}));assert.match(w.document.querySelector('#entry-split').textContent,/\$65\.00 before/);form.elements.buyIn.value='50.00';
+    form.elements.structureName.value='Edited practice structure';
+    form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await flush();
+    assert.match(w.document.body.textContent,/Edited practice structure/);
+    click('[data-go="players"]');assert.equal(w.document.querySelectorAll('[data-player]').length,4);
+    click('[data-player]');assert.match(w.document.body.textContent,/Tournament history/);
+    const stored=JSON.parse(w.localStorage.getItem('uno-tournament-practice-v1'));assert.equal(stored.tournaments.length,1);assert.equal(stored.templates[0].name,'Edited practice structure');
+    assert.deepEqual(errors,[]);
+  }finally{w.close();}
+});
