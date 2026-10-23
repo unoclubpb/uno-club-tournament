@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.2.5
+# Uno Club Tournament Director — v0.2.6
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -91,3 +91,7 @@ Non-clock pages have a single Home button in the main navigation row, also visib
 Players display sequential IDs starting at **001**, with leading zeroes to a minimum of three digits. Existing records receive numbers in their stored creation order. The visible number is permanent through name changes and archival, and archived numbers are not reused. Player profiles and list searches use these numbers; registration search accepts them too. Internal UUIDs and tournament history references remain unchanged.
 
 Practice records upgrade when loaded and persist with the next save. The cloud integrity trigger backfills existing records, preserves numbers omitted by older clients, rejects duplicate or changed numbers, and assigns the next number to unnumbered records. Atomic expected-version saves prevent concurrent devices from committing duplicate assignments. Numbering is per workspace. The installed trigger passed rolled-back tests for sequence assignment, invalid/duplicate number rejection, rename/reordering/archival, older-client saves and stable history references, alongside the existing identity checks.
+
+## v0.2.6 registration scrolling
+
+Tournament Registration fills the available viewport. Available and registered players scroll inside independently sized regions while search, payment selection and navigation remain in place. Filtering resets only the available-player list's scroll; its region no longer shrinks with result count. Registration rerenders retain list scroll, payment selection and focused search/caret. Phones switch between Find a player and Registered lists. Dynamic viewport sizing follows the phone keyboard; short viewports compact the header and summary to leave room for search and results. Other pages retain normal document scrolling.

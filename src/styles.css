@@ -31,3 +31,71 @@ body.tv{background:#050f19;color:#f7f8fb}.tv-shell{height:100dvh;min-height:0;pa
 .structure-card .button-row>.text-button{border:1px solid var(--line);border-radius:7px}
 @media(max-width:700px){.structure-grid{gap:12px}.structure-grid .structure-card{padding:12px}.structure-card h2{font-size:20px}.structure-card .structure-facts{margin:12px 0;padding:10px 0}.structure-card .button-row{gap:6px}.structure-card .button-row>button{min-height:44px}}
 @media(max-width:359px){.structure-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Registration stays within the viewport; only the two roster regions scroll. */
+.registration-tabs{display:none}
+body.registration-page{height:var(--registration-height,100dvh);min-height:0;overflow:hidden}
+.registration-page #app{height:100%;display:flex;flex-direction:column;overflow:hidden}
+.registration-page .header,.registration-page .context,.registration-page .mode-note,.registration-page .nav,.registration-page .app-footer{flex-shrink:0}
+.registration-page .header{width:100%;height:86px}
+.registration-page .workspace{width:100%;flex:1;min-height:0;display:flex;flex-direction:column}
+.registration-page .nav{padding-top:6px}
+.registration-page .content{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:16px 0}
+.registration-page .page-heading{flex-shrink:0;margin-bottom:0}
+.registration-page h1{font-size:26px}
+.registration-page .page-heading .eyebrow{display:none}
+.registration-page .page-heading .muted{margin-top:4px}
+.registration-page .metrics{flex-shrink:0;margin:12px 0;padding:12px 0}
+.registration-page .metrics span{margin-bottom:5px}
+.registration-page .metrics strong{font-size:21px}
+.registration-page .metrics .status-value{font-size:17px;padding-top:3px}
+.registration-page .signup-layout{flex:1;min-height:0;align-items:stretch;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}
+.registration-page .signup-layout>.panel{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;padding:18px}
+.registration-page .signup-layout>.panel>*{flex-shrink:0}
+.registration-page .signup-layout h2{margin-bottom:0}
+.registration-page .signup-layout .panel>p{margin:8px 0 12px}
+.registration-page .registration-find>label{margin-bottom:8px}
+.registration-page .registration-find>.check{margin:4px 0}
+.registration-page .signup-layout .registration-list,.registration-page .signup-layout .registered-list{flex:1;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;overflow-anchor:none;-webkit-overflow-scrolling:touch}
+.registration-page .registration-list{margin:10px 0}
+.registration-page .registered-list{margin-top:10px}
+.registration-page .signup-layout .section-label{margin:0 0 2px}
+.registration-page .money-strip{padding:10px 0}
+.registration-page .app-footer{padding:9px 0}
+@media(max-width:700px){
+  .registration-page .header{height:62px;padding:8px 14px}
+  .registration-page .brand{font-size:25px}.registration-page .brand small{font-size:8px;margin-top:4px}
+  .registration-page .context{padding:8px 14px}.registration-page .context .eyebrow{display:none}
+  .registration-page .context select{max-width:calc(100vw - 105px);min-width:0}
+  .registration-page .workspace{padding:0 12px}.registration-page .nav{padding-top:0}
+  .registration-page .nav button{padding:8px 5px;gap:4px;font-size:9px}.registration-page .nav svg{width:16px;height:16px}
+  .registration-page .content{padding:10px 0;gap:0}.registration-page h1{font-size:21px}
+  .registration-page .page-heading .muted{display:none}
+  .registration-page .metrics{grid-template-columns:repeat(4,minmax(0,1fr));padding:8px 0;margin:8px 0}
+  .registration-page .metrics>div{padding:0 7px;border-bottom:0;border-right:1px solid var(--line)}
+  .registration-page .metrics>div:last-child{border-right:0}.registration-page .metrics span{font-size:9px;margin-bottom:4px}
+  .registration-page .metrics strong{font-size:17px}.registration-page .metrics strong small{font-size:12px}
+  .registration-page .metrics .status-value{font-size:12px;padding:0}
+  .registration-tabs{display:flex;flex-shrink:0;gap:8px;margin-bottom:8px}
+  .registration-tabs button{flex:1;min-height:36px;padding:7px;font-size:12px}
+  .registration-tabs button[aria-pressed=true]{border-color:var(--gold);color:var(--gold);background:#302a1b}
+  .registration-page .signup-layout{grid-template-columns:minmax(0,1fr);gap:0}
+  .registration-page .signup-layout>.panel{padding:12px}
+  .registration-page .signup-layout[data-panel=find]>.registration-enrolled,.registration-page .signup-layout[data-panel=registered]>.registration-find{display:none}
+  .registration-page .signup-layout h2{font-size:17px}
+  .registration-page .registration-find>p{font-size:11px;margin:4px 0 8px}
+  .registration-page .registration-find>label{gap:4px;margin-bottom:4px}
+  .registration-page .registration-find>.check{margin:4px 0}
+  .registration-page .signup-layout .section-label{flex-direction:row;align-items:center}
+  .registration-page .app-footer{padding:6px 0;font-size:8px}
+}
+/* Keep search and results usable while a phone keyboard or a short landscape viewport is open. */
+@media(max-height:600px){
+  .registration-page .header,.registration-page .page-heading,.registration-page .metrics,.registration-page .app-footer{display:none}
+  .registration-page .context{padding-top:5px;padding-bottom:5px}
+  .registration-page .nav{padding-top:0}.registration-page .nav button{padding-top:7px;padding-bottom:7px}
+  .registration-page .content{padding-top:8px;padding-bottom:8px}
+  .registration-page .registration-find>h2,.registration-page .registration-find>p{display:none}
+  .registration-page .signup-layout>.panel{padding:10px}
+  .registration-page .registration-list{margin:5px 0}
+}
