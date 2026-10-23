@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.1
+# Uno Club Tournament Director — v0.3.2
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -128,3 +128,8 @@ Validation: 45 automated scenarios pass, including cutoff-break enablement on ti
 Tournament Setup and Player Database fill the available viewport without document scrolling. Setup keeps its heading and actions fixed while the saved-structure grid scrolls. Editing a structure scrolls the settings panel while Save and Cancel remain available outside that scroll region. Player Database keeps its heading, Add player, search and archive filter fixed; only the names/IDs list scrolls. Player detail forms and history use an internal content region. Compact layouts handle phone keyboards and short screens. Filtering resets only the player list, and cloud refresh retains its position, search focus and caret. Structure editing actions retain the settings panel's scroll position.
 
 The existing automated scenarios, plus player-list focus/scroll refresh coverage, pass. Layout checks use the hosted desktop and phone screens.
+
+
+## v0.3.2 full-width saved structures
+
+Removed the 760px cap and two-column desktop limit from saved structures. Cards fill the workspace with four columns at widths of 1200px and above, three at 900–1199px, two at 360–899px, and one below 360px. The fixed page and independently scrolling saved-structure region are retained.

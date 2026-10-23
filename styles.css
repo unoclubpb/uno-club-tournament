@@ -18,8 +18,10 @@ body.tv{background:#050f19;color:#f7f8fb}.tv-shell{height:100dvh;min-height:0;pa
 @media(max-width:700px){.game-copy-row{align-items:stretch;flex-direction:column;gap:12px}.game-copy-row label{max-width:none}.tv-side .tv-rebuys-open>.tv-final-rebuy{font-size:clamp(14px,3.35vw,30px)}.tv-rebuys-open>.tv-cutoff-detail{font-size:clamp(10px,2.15vw,18px);margin-top:10px}}
 @media(max-aspect-ratio:1/1){.tv-side .tv-rebuys-open>.tv-final-rebuy{font-size:30px}.tv-rebuys-open>.tv-cutoff-detail{font-size:19px}}
 
-/* Compact saved structures: two cards across, including regular phone widths. */
-.structure-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:760px;align-items:stretch}
+/* Saved structures fill the workspace: four, three, two or one columns as space permits. */
+.structure-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;width:100%;max-width:none;align-items:stretch}
+@media(max-width:1199px){.structure-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:899px){.structure-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .structure-grid .structure-card{min-width:0;margin:0;padding:18px;display:flex;flex-direction:column}
 .structure-card h2{font-size:20px;line-height:1.3;margin:8px 0;overflow-wrap:anywhere}
 .structure-card>p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
