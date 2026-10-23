@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.2.3
+# Uno Club Tournament Director — v0.2.4
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -81,3 +81,7 @@ Saved structures use a compact two-column grid capped at 760px, with tighter spa
 ## v0.2.3 starting chips entry
 
 Starting chips is a typed numeric-keyboard text field without spinner arrows. It displays comma-separated thousands on load and while typing or pasting, retaining the caret during edits. Settings save the underlying whole number, including after level-editor actions. Invalid, fractional, zero and unsafe integer values are rejected.
+
+## v0.2.4 home navigation
+
+Non-clock pages have a single Home button in the main navigation row, also visible on phones. Removed the redundant Overview text, Main menu button beside the clock action, and top-right Home button. The club logo remains a normal home link. The separate clock window retains its own Home control.
