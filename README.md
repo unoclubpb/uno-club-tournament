@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.9
+# Uno Club Tournament Director — v0.3.10
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -186,3 +186,8 @@ Removed the three explanatory paragraphs above the tables, retaining the drag/se
 Turning movement off cancels any selection or drag. It stays on through consecutive saves in the same tables view, but resets off when leaving the view, switching tournaments, completing the tournament or reopening the app. Movement mode is local to the screen, not a saved tournament setting. Locked players remain protected while movement is enabled.
 
 Validation: all 88 automated tests pass. New scenarios cover removed copy, default-off mouse/touch gestures without prevented scrolling or captured pointers, green enabled state, cancellation during touch dragging, repeated moves, navigation resets and reopening. Existing manual moves, locks, stale-data checks and cloud save-failure scenarios still pass. Touch gestures are simulated in jsdom; physical iPad scrolling has not been tested here.
+
+
+## v0.3.10 one clock-window button in management
+
+Removed the duplicate Open TV clock button beside the Tournament Management title. Open clock window remains in the tournament bar below the top banner and uses the same existing clock popup action. Verified with the existing navigation/clock-window UI scenarios at both root and GitHub Pages subdirectory paths and a production build.
