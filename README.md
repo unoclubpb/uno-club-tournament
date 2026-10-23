@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.1.2
+# Uno Club Tournament Director — v0.2.0
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -13,11 +13,11 @@ This repository contains the tournament app source and prebuilt website files. S
 - The `.nojekyll` file tells Pages to serve these static files directly.
 - Navigation, assets and the clock window use relative paths so this works from a GitHub repository subdirectory.
 
-The app has Overview, Tournament Setup, Player Database, Sign-Up, Tournament Management and a standalone Clock Display. Open Clock Display requests a separate browser window, which can be moved to an extended HDMI display. Phone and desktop use responsive management screens.
+The home screen has Tournament Setup, Player Database, Tournament Registration, Tournament Management and Open Clock Display. Open Clock Display requests a separate browser window, which can be moved to an extended HDMI display. Phone and desktop use responsive management screens.
 
 ## Two data modes
 
-- **Practice:** data is stored in localStorage in that browser. The sample tournament has four explicitly named Practice Players. Practice mode does not sync between devices.
+- **Practice:** data is stored in localStorage in that browser and does not sync between devices. The home screen starts empty until players are registered.
 - **Cloud:** sign in with the same Supabase data account on each device. This data account is separate from Supabase dashboard access. Accounts are created by the user through the explicit Create Data Account form; confirmation emails may be required. No player roster has been imported from another app. Cloud mode starts without player/tournament data and does not automatically import practice records.
 
 The GitHub repository is public. The application uses Supabase Auth and row security to protect tournament data. Practice mode is browser-local. The publishable key in `src/config.mjs` is intentionally browser-safe. No privileged key or password is in the source. Supabase project: Tournament Director (`jtoeihxodhejqukezwpb`). It was restored from INACTIVE and the new `td_workspaces` table and RPCs were applied via the `tournament_director_base` migration. Existing projects were not modified.
@@ -41,9 +41,9 @@ Document storage is an initial implementation choice, not the earlier relational
 ## Validation
 
 - Node scenario tests cover delayed starts, pause/resume, catch-up, break boundaries, last level, template isolation, optional antes, payments, payouts, eliminations, undo, seating, completion and stable player identities.
-- A jsdom test exercises the actual practice interface, including sample creation, Start, separate clock-window request, elimination/undo, template save and player profile. Its Auth fixture tests only local UI; it does not prove hosted Auth or Realtime.
+- jsdom scenarios exercise home visibility, player add/edit/duplicate checks, phone persistence, permanent IDs, registration, separate clock-window requests, clock start, automatic pre/post-rebuy layout transitions and cross-window practice updates. Auth is stubbed; these tests do not prove hosted sign-in or Realtime delivery.
 - `backend/verify-rls.sql` passed against hosted Supabase. It runs inside a rolled-back transaction and tests create/update, stale revisions, owner reassignment, cross-user reads/writes and anonymous denial. Security Advisor returned no lints.
-- No managed control-browser skill was available, so no browser preview server or rendered browser QA was run. Real-device sign-in, email confirmation, cross-device delivery, pop-up/fullscreen behavior, visual layout on Windows/TV and iPhone, and alert audio still require the user's practice run. This release should be tried as a practice tournament before live use.
+- Rendered browser QA was blocked by browser access restrictions. Real-device sign-in, email confirmation, cross-device delivery, pop-up/fullscreen behavior, visual layout on Windows/TV and iPhone, and alert audio still require a practice run.
 
 ## v0.1.2 compatibility
 
@@ -57,3 +57,11 @@ Adjust layout after feedback; confirm club login/staff access preferences; optio
 ## GitHub migration — v0.1.2
 
 Copied from the working v0.1.1 source at the user’s request. The previous hosted copy remains available until the user switches to the GitHub Pages address. This repository is the source to use for future GitHub edits. No `.openai/hosting.json`, runtime data, passwords, private API keys or Site publishing credentials were copied. The browser publishable key is intentionally included and is protected by database RLS. Local practice data from the old website address does not automatically move to a different website address. Shared data remains in the same Supabase project and uses the same data account.
+
+## v0.2.0 approved screens
+
+- The home page uses the approved dark navy and gold five-button layout. It has no greeting and no tournament summary for empty drafts. Current Tournament appears after the first registration (or clock start), remains for an active event, and hides when completed. Saved structures and empty tournament drafts do not trigger it.
+- The player database is separate from tournament registration. Records have an immutable UUID, unique name, optional phone (up to 40 characters), notes, archived flag and completed tournament history. Search covers names, IDs and phones. Renames preserve the UUID and all existing tournament references. Names ignore capitalization and repeated/leading/trailing whitespace. Archived names remain reserved. No shared-name bypass exists.
+- Cloud uniqueness and player reference checks run in the database trigger defined in `backend/player-integrity.sql`, alongside existing owner RLS and expected-version saves. This file must be applied after `backend/schema.sql` for a fresh installation. `backend/verify-player-data.sql` verifies database behavior in a rolled-back transaction. The trigger was applied to the existing Tournament Director project; no test records were retained.
+- The TV clock before rebuys close shows players remaining and static **Rebuys Open / Through Level N**. It hides rebuy counts, add-ons, prize pool and payouts. After the cutoff it shows players remaining, a smaller rebuy total underneath, prize pool and payouts. It changes at the clock boundary without requiring a save or reload, including when the browser catches up after being inactive. Disabled rebuys use the post-rebuy layout. A break immediately after the last rebuy level is already closed.
+- Existing setup, registration and management functions are retained for the next design iterations. No other Uno Club app or roster was changed.

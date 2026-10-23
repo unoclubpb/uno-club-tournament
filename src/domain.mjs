@@ -10,6 +10,8 @@ export function sampleTemplate() {
   });
   return {id:id(),name:'Uno Club — 15-minute levels',levels,settings:{financeVersion:2,startingStack:5000,buyIn:5000,dealerToke:1000,housePercent:20,rebuyEnabled:true,rebuyAmount:2500,rebuyChips:5000,rebuyLastRound:6,rebuyMax:0,addonEnabled:false,addonAmount:9000,addonChips:20000,addonLastRound:4,anteMode:'off',pauseBreaks:true,seatsPerTable:10,houseContribution:0,payoutMode:'percent',payouts:[65,35]}};
 }
+export const normalizePlayerName=name=>String(name??'').trim().replace(/\s+/gu,' ').toLowerCase();
+export const rebuyOpen=(t,c)=>t.status!=='completed'&&c.status!=='ended'&&t.settings.rebuyEnabled&&roundAt(t,c.index)<=t.settings.rebuyLastRound&&!(t.levels[c.index].kind==='break'&&roundAt(t,c.index)===t.settings.rebuyLastRound);
 export const initialState=()=>({schemaVersion:1,players:[],templates:[sampleTemplate()],tournaments:[]});
 export const paymentTotal=p=>p.total??((p.prize||0)+(p.house||0));
 export const tablesRequired=t=>Math.ceil(t.entries.filter(e=>!e.eliminatedAt).length/t.settings.seatsPerTable);
@@ -90,10 +92,11 @@ export function validateTemplate(template){
 export function execute(state,action,now=Date.now()){
   const s=clone(state), a=action;let t=s.tournaments.find(t=>t.id===a.tournamentId);
   if(a.type==='player-save'){
-    const name=String(a.name||'').trim();check(name,'Enter a player name.');check(name.length<=100,'Player name is too long.');
+    const name=String(a.name||'').trim().replace(/\s+/gu,' ');check(name,'Enter a player name.');check(name.length<=100,'Player name is too long.');
     const p=s.players.find(p=>p.id===a.id);
-    check(!s.players.some(v=>v.id!==a.id&&v.name.toLowerCase()===name.toLowerCase()),'That name already exists. Add an initial to distinguish players.');
-    if(p){p.name=name;p.notes=String(a.notes||'').slice(0,1000);}else s.players.push({id:a.id||id(),name,notes:String(a.notes||'').slice(0,1000),archived:false});return s;
+    check(!s.players.some(v=>v.id!==a.id&&normalizePlayerName(v.name)===normalizePlayerName(name)),'That name already exists. Please choose a different name.');
+    const phone=String(a.phone??p?.phone??'').trim();check(phone.length<=40,'Phone number is too long.');
+    if(p){p.name=name;p.phone=phone;p.notes=String(a.notes||'').slice(0,1000);}else s.players.push({id:a.id||id(),name,phone,notes:String(a.notes||'').slice(0,1000),archived:false});return s;
   }
   if(a.type==='player-archive'){const p=s.players.find(p=>p.id===a.id);check(p,'Player not found.');p.archived=!p.archived;return s;}
   if(a.type==='template-save'){const template=clone(a.template);validateTemplate(template);const ix=s.templates.findIndex(v=>v.id===template.id);if(ix<0)s.templates.push(template);else s.templates[ix]=template;return s;}
@@ -129,6 +132,7 @@ export function execute(state,action,now=Date.now()){
   if(['payment','paid','eliminate','seat'].includes(a.type))check(e,'Player entry not found.');
   if(a.type==='payment'){
     check(['rebuy','addon'].includes(a.kind),'Unknown payment type.');check(!e.eliminatedAt,'Player has been eliminated.');const k=a.kind;
+    if(k==='rebuy')check(rebuyOpen(t,c),'Rebuy period has closed.');
     check(t.settings[k+'Enabled'],`${k==='rebuy'?'Rebuys':'Add-ons'} are turned off.`);
     check(roundAt(t,c.index)<=t.settings[k+'LastRound'],`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
     if(k==='rebuy'&&t.settings.rebuyMax>0)check(e.payments.filter(p=>p.kind==='rebuy').length<t.settings.rebuyMax,'Player has reached the rebuy limit.');
