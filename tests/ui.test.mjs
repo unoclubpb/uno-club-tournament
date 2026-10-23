@@ -189,3 +189,21 @@ test('stale writes reload cloud state and require a retry without duplicating pl
   await ui.submit(f);assert.deepEqual(ui.stored().players.map(p=>p.playerNumber),[1,2]);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
+
+test('registration opens the active tournament without a chooser or a saved device selection',async()=>{
+ let s=initialState();s=execute(s,{type:'player-save',id:'p1',name:'Alex'});s=execute(s,{type:'player-save',id:'p2',name:'Casey'});
+ s=execute(s,{type:'tournament-create',id:'active-1',name:'This One',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'active-1',playerId:'p1',paid:true});
+ s=execute(s,{type:'tournament-create',id:'draft-1',name:'Next Week',templateId:s.templates[0].id});
+ const ui=await boot('https://example.test/uno-club-tournament/',s,'signup');
+ try{
+  assert.equal(ui.q('#current-tournament'),null);assert.equal(ui.q('.current-tournament-name').textContent,'This One');assert.equal(ui.q('.signup-layout').dataset.tournament,'active-1');assert.equal(ui.q('.page-heading .muted'),null);
+  ui.click('[data-register=p2]');await flush();assert.equal(ui.stored().tournaments.find(t=>t.id==='active-1').entries.length,2);assert.equal(ui.stored().tournaments.find(t=>t.id==='draft-1').entries.length,0);
+  ui.click('[data-go=manage]');assert.equal(ui.q('.current-tournament-name').textContent,'This One');assert.equal(ui.q('#current-tournament'),null);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('opening a clock link retains its requested tournament while cloud records load',async()=>{
+ let s=initialState();s=execute(s,{type:'player-save',id:'p1',name:'Alex'});s=execute(s,{type:'tournament-create',id:'active-1',name:'Active Event',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'active-1',playerId:'p1',paid:true});s=execute(s,{type:'tournament-create',id:'draft-1',name:'Next Week',templateId:s.templates[0].id});
+ const ui=await boot('https://example.test/',s,'clock','draft-1');
+ try{assert.equal(ui.q('.tv-heading h1').textContent,'Next Week');assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+});

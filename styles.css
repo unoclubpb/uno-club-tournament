@@ -45,11 +45,16 @@ body.registration-page{height:var(--app-height,100dvh);min-height:0;overflow:hid
 .registration-page h1{font-size:26px}
 .registration-page .page-heading .eyebrow{display:none}
 .registration-page .page-heading .muted{margin-top:4px}
-.registration-page .metrics{flex-shrink:0;margin:12px 0;padding:12px 0}
+.registration-page .metrics{flex-shrink:0;margin:0;padding:12px 0}
+.registration-page .metrics>div{min-width:0;padding:0 12px}
+.registration-page .metrics strong{overflow-wrap:anywhere}
 .registration-page .metrics span{margin-bottom:5px}
 .registration-page .metrics strong{font-size:21px}
 .registration-page .metrics .status-value{font-size:17px;padding-top:3px}
-.registration-page .signup-layout{flex:1;min-height:0;align-items:stretch;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}
+.registration-page .signup-layout{flex:1;min-height:0;align-items:stretch;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);grid-template-rows:auto minmax(0,1fr);gap:14px 22px;margin-top:12px}
+.registration-page .registration-find{grid-column:1;grid-row:1/3}
+.registration-page .registration-summary{grid-column:2;grid-row:1}
+.registration-page .registration-enrolled{grid-column:2;grid-row:2}
 .registration-page .signup-layout>.panel{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;padding:18px}
 .registration-page .signup-layout>.panel>*{flex-shrink:0}
 .registration-page .signup-layout h2{margin-bottom:0}
@@ -71,7 +76,7 @@ body.registration-page{height:var(--app-height,100dvh);min-height:0;overflow:hid
   .registration-page .nav button{padding:8px 5px;gap:4px;font-size:9px}.registration-page .nav svg{width:16px;height:16px}
   .registration-page .content{padding:10px 0;gap:0}.registration-page h1{font-size:21px}
   .registration-page .page-heading .muted{display:none}
-  .registration-page .metrics{grid-template-columns:repeat(4,minmax(0,1fr));padding:8px 0;margin:8px 0}
+  .registration-page .metrics{grid-template-columns:repeat(4,minmax(0,1fr));padding:8px 0;margin:0}
   .registration-page .metrics>div{padding:0 7px;border-bottom:0;border-right:1px solid var(--line)}
   .registration-page .metrics>div:last-child{border-right:0}.registration-page .metrics span{font-size:9px;margin-bottom:4px}
   .registration-page .metrics strong{font-size:17px}.registration-page .metrics strong small{font-size:12px}
@@ -79,7 +84,13 @@ body.registration-page{height:var(--app-height,100dvh);min-height:0;overflow:hid
   .registration-tabs{display:flex;flex-shrink:0;gap:8px;margin-bottom:8px}
   .registration-tabs button{flex:1;min-height:36px;padding:7px;font-size:12px}
   .registration-tabs button[aria-pressed=true]{border-color:var(--gold);color:var(--gold);background:#302a1b}
-  .registration-page .signup-layout{grid-template-columns:minmax(0,1fr);gap:0}
+  .registration-page .signup-layout{grid-template-columns:minmax(0,1fr);margin-top:0;gap:10px 0}
+  .registration-page .signup-layout[data-panel=find]{grid-template-rows:minmax(0,1fr)}
+  .registration-page .signup-layout[data-panel=registered]{grid-template-rows:auto minmax(0,1fr)}
+  .registration-page .registration-find{grid-column:1;grid-row:1}
+  .registration-page .registration-summary{grid-column:1;grid-row:1}
+  .registration-page .registration-enrolled{grid-column:1;grid-row:2}
+  .registration-page .signup-layout[data-panel=find]>.registration-summary{display:none}
   .registration-page .signup-layout>.panel{padding:12px}
   .registration-page .signup-layout[data-panel=find]>.registration-enrolled,.registration-page .signup-layout[data-panel=registered]>.registration-find{display:none}
   .registration-page .signup-layout h2{font-size:17px}
@@ -91,7 +102,7 @@ body.registration-page{height:var(--app-height,100dvh);min-height:0;overflow:hid
 }
 /* Keep search and results usable while a phone keyboard or a short landscape viewport is open. */
 @media(max-height:600px){
-  .registration-page .header,.registration-page .page-heading,.registration-page .metrics,.registration-page .app-footer{display:none}
+  .registration-page .header,.registration-page .page-heading,.registration-page .app-footer{display:none}
   .registration-page .context{padding-top:5px;padding-bottom:5px}
   .registration-page .nav{padding-top:0}.registration-page .nav button{padding-top:7px;padding-bottom:7px}
   .registration-page .content{padding-top:8px;padding-bottom:8px}
@@ -149,3 +160,7 @@ body.home-page{height:var(--app-height,100dvh);min-height:0;overflow:hidden;over
   .home-page .home-menu .menu-card>svg{grid-row:1;margin:0}.home-page .home-menu .menu-card h3{grid-row:1}
 }
 @media(max-height:430px){.home-page .app-footer{display:none}.home-page .header{height:48px}.home-page .home-menu .menu-card{padding:6px}.home-page .home-tournament .eyebrow{display:none}.home-page .home-tournament h2{font-size:16px}.home-page .home-tournament .button{min-height:30px}}
+
+/* The current tournament is a label rather than a second selection control. */
+.context>div:first-child{flex:1;min-width:0}.context-actions{flex-shrink:0}.current-tournament-name{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:17px;line-height:1.5}
+@media(max-width:700px){.current-tournament-name{font-size:14px}.registration-page .registration-tabs{margin-top:8px}}

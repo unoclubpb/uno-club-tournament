@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.2.8
+# Uno Club Tournament Director — v0.2.9
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -106,3 +106,7 @@ Release validation: 38 automated scenarios passed, including the cloud-only gate
 ## v0.2.8 fixed home screen
 
 The signed-in home page fills the available viewport, with no document or menu scrolling. All five menu buttons share the remaining space below the header and optional Current Tournament card. The desktop retains its three-plus-two grid; phones use five compact stacked buttons. Short viewports remove menu descriptions and secondary tournament summary values to retain visible actions. The Current Tournament name truncates within the card and exposes its full name on hover. Shared visual viewport sizing follows window changes; registration retains its independently scrolling lists. Other pages and the signed-out screen retain their existing layouts.
+
+## v0.2.9 registration layout
+
+The context header shows the current tournament name as plain text instead of a dropdown. If a browser has no valid selection, the app opens the active tournament, falling back to the latest draft or saved event. Registration uses a full-height left player-search panel beside a right column with summary metrics above Registered Players. The page stays fixed and each roster scrolls independently. On phones, the Find a player panel uses the available height; the Registered tab groups the metrics above its roster. The duplicate tournament name below the registration page title was removed.
