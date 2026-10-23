@@ -69,3 +69,16 @@ test('legacy player rebuys migrate once into an unassigned total, preserving IDs
  let upgraded=upgradeState(s);assert.equal(upgraded.tournaments[0].rebuyCount,1);assert.equal(financials(upgraded.tournaments[0]).pool,8400);assert.deepEqual(upgraded.tournaments[0].entries.map(e=>e.playerId),ids);assert.ok(upgraded.tournaments[0].entries.every(e=>e.payments.length===1));assert.deepEqual(upgradeState(upgraded),upgraded);
  t.status='completed';t.settlement={collected:7500,owed:0,dealerTokes:1000,houseBase:6500,houseFee:1300,pool:5200};upgraded=upgradeState(s);assert.deepEqual(upgraded.tournaments[0].settlement,t.settlement);assert.equal(financials(upgraded.tournaments[0]).pool,5200);
 });
+
+test('last played follows player identity and the latest started or completed tournament date',()=>{
+ const s=initialState();s.players=[{id:'p1',name:'Alex',playerNumber:1},{id:'p2',name:'Casey',playerNumber:2}];
+ s.tournaments=[
+  {id:'ongoing',date:'2026-10-22',status:'open',startedAt:0,entries:[{playerId:'p1'}]},
+  {id:'future-draft',date:'2026-12-01',status:'open',entries:[{playerId:'p1'}]},
+  {id:'completed',date:'2026-10-20',status:'completed',entries:[{playerId:'p1',place:1}]},
+  {id:'other-player',date:'2026-10-23',status:'completed',entries:[{playerId:'p2',place:1}]}
+ ];
+ assert.equal(statsFor(s,'p1').lastPlayed,'2026-10-22');assert.equal(statsFor(s,'p1').played,1);assert.equal(statsFor(s,'p2').lastPlayed,'2026-10-23');assert.equal(statsFor(s,'missing').lastPlayed,null);
+ s.players[0].name='Alex Updated';s.players[0].archived=true;assert.equal(statsFor(s,'p1').lastPlayed,'2026-10-22');
+ s.tournaments=s.tournaments.filter(t=>t.id!=='ongoing');assert.equal(statsFor(s,'p1').lastPlayed,'2026-10-20');s.tournaments=s.tournaments.filter(t=>t.id!=='completed');assert.equal(statsFor(s,'p1').lastPlayed,null);
+});

@@ -242,7 +242,8 @@ body.fixed-workspace{height:var(--app-height,100dvh);min-height:0;overflow:hidde
 .player-profile-panels{flex:1;min-height:0;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:20px}
 .player-profile-panels>.panel{min-width:0;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:14px;padding:20px;margin:0}
 .player-profile-panels>.panel>h2{flex-shrink:0;margin:0;font-size:19px}
-.player-details-fields{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:12px}
+.player-details-fields{flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto auto minmax(0,1fr);gap:12px}
+.player-details-fields>.player-notes{grid-column:1/-1}
 .player-details-fields>label{min-width:0;min-height:0;margin:0;gap:6px}
 .player-details-fields>label:not(:last-child){align-self:start}
 .player-details-fields input{min-width:0}
@@ -285,8 +286,8 @@ body.fixed-workspace{height:var(--app-height,100dvh);min-height:0;overflow:hidde
   .player-details-fields input,.player-details-fields textarea{min-height:30px;padding:5px 7px;font-size:12px}
   .player-details-panel>.button-row>.button{min-height:32px;padding:5px 7px;font-size:10px}
 }
-/* A phone keyboard leaves room for one panel at a time, without moving the page. */
-@media(max-width:700px) and (max-height:480px){
+/* Compact phone viewports show one panel at a time to keep every field visible. */
+@media(max-width:700px) and (max-height:800px){
   .player-profile-page .player-stats{display:none}
   .profile-tabs{display:flex;flex-shrink:0;gap:8px}
   .profile-tabs>.button{flex:1;min-height:30px;padding:5px;font-size:11px}
@@ -294,3 +295,5 @@ body.fixed-workspace{height:var(--app-height,100dvh);min-height:0;overflow:hidde
   .player-profile-panels{grid-template-rows:minmax(0,1fr)}
   .player-profile-panels[data-panel=details]>.player-history-panel,.player-profile-panels[data-panel=history]>.player-details-panel{display:none}
 }
+
+@media(max-height:480px){.player-profile-page .player-stats{display:none}}

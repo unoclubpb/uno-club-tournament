@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.3
+# Uno Club Tournament Director — v0.3.4
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -138,3 +138,8 @@ Removed the 760px cap and two-column desktop limit from saved structures. Cards 
 ## v0.3.3 fixed player profiles
 
 Archived player profiles show `(Archived)` after the name in the heading, without changing the saved name or permanent identity. Restoring the player removes that heading suffix. Profiles keep the page and details form fixed, with equally tall details/history panels. Only the history entries scroll; the history heading stays visible. Phone panels stack at equal heights, with compact fields and a Details/History switch when a phone keyboard leaves less than 480px of height. History scroll position survives profile rerenders.
+
+
+## v0.3.4 last played and full-width notes
+
+Player details show Phone number and a read-only Last played date on the same row, with Notes spanning both columns underneath. Last played comes from the latest dated tournament referencing the player's permanent ID that has started or completed; registration-only drafts do not count. It shows Not yet when no qualifying tournament exists, including for newly added players. Editing or archiving a player does not change that derived date. Compact phone profiles use their existing Details/History switch below 800px of height so all fields remain visible without page/form scrolling.

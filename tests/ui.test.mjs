@@ -122,7 +122,7 @@ test('player database displays three-digit IDs and can search by the visible num
  const ui=await boot('https://example.test/',s,'players');
  try{
   assert.match(ui.q('[data-player="long-legacy-id-alpha"]').textContent,/ID: 001/);assert.match(ui.q('[data-player="long-legacy-id-beta"]').textContent,/ID: 002/);assert.doesNotMatch(ui.q('#player-results').textContent,/long-legacy-id/);
-  ui.input(ui.q('#player-search'),'002');assert.equal(ui.w.document.querySelectorAll('[data-player]').length,1);ui.click('[data-player]');assert.equal(ui.q('#player-form [readonly]').value,'002');
+  ui.input(ui.q('#player-search'),'002');assert.equal(ui.w.document.querySelectorAll('[data-player]').length,1);ui.click('[data-player]');assert.equal(ui.q('#player-form [readonly]').value,'002');assert.equal(ui.q('[data-last-played]').value,'Not yet');
   ui.input(ui.q('#player-form [name=name]'),'Beta Updated');await ui.submit(ui.q('#player-form'));assert.deepEqual(ui.stored().players.map(p=>p.id),originalIds);assert.deepEqual(ui.stored().players.map(p=>p.playerNumber),[1,2]);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
@@ -233,9 +233,9 @@ test('rebuy control becomes available as the cutoff break starts without a reloa
 });
 
 test('completed player profiles show finishing history without money statistics or winnings',async()=>{
- let s=initialState();s=execute(s,{type:'player-save',id:'p1',name:'Alex'});s=execute(s,{type:'tournament-create',id:'t1',name:'Finished Event',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'t1',playerId:'p1'});s=execute(s,{type:'finish',tournamentId:'t1'});
+ let s=initialState();s=execute(s,{type:'player-save',id:'p1',name:'Alex'});s=execute(s,{type:'tournament-create',id:'t1',name:'Finished Event',date:'2026-10-20',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'t1',playerId:'p1'});s=execute(s,{type:'finish',tournamentId:'t1'});
  const ui=await boot('https://example.test/',s,'players');
- try{ui.click('[data-player=p1]');assert.match(ui.q('.player-stats').textContent,/Wins1/);assert.match(ui.w.document.body.textContent,/Finished #1/);assert.doesNotMatch(ui.w.document.body.textContent,/winnings|net result|recorded costs|cashes|\$/i);assert.equal('winnings' in ui.stored().tournaments[0].entries[0],false);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+ try{ui.click('[data-player=p1]');assert.equal(ui.q('[data-last-played]').value,'Oct 20, 2026');assert.equal(ui.q('[data-last-played]').readOnly,true);assert.ok(ui.q('.player-notes').contains(ui.q('[name=notes]')));assert.match(ui.q('.player-stats').textContent,/Wins1/);assert.match(ui.w.document.body.textContent,/Finished #1/);assert.doesNotMatch(ui.w.document.body.textContent,/winnings|net result|recorded costs|cashes|\$/i);assert.equal('winnings' in ui.stored().tournaments[0].entries[0],false);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
 
 test('player list filtering and cloud refresh preserve the fixed search and independent list position',async()=>{

@@ -202,5 +202,6 @@ export function execute(state,action,now=Date.now()){
 }
 export function statsFor(state,playerId){
   const rows=state.tournaments.filter(t=>t.status==='completed').flatMap(t=>t.entries.filter(e=>e.playerId===playerId).map(e=>({t,e})));
-  return {played:rows.length,wins:rows.filter(r=>r.e.place===1).length,history:rows};
+  const lastPlayed=state.tournaments.filter(t=>(t.status==='completed'||t.startedAt!=null)&&t.entries.some(e=>e.playerId===playerId)).map(t=>t.date).filter(Boolean).sort().at(-1)||null;
+  return {played:rows.length,wins:rows.filter(r=>r.e.place===1).length,history:rows,lastPlayed};
 }
