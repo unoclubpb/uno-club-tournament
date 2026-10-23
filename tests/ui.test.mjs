@@ -438,3 +438,14 @@ test('movement stays enabled for consecutive moves but resets after leaving tabl
   ui.click('[data-action=toggle-move-players]');const reopened=await boot('https://example.test/',ui.stored(),'manage','t1');try{reopened.click('[data-tab=tables]');assert.equal(reopened.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'false');assert.equal(reopened.q('[data-seat-grab=e7]').disabled,true);}finally{reopened.close();}assert.equal(ui.w.__fixture.saves,1);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
+
+test('management keeps all three header rows together and dragging scrolls below the pinned menu without dropping through it',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');const chrome=ui.q('.management-chrome');assert.ok(chrome.querySelector('.header'));assert.ok(chrome.querySelector('.context [data-action=open-clock]'));assert.ok(chrome.querySelector('.nav [data-go=home]'));assert.equal(chrome.contains(ui.q('.content')),false);assert.equal(ui.w.document.querySelectorAll('[data-action=open-clock]').length,1);
+  chrome.getBoundingClientRect=()=>({top:0,bottom:320,height:320});const frames=[];let scrolled=0;ui.w.requestAnimationFrame=callback=>(frames.push(callback),frames.length);ui.w.cancelAnimationFrame=()=>{};ui.w.scrollBy=(x,y)=>{scrolled+=y;};const target=ui.q('[data-table="1"][data-seat="1"]');ui.w.document.elementFromPoint=(x,y)=>{assert.ok(y>=320,'Never hit-test seats hidden under the fixed header');return target;};
+  dispatchPointer(ui,ui.q('[data-seat-grab=e7]'),'pointerdown',{x:130,y:500,pointerType:'touch'});dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:350,pointerType:'touch'});assert.equal(ui.q('.seat-drop-target'),target);frames.shift()();assert.ok(scrolled<0,'Scroll upward just below the fixed navigation');
+  dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:200,pointerType:'touch'});assert.equal(ui.q('.seat-drop-target'),null);dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:200,pointerType:'touch'});await flush();assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.q('#dialog').open,false);assert.equal(ui.q('.seat-drag-ghost'),null);
+  ui.click('[data-go=players]');assert.equal(ui.q('.management-chrome'),null);assert.ok(ui.q('#player-search'));assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});

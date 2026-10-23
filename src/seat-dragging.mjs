@@ -1,14 +1,14 @@
 // Pointer events support mouse, pen and touch without taking over scrolling elsewhere.
-export function installSeatDragging({getSource,getLabel,onStart,onDrop,onError}){
+export function installSeatDragging({getScrollBounds=()=>({top:0,bottom:innerHeight}),getSource,getLabel,onStart,onDrop,onError}){
   let drag=null,suppressUntil=0;
-  const targetAt=(x,y)=>document.elementFromPoint?.(x,y)?.closest('[data-seat-target]');
+  const targetAt=(x,y)=>{const {top,bottom}=getScrollBounds();return y>=top&&y<bottom?document.elementFromPoint?.(x,y)?.closest('[data-seat-target]'):null;};
   function highlight(){
     document.querySelectorAll('.seat-drop-target').forEach(el=>el.classList.remove('seat-drop-target'));
     const target=targetAt(drag.x,drag.y);if(target)target.classList.add('seat-drop-target');
   }
   function scrollFrame(){
     if(!drag?.active)return;
-    const edge=70,dy=drag.y<edge?-Math.ceil((edge-drag.y)/4):drag.y>innerHeight-edge?Math.ceil((drag.y-innerHeight+edge)/4):0;
+    const {top,bottom}=getScrollBounds(),edge=70,dy=drag.y<top+edge?-Math.ceil((top+edge-drag.y)/4):drag.y>bottom-edge?Math.ceil((drag.y-bottom+edge)/4):0;
     if(dy){window.scrollBy(0,Math.max(-22,Math.min(22,dy)));highlight();}
     drag.frame=window.requestAnimationFrame?.(scrollFrame);
   }

@@ -335,3 +335,6 @@ body.saving .seat-lock-button{pointer-events:none;opacity:.6}
 .seat-empty:disabled{opacity:1;cursor:default}
 .move-players-toggle.is-active{background:#245d39;border-color:#245d39;color:#fff}
 .move-players-toggle.is-active:hover{background:#1c4c2e;border-color:#1c4c2e}
+
+/* Keep the management banner, tournament bar and navigation together above the scrolling page. */
+.management-chrome{position:sticky;top:0;z-index:30;background:var(--bg);isolation:isolate}

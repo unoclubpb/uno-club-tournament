@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.10
+# Uno Club Tournament Director — v0.3.11
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -191,3 +191,10 @@ Validation: all 88 automated tests pass. New scenarios cover removed copy, defau
 ## v0.3.10 one clock-window button in management
 
 Removed the duplicate Open TV clock button beside the Tournament Management title. Open clock window remains in the tournament bar below the top banner and uses the same existing clock popup action. Verified with the existing navigation/clock-window UI scenarios at both root and GitHub Pages subdirectory paths and a production build.
+
+
+## v0.3.11 pinned management header and menu
+
+Tournament Management groups the Uno Club banner, current tournament/clock-window bar and navigation in one sticky header. All content beneath the menu scrolls normally, including the management title, clock controls, tabs and table listings. The header follows its actual responsive height without hardcoded row offsets; other pages retain their existing layouts.
+
+Player dragging uses the visible content boundary beneath that header for upward edge scrolling and rejects destinations covered by the header. The Move Players toggle and seat locks retain their existing protections. Existing navigation and seating tests pass, including a touch-drag scenario that scrolls just below the pinned menu and refuses to drop through it. No saved player or tournament data changes are needed.
