@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.6
+# Uno Club Tournament Director — v0.3.7
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -155,3 +155,14 @@ Optional player phone numbers accept exactly ten digits or the matching `###-###
 Seats per table is configured under Tournament Management → Tables & seats, with an Apply seats action. Removed it from reusable structure and tournament setup forms. Capacity stays per event, accepts 2–12 seats and updates displayed seats and calculated table count. Changing capacity retains valid assignments; players occupying removed seat numbers move into free seats, preferring tables with fewer players. Eliminated players keep their results, and undo never restores an unavailable seat.
 
 The seating screen distinguishes capacity from occupancy, shows players seated at each table and previews the balanced distribution. Shuffle & seat uses the existing round-robin algorithm: 12 players at nine-seat tables use two tables with six players each; 13 use seven and six. It only moves players when explicitly applied; table count is derived from remaining players rather than configured in setup.
+
+
+## v0.3.7 readable seats and manual drag moves
+
+Seat numbers use large circular badges. Drag a seated player with a mouse, pen or touch, or select a player and then choose the destination seat. The existing Move menu also supports occupied seats. Empty destinations move directly; occupied destinations offer Swap players or Slide players down, with a preview and Cancel.
+
+Sliding inserts the player and shifts consecutive occupants toward larger seat numbers until the first empty seat, accounting for the source seat becoming vacant at the same table. It never shifts past the configured last seat; a full target run disables sliding with an explanation while a valid swap remains available. Only affected seats change. Cross-table swaps and slides are supported; an unseated player can use an empty seat or a valid slide, but cannot swap someone into an unseated position. Completed events, invalid seats and eliminated players are blocked.
+
+Each move is validated and saved atomically with the existing expected-version cloud save. If another device changes the workspace during a selection or confirmation, the move requires reviewing the latest seating. Drag cancellation, drops outside seats and dropping back onto the original seat do not save. Pointer dragging highlights its target and scrolls the management page near the viewport edges; ordinary page scrolling remains available outside player handles.
+
+Validation: automated domain and UI scenarios cover unique seat assignments, all valid swaps/insertion directions across multiple capacities, full-table overflow, cross-table changes, occupied-seat confirmation, failed saves, stale data, cancellation, pointer gestures and edge scrolling. Pointer events are simulated in jsdom; no production seating or test players are changed by these checks.

@@ -122,6 +122,28 @@ export function validateTemplate(template){
   check(s.payouts.length>0&&s.payouts.length<=20&&s.payouts.every(v=>Number.isFinite(v)&&v>=0),'Enter valid payouts.');
   check(s.payoutMode!=='percent'||Math.abs(s.payouts.reduce((a,b)=>a+b,0)-100)<0.001,'Payout percentages must total 100%.');
 }
+// A complete, validated seating change; no records are mutated while planning.
+export function planSeatMove(t,{entryId,table,seat,mode='move'}){
+  check(t&&t.status!=='completed','Completed tournament is locked.');
+  const remaining=t.entries.filter(e=>!e.eliminatedAt),source=remaining.find(e=>e.id===entryId);
+  check(source,'Only remaining players can be moved.');
+  check(Number.isInteger(table)&&table>=1&&table<=tablesInUse(t)&&Number.isInteger(seat)&&seat>=1&&seat<=t.settings.seatsPerTable,'Invalid table or seat.');
+  check(['move','swap','slide'].includes(mode),'Choose a valid seat move.');
+  if(source.table===table&&source.seat===seat)return [];
+  const occupant=remaining.find(e=>e.id!==source.id&&e.table===table&&e.seat===seat);
+  const moved={entryId:source.id,table,seat};
+  if(!occupant)return [moved];
+  check(mode!=='move','That seat is occupied. Choose Swap players or Slide players down.');
+  if(mode==='swap'){
+    check(source.table&&source.seat>=1&&source.seat<=t.settings.seatsPerTable,'A player must already have a seat to swap.');
+    return [moved,{entryId:occupant.id,table:source.table,seat:source.seat}];
+  }
+  const occupied=new Map(remaining.filter(e=>e.id!==source.id&&e.table===table).map(e=>[e.seat,e]));
+  let emptySeat=seat;while(emptySeat<=t.settings.seatsPerTable&&occupied.has(emptySeat))emptySeat++;
+  check(emptySeat<=t.settings.seatsPerTable,`Cannot slide players down: no empty seat from Seat ${seat} through Seat ${t.settings.seatsPerTable} at Table ${table}.`);
+  const updates=[moved];for(let number=seat;number<emptySeat;number++)updates.push({entryId:occupied.get(number).id,table,seat:number+1});
+  return updates;
+}
 export function execute(state,action,now=Date.now()){
   const s=upgradeState(state), a=action;let t=s.tournaments.find(t=>t.id===a.tournamentId);
   if(a.type==='player-save'){
@@ -179,6 +201,7 @@ export function execute(state,action,now=Date.now()){
     }
     return s;
   }
+  if(a.type==='seat-move'){for(const update of planSeatMove(t,a)){const entry=t.entries.find(e=>e.id===update.entryId);entry.table=update.table;entry.seat=update.seat;}return s;}
   const e=t.entries.find(e=>e.id===a.entryId);
   if(['payment','eliminate','seat'].includes(a.type))check(e,'Player entry not found.');
   if(a.type==='payment'){

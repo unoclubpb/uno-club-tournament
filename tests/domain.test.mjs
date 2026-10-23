@@ -115,3 +115,48 @@ test('undo elimination never restores a removed seat and finished tournaments lo
  let {s,event}=setup(20);s=act(s,event,{type:'auto-seat'});const victim=s.tournaments[0].entries.find(e=>e.seat===10).id;s=act(s,event,{type:'eliminate',entryId:victim});s=act(s,event,{type:'seating-settings',seatsPerTable:9});s=act(s,event,{type:'undo-elimination'});const restored=s.tournaments[0].entries.find(e=>e.id===victim);assert.equal(restored.eliminatedAt,null);assert.equal(restored.table,null);assert.equal(restored.seat,null);
  const one=setup(1);const finished=act(one.s,one.event,{type:'finish'});assert.throws(()=>act(finished,one.event,{type:'seating-settings',seatsPerTable:9}),/locked/);
 });
+
+function manualSeats(players=10,capacity=10){const result=setup(players);const t=result.s.tournaments[0];t.settings.seatsPerTable=capacity;t.entries.forEach((e,i)=>{e.table=Math.floor(i/capacity)+1;e.seat=i%capacity+1;});return result;}
+function assertValidSeats(t){const seated=t.entries.filter(e=>!e.eliminatedAt&&e.table);assert.equal(new Set(seated.map(e=>`${e.table}/${e.seat}`)).size,seated.length);assert.ok(seated.every(e=>e.seat>=1&&e.seat<=t.settings.seatsPerTable));}
+
+test('manual moves use empty seats, swap occupants and retain player identity and records',()=>{
+ let {s,event}=manualSeats(7);const before=clone(s),source=s.tournaments[0].entries[6].id,target=s.tournaments[0].entries[0].id;
+ s=act(s,event,{type:'seat-move',entryId:source,table:1,seat:9,mode:'move'});assert.equal(s.tournaments[0].entries[6].seat,9);assert.equal(s.tournaments[0].entries[0].seat,1);
+ s=act(s,event,{type:'seat-move',entryId:source,table:1,seat:1,mode:'swap'});assert.equal(s.tournaments[0].entries[6].seat,1);assert.equal(s.tournaments[0].entries.find(e=>e.id===target).seat,9);assertValidSeats(s.tournaments[0]);
+ for(let i=0;i<s.tournaments[0].entries.length;i++){const {table,seat,...entry}=s.tournaments[0].entries[i],{table:oldTable,seat:oldSeat,...original}=before.tournaments[0].entries[i];assert.deepEqual(entry,original);}assert.deepEqual(s.players,before.players);
+});
+
+test('sliding seven to one uses the vacated seventh seat and leaves seats eight through ten unchanged',()=>{
+ const {s,event}=manualSeats(10),before=clone(s),source=s.tournaments[0].entries[6].id;
+ const moved=act(s,event,{type:'seat-move',entryId:source,table:1,seat:1,mode:'slide'});const entries=moved.tournaments[0].entries;assert.equal(entries[6].seat,1);for(let i=0;i<6;i++)assert.equal(entries[i].seat,i+2);for(let i=7;i<10;i++)assert.equal(entries[i].seat,i+1);assertValidSeats(moved.tournaments[0]);assert.deepEqual(s,before);
+});
+
+test('a slide stops at the first gap and cannot push anyone past the final seat',()=>{
+ const {s,event}=manualSeats(10),before=clone(s);assert.throws(()=>act(s,event,{type:'seat-move',entryId:s.tournaments[0].entries[0].id,table:1,seat:7,mode:'slide'}),/no empty seat.*Seat 10/);assert.deepEqual(s,before);
+ s.tournaments[0].entries[2].table=null;s.tournaments[0].entries[2].seat=null;const moved=act(s,event,{type:'seat-move',entryId:s.tournaments[0].entries[6].id,table:1,seat:1,mode:'slide'}),entries=moved.tournaments[0].entries;assert.equal(entries[0].seat,2);assert.equal(entries[1].seat,3);assert.equal(entries[3].seat,4);assert.equal(entries[6].seat,1);assert.equal(entries[9].seat,10);assertValidSeats(moved.tournaments[0]);
+});
+
+test('cross-table swaps work on full tables and cross-table slides require a free destination seat',()=>{
+ let {s,event}=manualSeats(20);const source=s.tournaments[0].entries[16].id;
+ assert.throws(()=>act(s,event,{type:'seat-move',entryId:source,table:1,seat:7,mode:'slide'}),/no empty seat/);
+ const swapped=act(s,event,{type:'seat-move',entryId:source,table:1,seat:1,mode:'swap'});assert.equal(swapped.tournaments[0].entries[16].table,1);assert.equal(swapped.tournaments[0].entries[0].table,2);assert.equal(swapped.tournaments[0].entries[0].seat,7);assertValidSeats(swapped.tournaments[0]);
+ s.tournaments[0].entries[9].table=null;s.tournaments[0].entries[9].seat=null;s=act(s,event,{type:'seat-move',entryId:source,table:1,seat:7,mode:'slide'});assert.equal(s.tournaments[0].entries[16].seat,7);assert.equal(s.tournaments[0].entries[6].seat,8);assert.equal(s.tournaments[0].entries[7].seat,9);assert.equal(s.tournaments[0].entries[8].seat,10);assertValidSeats(s.tournaments[0]);
+});
+
+test('manual moves reject missing choices, invalid seats, eliminated players and finished events',()=>{
+ const {s,event}=manualSeats(10),source=s.tournaments[0].entries[6].id;
+ assert.throws(()=>act(s,event,{type:'seat-move',entryId:source,table:1,seat:1}),/occupied.*Swap/);
+ for(const target of [{table:0,seat:1},{table:3,seat:1},{table:1,seat:11},{table:1,seat:1.5}])assert.throws(()=>act(s,event,{type:'seat-move',entryId:source,...target,mode:'swap'}),/Invalid table or seat/);
+ assert.throws(()=>act(s,event,{type:'seat-move',entryId:source,table:1,seat:1,mode:'unknown'}),/valid seat move/);
+ const eliminated=act(s,event,{type:'eliminate',entryId:source});assert.throws(()=>act(eliminated,event,{type:'seat-move',entryId:source,table:1,seat:1,mode:'swap'}),/remaining players/);
+ const one=manualSeats(1),finished=act(one.s,one.event,{type:'finish'});assert.throws(()=>act(finished,one.event,{type:'seat-move',entryId:finished.tournaments[0].entries[0].id,table:1,seat:1}),/locked/);
+ s.tournaments[0].entries[6].table=null;s.tournaments[0].entries[6].seat=null;assert.throws(()=>act(s,event,{type:'seat-move',entryId:source,table:1,seat:1,mode:'swap'}),/already have a seat/);
+});
+
+test('all swaps and possible insertion slides preserve one player per valid seat',()=>{
+ for(const capacity of [2,9,10,12])for(let from=1;from<=capacity;from++)for(let to=1;to<=capacity;to++)for(const mode of ['swap','slide']){
+  const {s,event}=manualSeats(capacity,capacity),action={type:'seat-move',entryId:s.tournaments[0].entries[from-1].id,table:1,seat:to,mode};
+  if(mode==='slide'&&from<to){assert.throws(()=>act(s,event,action),/no empty seat/);continue;}
+  const result=act(s,event,action);assertValidSeats(result.tournaments[0]);assert.equal(result.tournaments[0].entries[from-1].seat,to);assert.equal(result.tournaments[0].entries.length,capacity);
+ }
+});

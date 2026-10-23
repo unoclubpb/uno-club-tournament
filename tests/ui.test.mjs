@@ -276,3 +276,81 @@ test('seats are configured in management, display capacity and balance twelve pl
   ui.click('[data-action=auto-seat]');await flush();assert.deepEqual([...ui.w.document.querySelectorAll('.seat-table h3 small')].map(e=>e.textContent),['7 of 10 seats filled','6 of 10 seats filled']);assert.equal(ui.stored().templates[0].settings.seatsPerTable,10);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
+
+function manualSeatingFixture(players=10){let s=initialState();for(let i=1;i<=players;i++)s=execute(s,{type:'player-save',id:'p'+i,name:'Player '+i});s=execute(s,{type:'tournament-create',id:'t1',name:'Manual seating',templateId:s.templates[0].id});for(let i=1;i<=players;i++)s=execute(s,{type:'register',id:'e'+i,tournamentId:'t1',playerId:'p'+i});s.tournaments[0].entries.forEach((e,i)=>{e.table=Math.floor(i/10)+1;e.seat=i%10+1;});return s;}
+
+test('selecting occupied seats offers swap or insertion slide without saving until chosen',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.click('[data-seat-grab=e7]');assert.equal(ui.q('[data-seat-grab=e7]').getAttribute('aria-pressed'),'true');ui.click('[data-seat-grab=e1]');assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.q('[data-seat-move-mode=swap]').disabled,false);assert.equal(ui.q('[data-seat-move-mode=slide]').disabled,false);assert.match(ui.q('.seat-slide-preview').textContent,/Seat 6 → 7/);
+  ui.click('[data-seat-move-mode=slide]');await flush();const entries=ui.stored().tournaments[0].entries;assert.equal(entries.find(e=>e.id==='e7').seat,1);assert.equal(entries.find(e=>e.id==='e1').seat,2);assert.equal(entries.find(e=>e.id==='e6').seat,7);assert.equal(entries.find(e=>e.id==='e10').seat,10);assert.equal(ui.w.__fixture.saves,1);assert.equal(ui.q('#dialog').open,false);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('a full tail blocks sliding, permits swapping, and cancellation keeps seating unchanged',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.click('[data-seat-grab=e1]');ui.click('[data-seat-grab=e7]');assert.equal(ui.q('[data-seat-move-mode=slide]').disabled,true);assert.match(ui.q('.seat-move-error').textContent,/Seat 10/);ui.click('[data-action=close-modal]');assert.equal(ui.w.__fixture.saves,0);
+  ui.click('[data-seat-grab=e1]');ui.click('[data-seat-grab=e7]');ui.click('[data-seat-move-mode=swap]');await flush();assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e1').seat,7);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,1);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('empty-seat moves, selecting the original seat and canceling selections do not misplace players',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(7),'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.click('[data-seat-grab=e7]');ui.click('[data-seat-grab=e7]');assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.q('[data-seat-grab=e7]').getAttribute('aria-pressed'),'false');
+  ui.click('[data-seat-grab=e7]');ui.click('[data-action=cancel-seat-pick]');assert.equal(ui.w.__fixture.saves,0);ui.click('[data-seat-grab=e7]');ui.click('[data-table="1"][data-seat="9"] [data-seat-target-button]');await flush();assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,9);assert.equal(ui.q('[data-table="1"][data-seat="7"] [data-seat-target-button]').textContent.trim(),'7Empty');assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('the Move menu supports occupied seats and stale confirmations cannot overwrite remote seating',async()=>{
+ const s=manualSeatingFixture(),ui=await boot('https://example.test/',s,'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.click('[data-seat=e7]');let form=ui.q('#seat-form');assert.equal(form.elements.seat.querySelector('[value="1/1"]').disabled,false);form.elements.seat.value='1/1';await ui.submit(form);assert.ok(ui.q('[data-seat-move-mode=swap]'));
+  const remote=execute(s,{type:'seat-move',tournamentId:'t1',entryId:'e2',table:1,seat:3,mode:'swap'});await ui.storage(remote);ui.click('[data-seat-move-mode=slide]');await flush();assert.equal(ui.w.__fixture.saves,0);assert.match(ui.q('#toast').textContent,/Seating changed/);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,7);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e2').seat,3);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+function dispatchPointer(ui,target,type,{x=100,y=300,id=1,pointerType='mouse'}={}){const event=new ui.w.MouseEvent(type,{bubbles:true,cancelable:true,button:0,clientX:x,clientY:y});Object.defineProperties(event,{pointerId:{value:id},pointerType:{value:pointerType},isPrimary:{value:true}});target.dispatchEvent(event);}
+for(const pointerType of ['mouse','touch'])test(pointerType+' dragging highlights an occupied target, then asks before moving',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');const handle=ui.q('[data-seat-grab=e7]'),target=ui.q('[data-table="1"][data-seat="1"]');ui.w.document.elementFromPoint=()=>target;
+  dispatchPointer(ui,handle,'pointerdown',{pointerType});dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:200,pointerType});assert.equal(ui.q('.seat-drop-target'),target);assert.ok(ui.q('.seat-drag-ghost'));assert.equal(ui.w.__fixture.saves,0);
+  dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:200,pointerType});await flush();assert.equal(ui.q('.seat-drag-ghost'),null);assert.ok(ui.q('[data-seat-move-mode=swap]'));assert.equal(ui.w.__fixture.saves,0);ui.click('[data-seat-move-mode=swap]');await flush();assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,1);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('canceling a drag, dropping outside seats and a remote update during dragging never save',async()=>{
+ const s=manualSeatingFixture(),ui=await boot('https://example.test/',s,'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.w.document.elementFromPoint=()=>null;let handle=ui.q('[data-seat-grab=e7]');dispatchPointer(ui,handle,'pointerdown');dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:200});dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:200});await flush();assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.q('.seat-drag-ghost'),null);
+  handle=ui.q('[data-seat-grab=e7]');dispatchPointer(ui,handle,'pointerdown');dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:200});dispatchPointer(ui,ui.w.document,'pointercancel');assert.equal(ui.q('.seat-drag-ghost'),null);assert.equal(ui.w.__fixture.saves,0);
+  dispatchPointer(ui,ui.q('[data-seat-grab=e7]'),'pointerdown');dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:200});await ui.storage(execute(s,{type:'seat-move',tournamentId:'t1',entryId:'e2',table:1,seat:3,mode:'swap'}));assert.equal(ui.q('.seat-drag-ghost'),null);dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:200});await flush();assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,7);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('a failed swap save leaves both players in place and can be retried explicitly',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.click('[data-seat-grab=e7]');ui.click('[data-seat-grab=e1]');ui.w.__fixture.saveError={message:'Connection interrupted during save'};ui.click('[data-seat-move-mode=swap]');await flush();assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,7);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e1').seat,1);assert.equal(ui.q('#dialog').open,true);assert.match(ui.q('#toast').textContent,/Connection interrupted/);
+  ui.w.__fixture.saveError=null;ui.click('[data-seat-move-mode=swap]');await flush();assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,1);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e1').seat,7);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('dragging near the screen edge scrolls and Escape cancels the pending drag',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');const frames=[];let scrolled=0,canceled=0;ui.w.requestAnimationFrame=callback=>(frames.push(callback),frames.length);ui.w.cancelAnimationFrame=()=>{canceled++;};ui.w.scrollBy=(x,y)=>{scrolled+=y;};ui.w.document.elementFromPoint=()=>ui.q('[data-table="1"][data-seat="1"]');
+  dispatchPointer(ui,ui.q('[data-seat-grab=e7]'),'pointerdown');dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:ui.w.innerHeight-10});frames.shift()();assert.ok(scrolled>0);assert.ok(ui.q('.seat-drag-ghost'));
+  ui.w.document.dispatchEvent(new ui.w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(ui.q('.seat-drag-ghost'),null);assert.ok(canceled>0);dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:200});await flush();assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('a cloud update deferred while typing refreshes the displayed seats before another player is picked',async()=>{
+ const s=manualSeatingFixture(),ui=await boot('https://example.test/',s,'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.q('#seating-settings-form [name=seatsPerTable]').focus();const remote=execute(s,{type:'seat-move',tournamentId:'t1',entryId:'e7',table:1,seat:1,mode:'swap'});await ui.storage(remote);
+  assert.ok(ui.q('[data-table="1"][data-seat="7"] [data-seat-grab=e7]'));ui.click('[data-seat-grab=e7]');assert.equal(ui.w.__fixture.saves,0);assert.ok(ui.q('[data-table="1"][data-seat="1"] [data-seat-grab=e7]'));assert.match(ui.q('#toast').textContent,/Seating changed/);assert.equal(ui.q('[data-seat-grab=e7]').getAttribute('aria-pressed'),'false');assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});

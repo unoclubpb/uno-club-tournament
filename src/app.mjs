@@ -1,5 +1,6 @@
 import {createClient} from '@supabase/supabase-js';
-import {id,clone,initialState,sampleTemplate,execute,clockAt,roundAt,financials,prizes,statsFor,normalizePhone,tablesRequired,tablesInUse,upgradeState,normalizePlayerName,rebuyOpen,rebuyPhase,cutoffHasBreak,canRecordRebuys,playerNumberLabel} from './domain.mjs';
+import {id,clone,initialState,sampleTemplate,execute,clockAt,roundAt,financials,prizes,statsFor,planSeatMove,normalizePhone,tablesRequired,tablesInUse,upgradeState,normalizePlayerName,rebuyOpen,rebuyPhase,cutoffHasBreak,canRecordRebuys,playerNumberLabel} from './domain.mjs';
+import {installSeatDragging} from './seat-dragging.mjs';
 import {mergeBrowserWorkspace} from './workspace.mjs';
 import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 
@@ -17,6 +18,7 @@ let legacy=readBrowserData(),legacyPending=!!legacy&&!localStorage.getItem(migra
 let busy=false,channel=null,online=false,serverSample=null,lastSync=null,remoteError='',clockTimer,editor=null;
 let selected=localStorage.getItem('uno-tournament-selected')||'',view=new URLSearchParams(location.search).get('view')||'home';
 const requestedTournament=new URLSearchParams(location.search).get('tournament');if(requestedTournament)selected=requestedTournament;
+let seatDragging,pickedSeat=null,seatMoveChoice=null,renderedWorkspaceVersion=0;
 let playerSearch='',signupSearch='',registrationPanel='find',profilePanel='details',playerDetail=null,showArchived=false,tab='players',lastClockKey='',sound=false;
 const icons={home:'<path d="m3 10 9-7 9 7v11h-6v-7H9v7H3Z"/>',setup:'<path d="m9 3-1 3-3 1-2 3 2 2-1 3 3 2 3-1 2 2 3-1 1-3 3-1 2-3-2-2 1-3-3-2-3 1-2-2Z"/><circle cx="12" cy="12" r="3"/>',players:'<circle cx="12" cy="7" r="3"/><path d="M6 21v-3a6 6 0 0 1 12 0v3M3 8a2 2 0 0 0 0 4m18-4a2 2 0 0 1 0 4M1 20v-2a4 4 0 0 1 4-4m18 6v-2a4 4 0 0 0-4-4"/>',signup:'<path d="M14 3H4v18h11M14 3l5 5v5M14 3v5h5M8 8h3m-3 5h5m-5 4h3"/><circle cx="18" cy="18" r="4"/><path d="M18 16v4m-2-2h4"/>',clock:'<rect x="2" y="3" width="20" height="14" rx="1"/><path d="M12 17v4m-5 0h10"/>',manage:'<path d="M7 3h10v7a5 5 0 0 1-10 0ZM7 5H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 3v5m-4 1h8"/>'};
 const icon=k=>`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[k]||icons.clock}</svg>`;
@@ -67,7 +69,11 @@ function manage(){const t=current();if(!t)return noTournament();const f=financia
 function tableManagement(t){
   const remaining=active(t),count=tablesRequired(t),base=count?Math.floor(remaining.length/count):0,extra=count?remaining.length%count:0;
   const target=count?Array.from({length:count},(_,i)=>base+(i<extra?1:0)).join(' / '):'No players registered yet';
-  return `<div class="section-label"><h2>Tables & seats</h2><button class="button secondary small" data-action="auto-seat" ${t.status==='completed'||!remaining.length?'disabled':''}>Shuffle & seat remaining players</button></div><form id="seating-settings-form" class="seating-settings-form"><input type="hidden" name="tournamentId" value="${t.id}"><label>Seats per table<input type="number" name="seatsPerTable" min="2" max="12" step="1" value="${t.settings.seatsPerTable}" aria-describedby="seating-capacity-help" required ${t.status==='completed'?'disabled':''}></label><button class="button secondary" ${t.status==='completed'?'disabled':''}>Apply seats</button></form><p class="muted" id="seating-capacity-help">This is the number of available seats, not how many players must sit at each table. Changing it keeps valid seat assignments; players in removed seats move to available seats.</p><p class="muted seating-plan">${count} ${count===1?'table':'tables'} needed for ${remaining.length} remaining players · ${t.settings.seatsPerTable} available seats per table. ${count?`Balanced seating after shuffling: <strong>${target}</strong> players.`:target+'.'} ${tablesInUse(t)>count?'Occupied tables stay available until you move their players or shuffle again.':''}</p><div class="seat-tables">${Array.from({length:tablesInUse(t)},(_,i)=>`<div class="seat-table"><h3>Table ${i+1}<small>${remaining.filter(e=>e.table===i+1).length} of ${t.settings.seatsPerTable} seats filled</small></h3>${Array.from({length:t.settings.seatsPerTable},(_,j)=>{const e=remaining.find(e=>e.table===i+1&&e.seat===j+1);return `<div><span class="seat-number">${j+1}</span><span>${e?esc(pName(e)):'<span class="muted">Empty</span>'}</span>${e?`<button class="text-button" data-seat="${e.id}">Move</button>`:''}</div>`;}).join('')}</div>`).join('')}</div><h3>Unseated players</h3>${remaining.filter(e=>!e.table).map(e=>`<div class="result-row"><span>${esc(pName(e))}</span><button class="button small secondary" data-seat="${e.id}">Assign seat</button></div>`).join('')||'<p class="muted">All remaining players have seats.</p>'}`;
+  return `<div class="section-label"><h2>Tables & seats</h2><button class="button secondary small" data-action="auto-seat" ${t.status==='completed'||!remaining.length?'disabled':''}>Shuffle & seat remaining players</button></div><form id="seating-settings-form" class="seating-settings-form"><input type="hidden" name="tournamentId" value="${t.id}"><label>Seats per table<input type="number" name="seatsPerTable" min="2" max="12" step="1" value="${t.settings.seatsPerTable}" aria-describedby="seating-capacity-help" required ${t.status==='completed'?'disabled':''}></label><button class="button secondary" ${t.status==='completed'?'disabled':''}>Apply seats</button></form><p class="muted" id="seating-capacity-help">This is the number of available seats, not how many players must sit at each table. Changing it keeps valid seat assignments; players in removed seats move to available seats.</p><p class="muted seating-plan">${count} ${count===1?'table':'tables'} needed for ${remaining.length} remaining players · ${t.settings.seatsPerTable} available seats per table. ${count?`Balanced seating after shuffling: <strong>${target}</strong> players.`:target+'.'} ${tablesInUse(t)>count?'Occupied tables stay available until you move their players or shuffle again.':''}</p><div class="seat-move-help"><p class="muted" id="seat-move-instructions" role="status">Drag a player to another seat, or select a player and then a seat.</p><button type="button" class="button secondary small" id="cancel-seat-pick" data-action="cancel-seat-pick" hidden>Cancel move</button></div><div class="seat-tables">${Array.from({length:tablesInUse(t)},(_,i)=>`<div class="seat-table"><h3>Table ${i+1} <small>${remaining.filter(e=>e.table===i+1).length} of ${t.settings.seatsPerTable} seats filled</small></h3>${Array.from({length:t.settings.seatsPerTable},(_,j)=>{const e=remaining.find(e=>e.table===i+1&&e.seat===j+1);return seatRow(t,i+1,j+1,e);}).join('')}</div>`).join('')}</div><h3>Unseated players</h3>${remaining.filter(e=>!e.table).map(e=>`<div class="result-row"><span>${esc(pName(e))}</span><button class="button small secondary" data-seat="${e.id}">Assign seat</button></div>`).join('')||'<p class="muted">All remaining players have seats.</p>'}`;
+}
+function seatRow(t,table,seat,entry){
+  const disabled=t.status==='completed'?'disabled':'';
+  return `<div class="seat-row" data-seat-target data-table="${table}" data-seat="${seat}">${entry?`<button type="button" class="seat-player-grip" data-seat-grab="${entry.id}" aria-pressed="false" aria-label="Move ${esc(pName(entry))} from Table ${table}, Seat ${seat}" title="Drag to another seat, or select then choose a seat" ${disabled}><span class="seat-number" aria-hidden="true">${seat}</span><span class="seat-player-name">${esc(pName(entry))}</span><span class="seat-grab-icon" aria-hidden="true">⠿</span></button><button type="button" class="text-button" data-seat="${entry.id}" ${disabled}>Move</button>`:`<button type="button" class="seat-empty" data-seat-target-button="true" aria-label="Table ${table}, Seat ${seat}, empty" ${disabled}><span class="seat-number" aria-hidden="true">${seat}</span><span class="muted">Empty</span></button>`}</div>`;
 }
 function ordinal(n){return n+(n%100>=11&&n%100<=13?'th':({1:'st',2:'nd',3:'rd'})[n%10]||'th');}
 function clockSidebar(t,c){
@@ -103,7 +109,7 @@ function selectCurrentTournament(){
   const tournament=homeTournament()||state.tournaments.slice().reverse().find(t=>t.status!=='completed')||state.tournaments.at(-1);
   selected=tournament?.id||'';if(selected)localStorage.setItem('uno-tournament-selected',selected);
 }
-function render(){if(!session){clearInterval(clockTimer);document.body.classList.remove('registration-page','tv','home-page','fixed-workspace','setup-page','players-page','player-profile-page');app.innerHTML=signInScreen();return;}selectCurrentTournament();const registration=registrationSnapshot(),panels=panelSnapshot();clearInterval(clockTimer);document.body.classList.toggle('registration-page',view==='signup'&&!!current());document.body.classList.toggle('tv',view==='clock');document.body.classList.toggle('home-page',view==='home');document.body.classList.toggle('fixed-workspace',['setup','players'].includes(view));document.body.classList.toggle('setup-page',view==='setup');document.body.classList.toggle('players-page',view==='players');document.body.classList.toggle('player-profile-page',view==='players'&&!!playerDetail);if(view==='clock'){app.innerHTML=clockScreen();}else{app.innerHTML=header()+importNotice()+`<div class="workspace">${view==='home'?'':nav()}<main class="content">${({home,setup,players,signup,manage}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.3.6 · ${online?'Saved online':'Connection interrupted'}</span></footer></div>`;}restoreRegistration(registration);restorePanels(panels);tick();clockTimer=setInterval(tick,250);}
+function render(){seatDragging?.cancel();clearSeatPick();if(!session){clearInterval(clockTimer);document.body.classList.remove('registration-page','tv','home-page','fixed-workspace','setup-page','players-page','player-profile-page');app.innerHTML=signInScreen();return;}selectCurrentTournament();const registration=registrationSnapshot(),panels=panelSnapshot();clearInterval(clockTimer);document.body.classList.toggle('registration-page',view==='signup'&&!!current());document.body.classList.toggle('tv',view==='clock');document.body.classList.toggle('home-page',view==='home');document.body.classList.toggle('fixed-workspace',['setup','players'].includes(view));document.body.classList.toggle('setup-page',view==='setup');document.body.classList.toggle('players-page',view==='players');document.body.classList.toggle('player-profile-page',view==='players'&&!!playerDetail);if(view==='clock'){app.innerHTML=clockScreen();}else{app.innerHTML=header()+importNotice()+`<div class="workspace">${view==='home'?'':nav()}<main class="content">${({home,setup,players,signup,manage}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.3.7 · ${online?'Saved online':'Connection interrupted'}</span></footer></div>`;}restoreRegistration(registration);restorePanels(panels);renderedWorkspaceVersion=version;tick();clockTimer=setInterval(tick,250);}
 function setText(selector,text){const el=$(selector);if(el&&el.textContent!==String(text))el.textContent=text;}
 function formatTime(ms){const sec=Math.max(0,Math.ceil(ms/1000));return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}
 function nextBreak(t,c){if(t.levels[c.index].kind==='break')return 'Break in progress';let ms=c.remainingMs;for(let i=c.index+1;i<t.levels.length;i++){if(t.levels[i].kind==='break')return 'Next break in '+formatTime(ms);ms+=t.levels[i].minutes*60000;}return 'No further breaks scheduled';}
@@ -181,7 +187,56 @@ function editTemplate(templateId,copy=false){const value=clone(state.templates.f
 function captureEditor(){const form=$('#structure-form');if(!form)return;editor.value.name=form.elements.structureName.value;editor.value.settings=readPayout(form,readSettings(form,editor.value.settings));if(form.querySelector('[data-level]'))editor.value.levels=readLevels(form);}
 function paymentDialog(entryId){const t=current(),e=t.entries.find(e=>e.id===entryId);modal('Record add-on',`<form id="payment-form"><input type="hidden" name="entryId" value="${entryId}"><p><strong>${esc(pName(e))}</strong></p><p>${money(t.settings.addonAmount)} · ${num(t.settings.addonChips)} chips</p><button class="button primary full">Record add-on</button></form>`);}
 function rebuyCountDialog(){const t=current(),c=clockAt(t,timeNow());if(!canRecordRebuys(t,c)){toast(rebuyCountHelp(t,c),true);return;}modal('Tournament rebuys',`<form id="rebuy-count-form"><input type="hidden" name="tournamentId" value="${t.id}"><label for="rebuy-count">How many rebuys are there?</label><div class="rebuy-stepper"><button type="button" class="button secondary" data-rebuy-step="-1" aria-label="Decrease rebuys">−</button><input id="rebuy-count" name="count" type="number" inputmode="numeric" min="0" max="9007199254740991" step="1" value="${t.rebuyCount||0}" required><button type="button" class="button secondary" data-rebuy-step="1" aria-label="Increase rebuys">+</button></div><p class="muted">Enter the tournament total. Saving replaces the previous count.</p><button class="button primary full">Save rebuy total</button></form>`);}
-function seatDialog(entryId){const t=current(),e=t.entries.find(e=>e.id===entryId);modal('Seat '+esc(pName(e)),`<form id="seat-form"><input type="hidden" name="entryId" value="${entryId}"><label>Seat<select name="seat"><option value="unseated">Unseated</option>${Array.from({length:tablesInUse(t)},(_,i)=>Array.from({length:t.settings.seatsPerTable},(_,j)=>{const occupied=active(t).some(v=>v.id!==e.id&&v.table===i+1&&v.seat===j+1);return `<option value="${i+1}/${j+1}" ${e.table===i+1&&e.seat===j+1?'selected':''} ${occupied?'disabled':''}>Table ${i+1}, Seat ${j+1}${occupied?' · occupied':''}</option>`;}).join('')).join('')}</select></label><button class="button primary full">Save seat</button></form>`);}
+function seatSource(entryId){
+  if(!session||!online)throw new Error('Reconnect before moving players.');
+  if(busy)throw new Error('Wait for the current change to finish.');
+  if(renderedWorkspaceVersion!==version){render();throw new Error('Seating changed. Review the updated seats and choose the player again.');}
+  const t=current(),e=t?.entries.find(e=>e.id===entryId&&!e.eliminatedAt);
+  if(!t||!e||t.status==='completed')throw new Error('Only remaining players in an open tournament can be moved.');
+  return {entryId,tournamentId:t.id,version,fromTable:e.table??null,fromSeat:e.seat??null};
+}
+function checkSeatSource(source){
+  const t=current(),entry=t?.entries.find(e=>e.id===source.entryId);
+  if(source.version!==version||t?.id!==source.tournamentId||!entry||entry.eliminatedAt||(entry.table??null)!==source.fromTable||(entry.seat??null)!==source.fromSeat)throw new Error('Seating changed. Cancel this move, review the seats, and choose again.');
+  return t;
+}
+function clearSeatPick(){
+  pickedSeat=null;document.querySelectorAll('.seat-player-grip[aria-pressed="true"]').forEach(el=>el.setAttribute('aria-pressed','false'));
+  setText('#seat-move-instructions','Drag a player to another seat, or select a player and then a seat.');const cancel=$('#cancel-seat-pick');if(cancel)cancel.hidden=true;
+}
+function chooseSeatPlayer(entryId){
+  if(pickedSeat?.entryId===entryId){clearSeatPick();return;}
+  clearSeatPick();pickedSeat=seatSource(entryId);
+  document.querySelectorAll('[data-seat-grab]').forEach(el=>{if(el.dataset.seatGrab===entryId)el.setAttribute('aria-pressed','true');});
+  setText('#seat-move-instructions',`Choose a destination seat for ${pName(current().entries.find(e=>e.id===entryId))}.`);$('#cancel-seat-pick').hidden=false;
+}
+async function saveSeatMove(source,table,seat,mode){
+  try{
+    const t=checkSeatSource(source);planSeatMove(t,{entryId:source.entryId,table,seat,mode});
+    if(await commit({type:'seat-move',tournamentId:source.tournamentId,entryId:source.entryId,table,seat,mode})){
+      seatMoveChoice=null;if(dlg.open)dlg.close();toast(`Seating updated: Table ${table}, Seat ${seat}.`);
+      document.querySelectorAll('[data-seat-grab]').forEach(el=>{if(el.dataset.seatGrab===source.entryId)el.focus({preventScroll:true});});return true;
+    }
+  }catch(error){toast(error.message,true);}return false;
+}
+async function requestSeatMove(source,table,seat){
+  clearSeatPick();
+  try{
+    const t=checkSeatSource(source),entry=t.entries.find(e=>e.id===source.entryId);
+    if(source.fromTable===table&&source.fromSeat===seat){if(dlg.open)dlg.close();return;}
+    // Validate the destination even if it currently looks empty.
+    const occupant=active(t).find(e=>e.id!==source.entryId&&e.table===table&&e.seat===seat);
+    if(!occupant){await saveSeatMove(source,table,seat,'move');return;}
+    let slide=[],slideError='',swapError='';
+    try{slide=planSeatMove(t,{entryId:source.entryId,table,seat,mode:'slide'});}catch(error){slideError=error.message;}
+    try{planSeatMove(t,{entryId:source.entryId,table,seat,mode:'swap'});}catch(error){swapError=error.message;}
+    seatMoveChoice={source,table,seat};
+    const changes=slide.filter(update=>update.entryId!==source.entryId);
+    modal('Move '+esc(pName(entry)),`<p>Destination: <strong>Table ${table}, Seat ${seat}</strong>, currently occupied by <strong>${esc(pName(occupant))}</strong>.</p><div class="seat-move-choices"><button type="button" class="button primary" data-seat-move-mode="swap" ${swapError?'disabled':''}>Swap players</button><p class="muted">${swapError?esc(swapError):`${esc(pName(occupant))} moves to Table ${source.fromTable}, Seat ${source.fromSeat}.`}</p><button type="button" class="button secondary" data-seat-move-mode="slide" ${slideError?'disabled':''}>Slide players down</button>${slideError?`<p class="seat-move-error" role="status">${esc(slideError)}</p>`:`<p class="muted">${changes.length} ${changes.length===1?'player moves':'players move'} down one seat, stopping at the first empty seat.</p><details class="seat-slide-preview"><summary>Preview seat changes</summary><ul>${changes.map(update=>{const moved=t.entries.find(e=>e.id===update.entryId);return `<li>${esc(pName(moved))}: Seat ${moved.seat} → ${update.seat}</li>`;}).join('')}</ul></details>`}<button type="button" class="button secondary" data-action="close-modal">Cancel</button></div>`);
+  }catch(error){toast(error.message,true);}
+}
+function seatDialog(entryId){const source=seatSource(entryId),t=current(),e=t.entries.find(e=>e.id===entryId);clearSeatPick();modal('Seat '+esc(pName(e)),`<form id="seat-form"><input type="hidden" name="entryId" value="${entryId}"><input type="hidden" name="tournamentId" value="${source.tournamentId}"><input type="hidden" name="version" value="${source.version}"><input type="hidden" name="fromTable" value="${source.fromTable??''}"><input type="hidden" name="fromSeat" value="${source.fromSeat??''}"><label>Seat<select name="seat"><option value="unseated">Unseated</option>${Array.from({length:tablesInUse(t)},(_,i)=>Array.from({length:t.settings.seatsPerTable},(_,j)=>{const occupied=active(t).find(v=>v.id!==e.id&&v.table===i+1&&v.seat===j+1);return `<option value="${i+1}/${j+1}" ${e.table===i+1&&e.seat===j+1?'selected':''}>Table ${i+1}, Seat ${j+1}${occupied?' · '+esc(pName(occupied)):''}</option>`;}).join('')).join('')}</select></label><p class="muted">An occupied seat offers swapping or sliding before anything is changed.</p><button class="button primary full">Move player</button></form>`);}
+
 function openClock(){const target=view==='home'?(homeTournament()||current()):current();if(target&&target.id!==selected){selected=target.id;localStorage.setItem('uno-tournament-selected',selected);}if(!target){toast('Choose or create a tournament first.',true);return;}const url=`${APP_ROOT}?view=clock&tournament=${encodeURIComponent(selected)}`;const win=window.open(url,'uno-clock-'+selected,'popup=yes,width=1280,height=800');if(!win)toast('Allow pop-ups for this site to open the clock window.',true);else win.focus();}
 
 document.addEventListener('click',async event=>{const el=event.target.closest('button,a[data-go]');if(!el||el.disabled)return;try{
@@ -202,13 +257,21 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   if(el.dataset.rebuyStep){const input=$('#rebuy-count'),value=Number(input.value);input.value=String(Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,(Number.isSafeInteger(value)?value:0)+Number(el.dataset.rebuyStep))));return;}
   if(el.dataset.eliminate){const e=current().entries.find(e=>e.id===el.dataset.eliminate);if(confirm(`Eliminate ${pName(e)} in ${ordinal(active(current()).length)} place?`))await commit({type:'eliminate',tournamentId:selected,entryId:e.id});return;}
   if(el.dataset.archive){await commit({type:'player-archive',id:el.dataset.archive});return;}
+  if(el.dataset.seatMoveMode){if(dlg.open&&seatMoveChoice){const {source,table,seat}=seatMoveChoice;await saveSeatMove(source,table,seat,el.dataset.seatMoveMode);}return;}
+  if(el.dataset.seatGrab||el.dataset.seatTargetButton){
+    if(seatDragging?.shouldSuppressClick())return;
+    const target=el.closest('[data-seat-target]');
+    if(pickedSeat&&pickedSeat.entryId!==el.dataset.seatGrab){const source=pickedSeat;await requestSeatMove(source,Number(target.dataset.table),Number(target.dataset.seat));}
+    else if(el.dataset.seatGrab)chooseSeatPlayer(el.dataset.seatGrab);
+    else toast('Select a player first, then choose the destination seat.');return;
+  }
   if(el.dataset.seat){seatDialog(el.dataset.seat);return;}
   if(el.dataset.clock){if(['next','previous'].includes(el.dataset.clock)&&!confirm('Change the current level and reset its countdown?'))return;await commit({type:'clock',tournamentId:selected,command:el.dataset.clock});return;}
   if(el.dataset.adjust){await commit({type:'clock',tournamentId:selected,command:'adjust',seconds:Number(el.dataset.adjust)});return;}
   if(el.dataset.levelDelete!==undefined||el.dataset.levelUp!==undefined||el.dataset.levelDown!==undefined){captureEditor();const l=editor.value.levels;if(el.dataset.levelDelete!==undefined)l.splice(Number(el.dataset.levelDelete),1);else{const i=Number(el.dataset.levelUp??el.dataset.levelDown),j=i+(el.dataset.levelUp!==undefined?-1:1);if(j>=0&&j<l.length)[l[i],l[j]]=[l[j],l[i]];}render();return;}
   switch(el.dataset.action){
     case 'rebuy-count':rebuyCountDialog();break;
-    case 'account':showAccount();break;case 'close-modal':dlg.close();break;case 'new-tournament':newTournament();break;case 'add-player':newPlayer();break;
+    case 'cancel-seat-pick':clearSeatPick();break;case 'account':showAccount();break;case 'close-modal':seatMoveChoice=null;dlg.close();break;case 'new-tournament':newTournament();break;case 'add-player':newPlayer();break;
     case 'players-back':playerDetail=null;render();break;case 'open-clock':openClock();break;case 'refresh':await refresh();if(online&&version===0)await saveInitialWorkspace();break;
     case 'import-browser':await importBrowserData();break;
     case 'signout':{const {error}=await db.auth.signOut();if(error)throw error;acceptSession(null);break;}
@@ -266,13 +329,19 @@ document.addEventListener('submit',async event=>{event.preventDefault();const fo
   if(form.id==='payout-form'){const s=readPayout(form,clone(current().settings));if(await commit({type:'tournament-settings',tournamentId:selected,settings:s})){toast('Payouts updated.');}return;}
   if(form.id==='rebuy-count-form'){const raw=String(fd.get('count')).trim();if(!/^\d+$/.test(raw))throw new Error('Enter a whole number of rebuys, zero or greater.');if(await commit({type:'rebuy-count',tournamentId:fd.get('tournamentId'),count:Number(raw)})){dlg.close();toast('Tournament rebuy total saved.');}return;}
   if(form.id==='payment-form'){if(await commit({type:'payment',tournamentId:selected,entryId:fd.get('entryId'),kind:'addon'})){dlg.close();toast('Add-on recorded.');}return;}
-  if(form.id==='seat-form'){const value=fd.get('seat'),[table,seat]=value==='unseated'?[null,null]:value.split('/').map(Number);if(await commit({type:'seat',tournamentId:selected,entryId:fd.get('entryId'),table,seat})){dlg.close();toast('Seat saved.');}return;}
+  if(form.id==='seat-form'){
+    const source={entryId:fd.get('entryId'),tournamentId:fd.get('tournamentId'),version:Number(fd.get('version')),fromTable:fd.get('fromTable')===''?null:Number(fd.get('fromTable')),fromSeat:fd.get('fromSeat')===''?null:Number(fd.get('fromSeat'))};checkSeatSource(source);
+    const value=fd.get('seat');if(value==='unseated'){if(await commit({type:'seat',tournamentId:source.tournamentId,entryId:source.entryId,table:null,seat:null})){dlg.close();toast('Player is now unseated.');}}
+    else{const [table,seat]=value.split('/').map(Number);await requestSeatMove(source,table,seat);}return;
+  }
 }catch(e){toast(e.message,true);}});
 window.addEventListener('popstate',()=>{view=new URLSearchParams(location.search).get('view')||'home';editor=null;render();});
 window.addEventListener('online',()=>refresh());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){synchronizeTimeIfSignedIn();refresh();tick();}});
 function synchronizeTimeIfSignedIn(){if(session)synchronizeTime();}
 setInterval(()=>refresh(),2500);setInterval(synchronizeTimeIfSignedIn,60000);
+seatDragging=installSeatDragging({getSource:entryId=>dlg.open?null:seatSource(entryId),getLabel:source=>`Seat ${source.fromSeat} · ${pName(current().entries.find(e=>e.id===source.entryId))}`,onStart:clearSeatPick,onDrop:(source,target)=>requestSeatMove(source,target.table,target.seat),onError:error=>toast(error.message,true)});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')clearSeatPick();});
 render();
 let authEventSeen=false;
 db.auth.onAuthStateChange((event,newSession)=>{authEventSeen=true;setTimeout(()=>{if(event==='TOKEN_REFRESHED'){session=newSession;void refresh();}else void acceptSession(newSession);},0);});
