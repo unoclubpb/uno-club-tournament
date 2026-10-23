@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.2.2
+# Uno Club Tournament Director — v0.2.3
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -77,3 +77,7 @@ Copied from the working v0.1.1 source at the user’s request. The previous host
 ## v0.2.2 saved structure cards
 
 Saved structures use a compact two-column grid capped at 760px, with tighter spacing and two-by-two action buttons. Regular phone widths also show two cards across; screens narrower than 360px use one column for readability. Card titles retain their 20px type size. Structure values and actions are preserved.
+
+## v0.2.3 starting chips entry
+
+Starting chips is a typed numeric-keyboard text field without spinner arrows. It displays comma-separated thousands on load and while typing or pasting, retaining the caret during edits. Settings save the underlying whole number, including after level-editor actions. Invalid, fractional, zero and unsafe integer values are rejected.

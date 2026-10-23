@@ -88,3 +88,19 @@ test('clock transitions from final round to cutoff break and then prizes on time
  const ui=await boot('https://example.test/',s,'clock','t1');
  try{assert.ok(ui.q('.tv-final-rebuy'));await new Promise(r=>setTimeout(r,850));assert.equal(ui.q('.tv-side').dataset.rebuyPhase,'final-break');assert.match(ui.q('.tv-cutoff-detail').textContent,/when this break ends/);await new Promise(r=>setTimeout(r,650));assert.equal(ui.q('.tv-side').dataset.rebuyPhase,'closed');assert.ok(ui.q('.tv-pool'));assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
+
+test('starting chips is typed, formats thousands and saves the numeric value through editor changes',async()=>{
+ const ui=await boot('https://example.test/'),{q,click,input,submit}=ui;
+ try{
+  click('[data-go="setup"]');click('[data-edit-template]');let field=q('[name=startingStack]');
+  assert.equal(field.type,'text');assert.equal(field.inputMode,'numeric');assert.equal(field.value,'5,000');
+  input(field,'1000');assert.equal(field.value,'1,000');assert.equal(field.checkValidity(),true);assert.equal(field.selectionStart,5);
+  input(field,'1234567');assert.equal(field.value,'1,234,567');
+  field.value='12,345';field.setSelectionRange(2,2);field.value='192,345';field.setSelectionRange(2,2);field.dispatchEvent(new ui.w.Event('input',{bubbles:true}));assert.equal(field.value,'192,345');assert.equal(field.selectionStart,2);
+  input(field,'1.5');assert.equal(field.checkValidity(),false);await submit(q('#structure-form'));assert.equal(ui.stored(),null);
+  input(field,'0');assert.equal(field.checkValidity(),false);input(field,'');assert.equal(field.checkValidity(),false);
+  input(field,'20000');assert.equal(field.value,'20,000');click('[data-action="add-break"]');field=q('[name=startingStack]');assert.equal(field.value,'20,000');
+  await submit(q('#structure-form'));assert.equal(ui.stored().templates[0].settings.startingStack,20000);assert.equal(typeof ui.stored().templates[0].settings.startingStack,'number');
+  click('[data-edit-template]');assert.equal(q('[name=startingStack]').value,'20,000');assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
