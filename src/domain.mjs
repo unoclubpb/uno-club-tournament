@@ -122,6 +122,39 @@ export function validateTemplate(template){
   check(s.payouts.length>0&&s.payouts.length<=20&&s.payouts.every(v=>Number.isFinite(v)&&v>=0),'Enter valid payouts.');
   check(s.payoutMode!=='percent'||Math.abs(s.payouts.reduce((a,b)=>a+b,0)-100)<0.001,'Payout percentages must total 100%.');
 }
+// Locks belong to this tournament entry and protect the exact table and seat.
+function requireUnlocked(entry){check(!entry.seatLocked,`Unlock the player at Table ${entry.table}, Seat ${entry.seat} first.`);}
+export function canCombineTables(t){return tablesRequired(t)>0&&t.entries.some(e=>!e.eliminatedAt&&e.table>tablesRequired(t));}
+export function planTableSeating(t,{mode='remaining',order=[]}={}){
+  check(t&&t.status!=='completed','Completed tournament is locked.');
+  check(['remaining','combine','redraw','legacy-redraw'].includes(mode),'Choose a valid seating action.');
+  const active=t.entries.filter(e=>!e.eliminatedAt),capacity=t.settings.seatsPerTable;
+  const count=mode==='remaining'?tablesInUse(t):tablesRequired(t);
+  if(mode==='combine'||mode==='redraw')check(canCombineTables(t),'No tables need to be combined.');
+  if(mode==='redraw')check(count===1,'Redraw is only available when forming the final table.');
+  const redraw=mode==='redraw'||mode==='legacy-redraw';
+  const moving=active.filter(e=>redraw?!e.seatLocked:!e.table||(mode==='combine'&&e.table>count));
+  // Refuse to close a locked player's table before planning any changes.
+  for(const entry of active.filter(e=>e.seatLocked)){
+    check(entry.table>=1&&entry.table<=count&&entry.seat>=1&&entry.seat<=capacity,`Unlock the player at Table ${entry.table}, Seat ${entry.seat} before combining tables.`);
+  }
+  const movingIds=new Set(moving.map(e=>e.id)),occupied=new Set(),loads=Array(count).fill(0);
+  for(const entry of active.filter(e=>!movingIds.has(e.id))){occupied.add(`${entry.table}/${entry.seat}`);loads[entry.table-1]++;}
+  const rank=new Map(order.map((entryId,i)=>[entryId,i]));
+  if(mode==='remaining'||redraw)moving.sort((a,b)=>(rank.get(a.id)??order.length)-(rank.get(b.id)??order.length));
+  const updates=[];
+  for(const entry of moving){
+    requireUnlocked(entry);
+    let table=0;
+    for(let i=0;i<count;i++)if(loads[i]<capacity&&(!table||loads[i]<loads[table-1]))table=i+1;
+    check(table,'No open seat is available.');
+    let seat=1;while(occupied.has(`${table}/${seat}`))seat++;
+    check(seat<=capacity,'No open seat is available.');
+    updates.push({entryId:entry.id,table,seat});occupied.add(`${table}/${seat}`);loads[table-1]++;
+  }
+  return updates;
+}
+function applySeats(t,updates){for(const update of updates){const entry=t.entries.find(e=>e.id===update.entryId);entry.table=update.table;entry.seat=update.seat;}}
 // A complete, validated seating change; no records are mutated while planning.
 export function planSeatMove(t,{entryId,table,seat,mode='move'}){
   check(t&&t.status!=='completed','Completed tournament is locked.');
@@ -130,18 +163,20 @@ export function planSeatMove(t,{entryId,table,seat,mode='move'}){
   check(Number.isInteger(table)&&table>=1&&table<=tablesInUse(t)&&Number.isInteger(seat)&&seat>=1&&seat<=t.settings.seatsPerTable,'Invalid table or seat.');
   check(['move','swap','slide'].includes(mode),'Choose a valid seat move.');
   if(source.table===table&&source.seat===seat)return [];
+  requireUnlocked(source);
   const occupant=remaining.find(e=>e.id!==source.id&&e.table===table&&e.seat===seat);
   const moved={entryId:source.id,table,seat};
   if(!occupant)return [moved];
   check(mode!=='move','That seat is occupied. Choose Swap players or Slide players down.');
   if(mode==='swap'){
+    requireUnlocked(occupant);
     check(source.table&&source.seat>=1&&source.seat<=t.settings.seatsPerTable,'A player must already have a seat to swap.');
     return [moved,{entryId:occupant.id,table:source.table,seat:source.seat}];
   }
   const occupied=new Map(remaining.filter(e=>e.id!==source.id&&e.table===table).map(e=>[e.seat,e]));
   let emptySeat=seat;while(emptySeat<=t.settings.seatsPerTable&&occupied.has(emptySeat))emptySeat++;
   check(emptySeat<=t.settings.seatsPerTable,`Cannot slide players down: no empty seat from Seat ${seat} through Seat ${t.settings.seatsPerTable} at Table ${table}.`);
-  const updates=[moved];for(let number=seat;number<emptySeat;number++)updates.push({entryId:occupied.get(number).id,table,seat:number+1});
+  const updates=[moved];for(let number=seat;number<emptySeat;number++){requireUnlocked(occupied.get(number));updates.push({entryId:occupied.get(number).id,table,seat:number+1});}
   return updates;
 }
 export function execute(state,action,now=Date.now()){
@@ -191,6 +226,7 @@ export function execute(state,action,now=Date.now()){
   }
   if(a.type==='seating-settings'){
     check(Number.isSafeInteger(a.seatsPerTable)&&a.seatsPerTable>=2&&a.seatsPerTable<=12,'Use 2–12 seats per table.');
+    for(const entry of t.entries.filter(e=>!e.eliminatedAt&&e.seat>a.seatsPerTable))requireUnlocked(entry);
     t.settings.seatsPerTable=a.seatsPerTable;
     const remaining=t.entries.filter(e=>!e.eliminatedAt),displaced=remaining.filter(e=>e.seat>a.seatsPerTable);
     for(const entry of displaced){entry.table=null;entry.seat=null;}
@@ -201,9 +237,18 @@ export function execute(state,action,now=Date.now()){
     }
     return s;
   }
-  if(a.type==='seat-move'){for(const update of planSeatMove(t,a)){const entry=t.entries.find(e=>e.id===update.entryId);entry.table=update.table;entry.seat=update.seat;}return s;}
+  if(a.type==='seat-move'){applySeats(t,planSeatMove(t,a));return s;}
+  if(a.type==='seat-remaining'||a.type==='combine-tables'||a.type==='auto-seat'){
+    const mode=a.type==='seat-remaining'?'remaining':a.type==='auto-seat'?'legacy-redraw':a.mode;
+    check(a.type!=='combine-tables'||['combine','redraw'].includes(mode),'Choose how to combine tables.');
+    applySeats(t,planTableSeating(t,{mode,order:a.order}));return s;
+  }
   const e=t.entries.find(e=>e.id===a.entryId);
-  if(['payment','eliminate','seat'].includes(a.type))check(e,'Player entry not found.');
+  if(['payment','eliminate','seat','seat-lock'].includes(a.type))check(e,'Player entry not found.');
+  if(a.type==='seat-lock'){
+    check(!e.eliminatedAt&&e.table&&e.seat,'Only a seated remaining player can be locked.');
+    check(typeof a.locked==='boolean','Choose lock or unlock.');e.seatLocked=a.locked;return s;
+  }
   if(a.type==='payment'){
     check(a.kind==='addon','Record rebuys as a tournament total from the cutoff break onward.');check(!e.eliminatedAt,'Player has been eliminated.');const k=a.kind;
     check(purchaseOpen(t,c,k),`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
@@ -214,23 +259,18 @@ export function execute(state,action,now=Date.now()){
   }
   if(a.type==='eliminate'){
     check(!e.eliminatedAt,'Player already eliminated.');const active=t.entries.filter(e=>!e.eliminatedAt).length;check(active>1,'Use Finish Tournament to confirm the winner.');
-    t.eliminationUndo.push({entryId:e.id,table:e.table,seat:e.seat});e.eliminatedAt=now;e.place=active;e.table=null;e.seat=null;return s;
+    t.eliminationUndo.push({entryId:e.id,table:e.table,seat:e.seat,seatLocked:!!e.seatLocked});e.eliminatedAt=now;e.place=active;e.table=null;e.seat=null;e.seatLocked=false;return s;
   }
   if(a.type==='undo-elimination'){
     const undo=t.eliminationUndo.pop();check(undo,'No elimination to undo.');const p=t.entries.find(e=>e.id===undo.entryId);check(p,'Entry not found.');p.eliminatedAt=null;p.place=null;
-    if(undo.table&&undo.seat>=1&&undo.seat<=t.settings.seatsPerTable&&!t.entries.some(e=>!e.eliminatedAt&&e.table===undo.table&&e.seat===undo.seat)){p.table=undo.table;p.seat=undo.seat;}return s;
+    if(undo.table&&undo.seat>=1&&undo.seat<=t.settings.seatsPerTable&&!t.entries.some(e=>!e.eliminatedAt&&e.table===undo.table&&e.seat===undo.seat)){p.table=undo.table;p.seat=undo.seat;p.seatLocked=!!undo.seatLocked;}return s;
   }
   if(a.type==='seat'){
     check(!e.eliminatedAt,'Only remaining players can be seated.');
+    if(e.table!==a.table||e.seat!==a.seat)requireUnlocked(e);
     if(a.table===null){e.table=null;e.seat=null;return s;}
     check(Number.isInteger(a.table)&&a.table>=1&&a.table<=tablesInUse(t)&&Number.isInteger(a.seat)&&a.seat>=1&&a.seat<=t.settings.seatsPerTable,'Invalid table or seat.');
     check(!t.entries.some(v=>v.id!==e.id&&!v.eliminatedAt&&v.table===a.table&&v.seat===a.seat),'That seat is occupied.');e.table=a.table;e.seat=a.seat;return s;
-  }
-  if(a.type==='auto-seat'){
-    const active=t.entries.filter(e=>!e.eliminatedAt),count=tablesRequired(t);
-    // Round-robin seating balances tables; a fresh shuffle is supplied by the caller.
-    const ordered=[...active].sort((a,b)=>(action.order||[]).indexOf(a.id)-(action.order||[]).indexOf(b.id));
-    ordered.forEach((e,i)=>{e.table=i%count+1;e.seat=Math.floor(i/count)+1;});return s;
   }
   if(a.type==='finish'){
     const remaining=t.entries.filter(e=>!e.eliminatedAt);check(remaining.length===1,'Leave exactly one remaining player before finishing.');

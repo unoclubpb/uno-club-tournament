@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.7
+# Uno Club Tournament Director — v0.3.8
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -166,3 +166,14 @@ Sliding inserts the player and shifts consecutive occupants toward larger seat n
 Each move is validated and saved atomically with the existing expected-version cloud save. If another device changes the workspace during a selection or confirmation, the move requires reviewing the latest seating. Drag cancellation, drops outside seats and dropping back onto the original seat do not save. Pointer dragging highlights its target and scrolls the management page near the viewport edges; ordinary page scrolling remains available outside player handles.
 
 Validation: automated domain and UI scenarios cover unique seat assignments, all valid swaps/insertion directions across multiple capacities, full-table overflow, cross-table changes, occupied-seat confirmation, failed saves, stale data, cancellation, pointer gestures and edge scrolling. Pointer events are simulated in jsdom; no production seating or test players are changed by these checks.
+
+
+## v0.3.8 separate seating, table consolidation and protected seats
+
+Seat Players assigns unseated players across available tables, preferring the least occupied. It becomes Seat Remaining Players after the first player is seated and disables when everyone has a seat. Existing seated players stay put. Combine Tables is enabled when an occupied table can close; the lowest-numbered tables remain open. Only players from closing tables and any unseated players move into vacant seats, preferring the least occupied surviving table. It does not shuffle players or rebalance seats already held at surviving tables.
+
+When forming the final table (Table 1), confirmation offers Keep existing seats or Redraw all seats. Keeping seats preserves Table 1 assignments; redrawing randomizes unlocked players around its locked seats. Any lock at a closing table blocks both choices, identifying the table and seat to unlock first. A lock is never transferred to another table automatically.
+
+Each occupied seat has a Lock in seat button that turns red and reads Locked. Press again to unlock. Locks are saved on tournament entries through the existing atomic, expected-version workspace save, shared between devices and retained after reopening the app. They protect against direct moves, swaps, insertion slides, redraws and capacity reductions. Eliminating a player releases the seat; undo restores the lock only if the original seat is still available. Completed events remain locked.
+
+Validation: 83 automated tests cover balanced initial seating, preservation of seated players, three-to-two and four-to-two merges, both final-table choices, multiple fixed seats, lock conflicts and unlock recovery, saved-lock reloads, manual movement protection, elimination undo, canceled dialogs, stale confirmations and failed saves with explicit retry. UI checks use jsdom fixtures and do not alter production players or tournaments.

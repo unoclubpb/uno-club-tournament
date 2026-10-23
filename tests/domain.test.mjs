@@ -160,3 +160,49 @@ test('all swaps and possible insertion slides preserve one player per valid seat
   const result=act(s,event,action);assertValidSeats(result.tournaments[0]);assert.equal(result.tournaments[0].entries[from-1].seat,to);assert.equal(result.tournaments[0].entries.length,capacity);
  }
 });
+
+test('initial seating balances tables and seating remaining players never changes existing seats or locks',()=>{
+ let {s,event}=setup(12);s=act(s,event,{type:'seat-remaining',order:s.tournaments[0].entries.map(e=>e.id).reverse()});let t=s.tournaments[0];assert.deepEqual([1,2].map(n=>t.entries.filter(e=>e.table===n).length),[6,6]);assertValidSeats(t);
+ const locked=t.entries[0].id;s=act(s,event,{type:'seat-lock',entryId:locked,locked:true});const before=clone(s.tournaments[0].entries);
+ const player=id();s=execute(s,{type:'player-save',id:player,name:'Late arrival'});s=act(s,event,{type:'register',playerId:player});s=act(s,event,{type:'seat-remaining'});t=s.tournaments[0];assert.deepEqual(t.entries.slice(0,12),before);assert.equal(t.entries.at(-1).table,1);assert.equal(t.entries.find(e=>e.id===locked).seatLocked,true);assertValidSeats(t);
+});
+function reducedTables(players,keep){const result=manualSeats(players);for(const [i,e] of result.s.tournaments[0].entries.entries())if(!keep.includes(i)){e.eliminatedAt=start+1;e.table=null;e.seat=null;}return result;}
+test('combining three tables into two moves only closing-table players into vacant seats',()=>{
+ const {s,event}=reducedTables(30,[0,1,2,3,4,5,6,7,10,11,12,13,14,15,20,21]);const before=clone(s);const result=act(s,event,{type:'combine-tables',mode:'combine'}),t=result.tournaments[0];
+ assert.equal(tablesInUse(t),2);for(let i=0;i<20;i++)assert.deepEqual(t.entries[i],before.tournaments[0].entries[i]);assert.equal(t.entries[20].table,2);assert.equal(t.entries[21].table,2);assertValidSeats(t);assert.deepEqual(s,before);
+ assert.throws(()=>act(s,event,{type:'combine-tables',mode:'redraw'}),/only.*final table/);assert.throws(()=>act(result,event,{type:'combine-tables',mode:'combine'}),/No tables/);
+});
+test('combining four tables into two retains all existing seats at the surviving tables',()=>{
+ const keep=[0,1,2,3,10,11,12,13,20,21,22,23,30,31,32,33],{s,event}=reducedTables(40,keep),before=clone(s.tournaments[0]);
+ const result=act(s,event,{type:'combine-tables',mode:'combine'}).tournaments[0];assert.equal(tablesInUse(result),2);for(const i of keep.filter(i=>i<20))assert.deepEqual(result.entries[i],before.entries[i]);assertValidSeats(result);
+});
+test('final table can retain its seats or redraw everyone except locked players',()=>{
+ let {s,event}=reducedTables(20,[0,2,4,10,11,12]);s=act(s,event,{type:'seat-lock',entryId:s.tournaments[0].entries[0].id,locked:true});s=act(s,event,{type:'seat-lock',entryId:s.tournaments[0].entries[4].id,locked:true});const before=clone(s),active=s.tournaments[0].entries.filter(e=>!e.eliminatedAt);
+ const kept=act(s,event,{type:'combine-tables',mode:'combine'}).tournaments[0];for(const i of [0,2,4])assert.deepEqual(kept.entries[i],s.tournaments[0].entries[i]);assert.equal(tablesInUse(kept),1);assertValidSeats(kept);
+ const redrawn=act(s,event,{type:'combine-tables',mode:'redraw',order:active.map(e=>e.id).reverse()}).tournaments[0];assert.deepEqual(redrawn.entries[0],s.tournaments[0].entries[0]);assert.deepEqual(redrawn.entries[4],s.tournaments[0].entries[4]);assert.equal(redrawn.entries[12].seat,2);assert.ok(redrawn.entries.filter(e=>!e.eliminatedAt).every(e=>e.table===1));assertValidSeats(redrawn);assert.deepEqual(s,before);
+});
+test('locked players at closing tables block merging, final-table choices and legacy shuffling atomically',()=>{
+ for(const keep of [[0,1,2,10,11,12],[0,1,2,3,4,5,10,11,12,13,14,15,20]]){
+  let {s,event}=reducedTables(keep.length>10?30:20,keep);const entry=s.tournaments[0].entries[keep.at(-1)];s=act(s,event,{type:'seat-lock',entryId:entry.id,locked:true});const before=clone(s);
+  for(const action of [{type:'combine-tables',mode:'combine'},{type:'auto-seat'},...(keep.length<10?[{type:'combine-tables',mode:'redraw'}]:[])])assert.throws(()=>act(s,event,action),/Unlock.*Table.*Seat/);
+  assert.deepEqual(s,before);s=act(s,event,{type:'seat-lock',entryId:entry.id,locked:false});s=act(s,event,{type:'combine-tables',mode:'combine'});assertValidSeats(s.tournaments[0]);
+ }
+});
+test('locks prevent direct moves, swaps, insertion slides, unseating and removing their seat',()=>{
+ let {s,event}=manualSeats(10);const [first,,third]=s.tournaments[0].entries;s=act(s,event,{type:'seat-lock',entryId:third.id,locked:true});const before=clone(s);
+ for(const action of [
+  {type:'seat-move',entryId:third.id,table:1,seat:1,mode:'swap'},
+  {type:'seat-move',entryId:first.id,table:1,seat:3,mode:'swap'},
+  {type:'seat-move',entryId:s.tournaments[0].entries[6].id,table:1,seat:1,mode:'slide'},
+  {type:'seat',entryId:third.id,table:null,seat:null},
+  {type:'seat',entryId:third.id,table:1,seat:11},
+  {type:'seating-settings',seatsPerTable:2}
+ ])assert.throws(()=>act(s,event,action),/Unlock/);
+ assert.deepEqual(s,before);s=act(s,event,{type:'auto-seat',order:s.tournaments[0].entries.map(e=>e.id).reverse()});assert.equal(s.tournaments[0].entries[2].seat,3);assertValidSeats(s.tournaments[0]);
+});
+test('seat locks are per tournament, require a seated active player and restore safely on elimination undo',()=>{
+ let {s,event}=manualSeats(3);const entry=s.tournaments[0].entries[0].id;s=act(s,event,{type:'seat-lock',entryId:entry,locked:true});s=act(s,event,{type:'eliminate',entryId:entry});assert.equal(s.tournaments[0].entries[0].seatLocked,false);assert.throws(()=>act(s,event,{type:'seat-lock',entryId:entry,locked:true}),/seated remaining/);
+ const restored=act(s,event,{type:'undo-elimination'});assert.equal(restored.tournaments[0].entries[0].seatLocked,true);assert.equal(restored.tournaments[0].entries[0].seat,1);
+ s=act(s,event,{type:'seat',entryId:s.tournaments[0].entries[1].id,table:1,seat:1});s=act(s,event,{type:'undo-elimination'});assert.equal(s.tournaments[0].entries[0].seatLocked,false);assert.equal(s.tournaments[0].entries[0].table,null);assert.throws(()=>act(s,event,{type:'seat-lock',entryId:entry,locked:true}),/seated remaining/);
+ const one=manualSeats(1);one.s=act(one.s,one.event,{type:'finish'});assert.throws(()=>act(one.s,one.event,{type:'seat-lock',entryId:one.s.tournaments[0].entries[0].id,locked:true}),/Completed tournament/);
+});

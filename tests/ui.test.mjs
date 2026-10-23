@@ -271,9 +271,9 @@ test('seats are configured in management, display capacity and balance twelve pl
   ui.click('[data-edit-template]');assert.equal(ui.q('#structure-form [name=seatsPerTable]'),null);ui.click('[data-action=close-editor]');ui.click('[data-action=event-settings]');assert.equal(ui.q('#structure-form [name=seatsPerTable]'),null);ui.click('[data-action=close-editor]');
   ui.click('[data-go=manage]');ui.click('[data-tab=tables]');let form=ui.q('#seating-settings-form');assert.equal(form.elements.seatsPerTable.value,'10');ui.input(form.elements.seatsPerTable,'9');await ui.submit(form);
   assert.equal(ui.stored().tournaments[0].settings.seatsPerTable,9);assert.equal(ui.w.document.querySelectorAll('.seat-table').length,2);assert.equal(ui.w.document.querySelectorAll('.seat-number').length,18);assert.match(ui.q('.seating-plan').textContent,/6 \/ 6/);
-  ui.click('[data-action=auto-seat]');await flush();assert.deepEqual([...ui.w.document.querySelectorAll('.seat-table h3 small')].map(e=>e.textContent),['6 of 9 seats filled','6 of 9 seats filled']);assert.equal(ui.q('.seat-table .text-button').textContent,'Move');
+  ui.click('[data-action=seat-remaining]');await flush();assert.deepEqual([...ui.w.document.querySelectorAll('.seat-table h3 small')].map(e=>e.textContent),['6 of 9 seats filled','6 of 9 seats filled']);assert.equal(ui.q('.seat-table .text-button').textContent,'Move');
   await ui.storage(execute(ui.stored(),{type:'register',tournamentId:'t1',playerId:'p13'}));form=ui.q('#seating-settings-form');ui.input(form.elements.seatsPerTable,'10');await ui.submit(form);assert.equal(ui.w.document.querySelectorAll('.seat-number').length,20);assert.match(ui.q('.seating-plan').textContent,/7 \/ 6/);
-  ui.click('[data-action=auto-seat]');await flush();assert.deepEqual([...ui.w.document.querySelectorAll('.seat-table h3 small')].map(e=>e.textContent),['7 of 10 seats filled','6 of 10 seats filled']);assert.equal(ui.stored().templates[0].settings.seatsPerTable,10);assert.deepEqual(ui.errors,[]);
+  ui.click('[data-action=seat-remaining]');await flush();assert.deepEqual([...ui.w.document.querySelectorAll('.seat-table h3 small')].map(e=>e.textContent),['7 of 10 seats filled','6 of 10 seats filled']);assert.equal(ui.stored().templates[0].settings.seatsPerTable,10);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
 
@@ -352,5 +352,54 @@ test('a cloud update deferred while typing refreshes the displayed seats before 
  try{
   ui.click('[data-tab=tables]');ui.q('#seating-settings-form [name=seatsPerTable]').focus();const remote=execute(s,{type:'seat-move',tournamentId:'t1',entryId:'e7',table:1,seat:1,mode:'swap'});await ui.storage(remote);
   assert.ok(ui.q('[data-table="1"][data-seat="7"] [data-seat-grab=e7]'));ui.click('[data-seat-grab=e7]');assert.equal(ui.w.__fixture.saves,0);assert.ok(ui.q('[data-table="1"][data-seat="1"] [data-seat-grab=e7]'));assert.match(ui.q('#toast').textContent,/Seating changed/);assert.equal(ui.q('[data-seat-grab=e7]').getAttribute('aria-pressed'),'false');assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('Seat Players becomes Seat Remaining Players and preserves every already seated player',async()=>{
+ const s=manualSeatingFixture(12);for(const e of s.tournaments[0].entries){e.table=null;e.seat=null;}
+ const ui=await boot('https://example.test/',s,'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');assert.equal(ui.q('[data-action=seat-remaining]').textContent,'Seat Players');assert.equal(ui.q('[data-action=combine-tables]').disabled,true);
+  ui.click('[data-seat=e1]');ui.q('#seat-form').elements.seat.value='1/9';await ui.submit(ui.q('#seat-form'));assert.equal(ui.q('[data-action=seat-remaining]').textContent,'Seat Remaining Players');
+  ui.click('[data-seat-lock=e1]');await flush();ui.click('[data-action=seat-remaining]');await flush();const entries=ui.stored().tournaments[0].entries;assert.equal(entries[0].seat,9);assert.equal(entries[0].seatLocked,true);assert.ok(entries.every(e=>e.table));assert.equal(ui.q('[data-action=seat-remaining]').disabled,true);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+function reducedSeatingFixture(players,keep){const s=manualSeatingFixture(players);s.tournaments[0].entries.forEach((e,i)=>{if(!keep.includes(i)){e.eliminatedAt=Date.now();e.table=null;e.seat=null;}});return s;}
+test('Combine Tables merges three into two only after confirmation and never offers a redraw',async()=>{
+ const s=reducedSeatingFixture(30,[0,1,2,3,4,5,6,7,10,11,12,13,14,15,20,21]),ui=await boot('https://example.test/',s,'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.click('[data-action=combine-tables]');assert.equal(ui.q('[data-combine-mode=redraw]'),null);assert.equal(ui.w.__fixture.saves,0);ui.click('[data-action=close-modal]');assert.equal(ui.w.__fixture.saves,0);
+  ui.click('[data-action=combine-tables]');ui.click('[data-combine-mode=combine]');await flush();assert.equal(ui.w.document.querySelectorAll('.seat-table').length,2);assert.equal(ui.q('[data-action=combine-tables]').disabled,true);assert.deepEqual(ui.stored().tournaments[0].entries.slice(0,20),s.tournaments[0].entries.slice(0,20));assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('Lock in seat toggles to red Locked, persists after reload and stops manual moves until unlocked',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.click('[data-seat-lock=e3]');await flush();assert.equal(ui.q('[data-seat-lock=e3]').textContent,'Locked');assert.equal(ui.q('[data-seat-lock=e3]').classList.contains('is-locked'),true);assert.equal(ui.q('[data-seat-lock=e3]').getAttribute('aria-pressed'),'true');assert.equal(ui.q('[data-seat-grab=e3]').disabled,true);assert.equal(ui.q('[data-seat=e3]').disabled,true);
+  ui.click('[data-seat-grab=e7]');ui.click('[data-seat-grab=e1]');assert.equal(ui.q('[data-seat-move-mode=slide]').disabled,true);assert.match(ui.q('.seat-move-error').textContent,/Unlock.*Seat 3/);ui.click('[data-action=close-modal]');
+  const reloaded=await boot('https://example.test/',ui.stored(),'manage','t1');try{reloaded.click('[data-tab=tables]');assert.equal(reloaded.q('[data-seat-lock=e3]').textContent,'Locked');assert.equal(reloaded.q('[data-seat-grab=e3]').disabled,true);}finally{reloaded.close();}
+  await ui.storage(ui.stored());ui.click('[data-seat-lock=e3]');await flush();assert.equal(ui.q('[data-seat-lock=e3]').textContent,'Lock in seat');assert.equal(ui.q('[data-seat-grab=e3]').disabled,false);assert.equal(ui.stored().tournaments[0].entries[2].seatLocked,false);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+for(const mode of ['combine','redraw'])test(`final-table ${mode} keeps Table 1 locks and blocks closing-table locks`,async()=>{
+ const s=reducedSeatingFixture(20,[0,2,4,10,11,12]),ui=await boot('https://example.test/',s,'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.click('[data-seat-lock=e11]');await flush();ui.click('[data-action=combine-tables]');assert.match(ui.q('#dialog').textContent,/Unlock.*Table 2, Seat 1/);assert.equal(ui.q('[data-combine-mode=redraw]'),null);assert.equal(ui.w.__fixture.saves,1);ui.click('[data-action=close-modal]');
+  ui.click('[data-seat-lock=e11]');await flush();ui.click('[data-seat-lock=e1]');await flush();ui.click('[data-action=combine-tables]');assert.ok(ui.q('[data-combine-mode=combine]'));assert.ok(ui.q('[data-combine-mode=redraw]'));ui.click(`[data-combine-mode=${mode}]`);await flush();const entries=ui.stored().tournaments[0].entries;assert.equal(entries[0].table,1);assert.equal(entries[0].seat,1);assert.equal(entries[0].seatLocked,true);assert.ok(entries.filter(e=>!e.eliminatedAt).every(e=>e.table===1));if(mode==='combine'){assert.equal(entries[2].seat,3);assert.equal(entries[4].seat,5);}assert.equal(ui.q('#dialog').open,false);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('combining rejects stale final-table choices and a failed save allows explicit retry',async()=>{
+ const s=reducedSeatingFixture(20,[0,2,10,11]),ui=await boot('https://example.test/',s,'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.click('[data-action=combine-tables]');const remote=execute(s,{type:'seat-lock',tournamentId:'t1',entryId:'e11',locked:true});await ui.storage(remote);ui.click('[data-combine-mode=redraw]');await flush();assert.equal(ui.w.__fixture.saves,0);assert.match(ui.q('#toast').textContent,/Seating changed/);ui.click('[data-action=close-modal]');ui.click('[data-tab=tables]');ui.click('[data-seat-lock=e11]');await flush();
+  ui.click('[data-action=combine-tables]');ui.w.__fixture.saveError={message:'Connection interrupted'};ui.click('[data-combine-mode=combine]');await flush();assert.equal(ui.q('#dialog').open,true);assert.equal(ui.stored().tournaments[0].entries[10].table,2);ui.w.__fixture.saveError=null;ui.click('[data-combine-mode=combine]');await flush();assert.equal(ui.stored().tournaments[0].entries[10].table,1);assert.equal(ui.q('#dialog').open,false);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('failed seat locks never appear saved and stale displayed seats require review before locking',async()=>{
+ const s=manualSeatingFixture(),ui=await boot('https://example.test/',s,'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.w.__fixture.saveError={message:'Could not save lock'};ui.click('[data-seat-lock=e1]');await flush();assert.equal(ui.q('[data-seat-lock=e1]').textContent,'Lock in seat');assert.equal(ui.stored().tournaments[0].entries[0].seatLocked,undefined);assert.match(ui.q('#toast').textContent,/Could not save lock/);ui.w.__fixture.saveError=null;
+  ui.q('#seating-settings-form [name=seatsPerTable]').focus();await ui.storage(execute(s,{type:'seat-move',tournamentId:'t1',entryId:'e1',table:1,seat:2,mode:'swap'}));ui.click('[data-seat-lock=e1]');await flush();assert.equal(ui.w.__fixture.saves,0);assert.match(ui.q('#toast').textContent,/Seating changed/);assert.equal(ui.q('[data-seat-lock=e1]').closest('[data-seat-target]').dataset.seat,'2');ui.click('[data-seat-lock=e1]');await flush();assert.equal(ui.stored().tournaments[0].entries[0].seatLocked,true);assert.equal(ui.stored().tournaments[0].entries[0].seat,2);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
