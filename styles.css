@@ -297,3 +297,5 @@ body.fixed-workspace{height:var(--app-height,100dvh);min-height:0;overflow:hidde
 }
 
 @media(max-height:480px){.player-profile-page .player-stats{display:none}}
+
+.archived-status{color:#ff6666}

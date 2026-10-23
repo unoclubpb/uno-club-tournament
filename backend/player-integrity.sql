@@ -9,6 +9,7 @@ declare
   player_record jsonb;
   prior_player jsonb;
   highest_number bigint;
+  player_phone text;
 begin
   if tg_op='UPDATE' then old_players:=old.state->'players'; end if;
   if exists (
@@ -31,6 +32,19 @@ begin
       highest_number:=highest_number+1;
       if highest_number>9007199254740991 then raise exception 'Player number limit reached.' using errcode='23514'; end if;
       player_record:=jsonb_set(player_record,'{playerNumber}',to_jsonb(highest_number));
+    end if;
+    if player_record ? 'phone' then
+      if jsonb_typeof(player_record->'phone') is distinct from 'string' then
+        raise exception 'Enter exactly 10 digits for the phone number (###-###-####).' using errcode='23514';
+      end if;
+      player_phone:=btrim(player_record->>'phone');
+      if player_phone<>'' and player_phone !~ '^([0-9]{10}|[0-9]{3}-[0-9]{3}-[0-9]{4})$' then
+        raise exception 'Enter exactly 10 digits for the phone number (###-###-####).' using errcode='23514';
+      end if;
+      if player_phone ~ '^[0-9]{10}$' then
+        player_phone:=substr(player_phone,1,3)||'-'||substr(player_phone,4,3)||'-'||substr(player_phone,7,4);
+      end if;
+      player_record:=jsonb_set(player_record,'{phone}',to_jsonb(player_phone));
     end if;
     numbered_players:=numbered_players||jsonb_build_array(player_record);
   end loop;

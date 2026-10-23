@@ -82,3 +82,14 @@ test('last played follows player identity and the latest started or completed to
  s.players[0].name='Alex Updated';s.players[0].archived=true;assert.equal(statsFor(s,'p1').lastPlayed,'2026-10-22');
  s.tournaments=s.tournaments.filter(t=>t.id!=='ongoing');assert.equal(statsFor(s,'p1').lastPlayed,'2026-10-20');s.tournaments=s.tournaments.filter(t=>t.id!=='completed');assert.equal(statsFor(s,'p1').lastPlayed,null);
 });
+
+
+test('player phone numbers normalize ten digits and reject malformed values without changing the player',()=>{
+ let s=initialState();s=execute(s,{type:'player-save',id:'phone-player',name:'Phone Player',phone:'4045550123'});
+ assert.equal(s.players[0].phone,'404-555-0123');
+ s=execute(s,{type:'player-save',id:'phone-player',name:'Phone Player',phone:'770-555-0199'});assert.equal(s.players[0].phone,'770-555-0199');
+ for(const phone of ['123456789','12345678901','abc5550123','404.555.0123','(404)5550123','+14045550123','404 555 0123','404-55-50123','404-555-01234']){
+  assert.throws(()=>execute(s,{type:'player-save',id:'phone-player',name:'Phone Player',phone}),/exactly 10 digits/);assert.equal(s.players[0].phone,'770-555-0199');
+ }
+ s=execute(s,{type:'player-save',id:'phone-player',name:'Phone Player',phone:''});assert.equal(s.players[0].phone,'');assert.equal(s.players[0].id,'phone-player');
+});

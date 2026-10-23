@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.4
+# Uno Club Tournament Director — v0.3.5
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -143,3 +143,8 @@ Archived player profiles show `(Archived)` after the name in the heading, withou
 ## v0.3.4 last played and full-width notes
 
 Player details show Phone number and a read-only Last played date on the same row, with Notes spanning both columns underneath. Last played comes from the latest dated tournament referencing the player's permanent ID that has started or completed; registration-only drafts do not count. It shows Not yet when no qualifying tournament exists, including for newly added players. Editing or archiving a player does not change that derived date. Compact phone profiles use their existing Details/History switch below 800px of height so all fields remain visible without page/form scrolling.
+
+
+## v0.3.5 phone validation and red archive labels
+
+Optional player phone numbers accept exactly ten digits or the matching `###-###-####` form. Ten plain digits automatically format; letters, extra or missing digits, country codes and other separators are rejected. The same rule applies to add/edit forms, player-save actions and the installed Supabase player-integrity trigger, which also normalizes plain digits before storage. No existing phone numbers needed correction at deployment. Profile `(Archived)` and player-list `Archived` labels are red.

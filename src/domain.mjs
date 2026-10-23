@@ -15,6 +15,11 @@ function assignPlayerNumbers(players){
   let highest=players.reduce((n,p)=>Number.isSafeInteger(p.playerNumber)&&p.playerNumber>0?Math.max(n,p.playerNumber):n,0);
   for(const p of players)if(!Number.isSafeInteger(p.playerNumber)||p.playerNumber<1)p.playerNumber=++highest;
 }
+export function normalizePhone(value){
+  const phone=String(value??'').trim();
+  check(phone===''||/^(?:[0-9]{10}|[0-9]{3}-[0-9]{3}-[0-9]{4})$/.test(phone),'Enter exactly 10 digits for the phone number (###-###-####).');
+  const digits=phone.replace(/-/g,'');return digits?`${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`:'';
+}
 export const normalizePlayerName=name=>String(name??'').trim().replace(/\s+/gu,' ').toLowerCase();
 // The cutoff includes one break immediately following the last allowed playing round.
 export function purchaseOpen(t,c,kind){
@@ -123,7 +128,7 @@ export function execute(state,action,now=Date.now()){
     const name=String(a.name||'').trim().replace(/\s+/gu,' ');check(name,'Enter a player name.');check(name.length<=100,'Player name is too long.');
     const p=s.players.find(p=>p.id===a.id);
     check(!s.players.some(v=>v.id!==a.id&&normalizePlayerName(v.name)===normalizePlayerName(name)),'That name already exists. Please choose a different name.');
-    const phone=String(a.phone??p?.phone??'').trim();check(phone.length<=40,'Phone number is too long.');
+    const phone=normalizePhone(a.phone??p?.phone??'');
     if(p){p.name=name;p.phone=phone;p.notes=String(a.notes||'').slice(0,1000);}else s.players.push({id:a.id||id(),playerNumber:s.players.reduce((n,p)=>Math.max(n,p.playerNumber),0)+1,name,phone,notes:String(a.notes||'').slice(0,1000),archived:false});return s;
   }
   if(a.type==='player-archive'){const p=s.players.find(p=>p.id===a.id);check(p,'Player not found.');p.archived=!p.archived;return s;}

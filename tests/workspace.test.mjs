@@ -13,6 +13,6 @@ test('import keeps cloud identities and numbers while bringing across browser hi
 test('import refuses conflicting names, changed records and changed tournament versions without partial changes',()=>{
  const cloud=execute(initialState(),{type:'player-save',id:'cloud-1',name:'Alex'}),before=clone(cloud);
  let browser=execute(initialState(),{type:'player-save',id:'browser-1',name:' ALEX '});assert.throws(()=>mergeBrowserWorkspace(cloud,browser),/already belongs/);assert.deepEqual(cloud,before);
- browser=clone(cloud);browser.players[0].phone='555-0100';assert.throws(()=>mergeBrowserWorkspace(cloud,browser),/versions.*differ/);assert.deepEqual(cloud,before);
+ browser=clone(cloud);browser.players[0].phone='555-123-0100';assert.throws(()=>mergeBrowserWorkspace(cloud,browser),/versions.*differ/);assert.deepEqual(cloud,before);
  let event=execute(cloud,{type:'tournament-create',id:'event-1',name:'Event',templateId:cloud.templates[0].id});browser=clone(event);browser.tournaments[0].name='Changed';assert.throws(()=>mergeBrowserWorkspace(event,browser),/versions.*differ/);
 });

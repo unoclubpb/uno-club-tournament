@@ -5,7 +5,7 @@ create trigger td_player_validation_test before insert or update of state on td_
 for each row execute function public.td_validate_players();
 do $$
 declare
-  doc jsonb := '{"schemaVersion":1,"players":[{"id":"player-1","name":"Alex Smith","phone":"555-0100"}],"templates":[],"tournaments":[]}'::jsonb;
+  doc jsonb := '{"schemaVersion":1,"players":[{"id":"player-1","name":"Alex Smith","phone":"555-123-0100"}],"templates":[],"tournaments":[]}'::jsonb;
   candidate jsonb;
   bad_number jsonb;
 begin
@@ -18,7 +18,7 @@ begin
   exception when unique_violation then null; end;
   update td_player_validation_test set state=jsonb_set(state,'{players,0,name}','"Alex S"'::jsonb);
   assert (select state#>>'{players,0,id}' from td_player_validation_test)='player-1','Rename changed player identity';
-  assert (select state#>>'{players,0,phone}' from td_player_validation_test)='555-0100','Phone number was lost';
+  assert (select state#>>'{players,0,phone}' from td_player_validation_test)='555-123-0100','Phone number was lost';
   begin
     update td_player_validation_test set state=jsonb_set(state,'{players}','[]'::jsonb);
     raise exception 'Removing permanent player ID unexpectedly allowed';

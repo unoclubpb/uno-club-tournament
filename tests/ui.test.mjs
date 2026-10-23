@@ -36,11 +36,11 @@ for(const base of ['https://example.test/','https://example.test/uno-club-tourna
   assert.equal(ui.w.document.querySelectorAll('.home-menu .menu-card').length,5);
   assert.equal(q('.home-tournament'),null);assert.doesNotMatch(ui.w.document.body.textContent,/Welcome back|What would you like/);
   click('[data-go="players"]');assert.equal(q('.context'),null);assert.equal(q('[data-register]'),null);
-  click('[data-action="add-player"]');let form=q('#player-form');input(form.elements.name,'  Alex   Smith  ');input(form.elements.phone,'555-0100');await submit(form);
-  let p=ui.stored().players[0];assert.equal(p.name,'Alex Smith');assert.equal(p.phone,'555-0100');const pid=p.id;
+  click('[data-action="add-player"]');let form=q('#player-form');input(form.elements.name,'  Alex   Smith  ');input(form.elements.phone,'555-123-0100');await submit(form);
+  let p=ui.stored().players[0];assert.equal(p.name,'Alex Smith');assert.equal(p.phone,'555-123-0100');const pid=p.id;
   assert.equal(ui.stored().tournaments.length,0);
   click('[data-action="add-player"]');form=q('#player-form');input(form.elements.name,'alex SMITH');assert.match(q('.name-feedback').textContent,/already exists/);assert.equal(form.elements.name.checkValidity(),false);await submit(form);assert.equal(ui.stored().players.length,1);
-  click('[data-action="close-modal"]');click('[data-player]');form=q('#player-form');assert.equal(form.querySelector('[readonly]').value,'001');input(form.elements.name,'Alex S');await submit(form);assert.equal(ui.stored().players[0].id,pid);assert.equal(ui.stored().players[0].phone,'555-0100');
+  click('[data-action="close-modal"]');click('[data-player]');form=q('#player-form');assert.equal(form.querySelector('[readonly]').value,'001');input(form.elements.name,'Alex S');await submit(form);assert.equal(ui.stored().players[0].id,pid);assert.equal(ui.stored().players[0].phone,'555-123-0100');
   click('[data-go="home"]');assert.equal(q('.home-tournament'),null);click('[data-go="setup"]');click('[data-action="new-tournament"]');form=q('#new-tournament-form');form.elements.name.value='Wednesday Tournament';await submit(form);
   assert.equal(q('h1').textContent,'Tournament Registration');assert.equal(ui.w.document.querySelectorAll('button[data-go="home"]').length,1);assert.equal(q('.nav [data-go="home"]').textContent,'Home');assert.doesNotMatch(ui.w.document.body.textContent,/Overview|Main menu/);click('[data-go="home"]');assert.equal(q('.home-tournament'),null);
   click('[data-go="signup"]');click('[data-register]');await flush();assert.equal(ui.stored().tournaments[0].entries[0].playerId,pid);
@@ -65,7 +65,7 @@ test('player rename follows entries, duplicate rename and archived name reuse ar
  let s=initialState();for(const [id,name] of [['p1','Alex'],['p2','Casey']])s=execute(s,{type:'player-save',id,name});s=execute(s,{type:'tournament-create',id:'t1',name:'Test',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'t1',playerId:'p1',paid:true});s=execute(s,{type:'player-archive',id:'p2'});
  const ui=await boot('https://example.test/',s,'players');
  try{ui.click('[data-player="p1"]');let f=ui.q('#player-form');ui.input(f.elements.name,' CASEY ');await ui.submit(f);assert.equal(ui.stored().players[0].name,'Alex');ui.input(f.elements.name,'Alex S');await ui.submit(f);assert.equal(ui.stored().players[0].id,'p1');assert.equal(ui.stored().tournaments[0].entries[0].playerId,'p1');
- ui.q('#player-history-list').scrollTop=140;ui.click('[data-archive=p1]');await flush();assert.equal(ui.q('h1').textContent,'Alex S (Archived)');assert.equal(ui.q('#player-form').elements.name.value,'Alex S');assert.equal(ui.q('#player-history-list').scrollTop,140);assert.equal(ui.q('[data-archive=p1]').textContent,'Restore player');
+ ui.q('#player-history-list').scrollTop=140;ui.click('[data-archive=p1]');await flush();assert.equal(ui.q('h1').textContent,'Alex S (Archived)');assert.equal(ui.q('h1 .archived-status').textContent,'(Archived)');assert.equal(ui.q('#player-form').elements.name.value,'Alex S');assert.equal(ui.q('#player-history-list').scrollTop,140);assert.equal(ui.q('[data-archive=p1]').textContent,'Restore player');
  ui.click('[data-archive=p1]');await flush();assert.equal(ui.q('h1').textContent,'Alex S');assert.equal(ui.stored().players[0].archived,false);assert.equal(ui.stored().tournaments[0].entries[0].playerId,'p1');assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
 
@@ -247,5 +247,19 @@ test('player list filtering and cloud refresh preserve the fixed search and inde
   assert.equal(ui.q('#player-results').scrollTop,180);assert.equal(ui.w.document.activeElement,ui.q('#player-search'));assert.equal(ui.q('#player-search').selectionStart,2);assert.equal(ui.q('#player-search').selectionEnd,4);
   ui.input(ui.q('#player-search'),'Nobody');assert.equal(ui.q('#player-results').scrollTop,0);assert.match(ui.q('#player-results').textContent,/No matching players/);
   ui.click('[data-go=home]');assert.equal(ui.w.document.body.classList.contains('fixed-workspace'),false);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+
+test('phone add and edit fields format plain digits and block invalid saves; archived list uses its status label',async()=>{
+ let s=initialState();s=execute(s,{type:'player-save',id:'p1',name:'Archived Player'});s=execute(s,{type:'player-archive',id:'p1'});
+ const ui=await boot('https://example.test/',s,'players');
+ try{
+  ui.q('#show-archived').checked=true;ui.q('#show-archived').dispatchEvent(new ui.w.Event('change',{bubbles:true}));assert.equal(ui.q('.player-row .archived-status').textContent,'Archived');
+  ui.click('[data-action=add-player]');let form=ui.q('#player-form');ui.input(form.elements.name,'Phone Test');ui.input(form.elements.phone,'4045550123');assert.equal(form.elements.phone.value,'404-555-0123');assert.equal(form.elements.phone.checkValidity(),true);await ui.submit(form);
+  const player=ui.stored().players.find(p=>p.name==='Phone Test');assert.equal(player.phone,'404-555-0123');ui.click('[data-player="'+player.id+'"]');form=ui.q('#player-form');
+  for(const invalid of ['404555012','40455501234','abc5550123','404.555.0123','+14045550123']){ui.input(form.elements.phone,invalid);assert.equal(form.elements.phone.checkValidity(),false);await ui.submit(form);assert.equal(ui.stored().players.find(p=>p.id===player.id).phone,'404-555-0123');}
+  ui.input(form.elements.phone,'7705550199');assert.equal(form.elements.phone.value,'770-555-0199');assert.equal(form.elements.phone.selectionStart,12);await ui.submit(form);assert.equal(ui.stored().players.find(p=>p.id===player.id).phone,'770-555-0199');
+  form=ui.q('#player-form');ui.input(form.elements.phone,'');assert.equal(form.elements.phone.checkValidity(),true);await ui.submit(form);assert.equal(ui.stored().players.find(p=>p.id===player.id).phone,'');assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
