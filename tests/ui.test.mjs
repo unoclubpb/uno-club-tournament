@@ -64,7 +64,9 @@ test('TV display switches at cutoff without refresh, and follows remote account 
 test('player rename follows entries, duplicate rename and archived name reuse are blocked',async()=>{
  let s=initialState();for(const [id,name] of [['p1','Alex'],['p2','Casey']])s=execute(s,{type:'player-save',id,name});s=execute(s,{type:'tournament-create',id:'t1',name:'Test',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'t1',playerId:'p1',paid:true});s=execute(s,{type:'player-archive',id:'p2'});
  const ui=await boot('https://example.test/',s,'players');
- try{ui.click('[data-player="p1"]');let f=ui.q('#player-form');ui.input(f.elements.name,' CASEY ');await ui.submit(f);assert.equal(ui.stored().players[0].name,'Alex');ui.input(f.elements.name,'Alex S');await ui.submit(f);assert.equal(ui.stored().players[0].id,'p1');assert.equal(ui.stored().tournaments[0].entries[0].playerId,'p1');assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+ try{ui.click('[data-player="p1"]');let f=ui.q('#player-form');ui.input(f.elements.name,' CASEY ');await ui.submit(f);assert.equal(ui.stored().players[0].name,'Alex');ui.input(f.elements.name,'Alex S');await ui.submit(f);assert.equal(ui.stored().players[0].id,'p1');assert.equal(ui.stored().tournaments[0].entries[0].playerId,'p1');
+ ui.q('#player-history-list').scrollTop=140;ui.click('[data-archive=p1]');await flush();assert.equal(ui.q('h1').textContent,'Alex S (Archived)');assert.equal(ui.q('#player-form').elements.name.value,'Alex S');assert.equal(ui.q('#player-history-list').scrollTop,140);assert.equal(ui.q('[data-archive=p1]').textContent,'Restore player');
+ ui.click('[data-archive=p1]');await flush();assert.equal(ui.q('h1').textContent,'Alex S');assert.equal(ui.stored().players[0].archived,false);assert.equal(ui.stored().tournaments[0].entries[0].playerId,'p1');assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
 
 test('structure editor uses whole-minute breaks and copies a common game without changing mixed levels automatically',async()=>{

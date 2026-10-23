@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.2
+# Uno Club Tournament Director — v0.3.3
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -133,3 +133,8 @@ The existing automated scenarios, plus player-list focus/scroll refresh coverage
 ## v0.3.2 full-width saved structures
 
 Removed the 760px cap and two-column desktop limit from saved structures. Cards fill the workspace with four columns at widths of 1200px and above, three at 900–1199px, two at 360–899px, and one below 360px. The fixed page and independently scrolling saved-structure region are retained.
+
+
+## v0.3.3 fixed player profiles
+
+Archived player profiles show `(Archived)` after the name in the heading, without changing the saved name or permanent identity. Restoring the player removes that heading suffix. Profiles keep the page and details form fixed, with equally tall details/history panels. Only the history entries scroll; the history heading stays visible. Phone panels stack at equal heights, with compact fields and a Details/History switch when a phone keyboard leaves less than 480px of height. History scroll position survives profile rerenders.
