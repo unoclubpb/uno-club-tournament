@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initialState,execute,id,clockAt,financials,prizes,statsFor,clone,tablesRequired,tablesInUse,upgradeState,rebuyOpen} from '../src/domain.mjs';
+import {initialState,execute,id,clockAt,financials,prizes,statsFor,clone,tablesRequired,tablesInUse,upgradeState,rebuyOpen,purchaseOpen,rebuyPhase,cutoffHasBreak,validateTemplate} from '../src/domain.mjs';
 const start=Date.parse('2026-10-15T23:35:00Z');
 function setup(n=3){let s=initialState();const event=id();s=execute(s,{type:'tournament-create',id:event,name:'Test tournament',templateId:s.templates[0].id},start);for(let i=0;i<n;i++){const player=id();s=execute(s,{type:'player-save',id:player,name:'Player '+i},start);s=execute(s,{type:'register',tournamentId:event,playerId:player,paid:true},start);}return {s,event};}
 function act(s,event,a,now=start){return execute(s,{...a,tournamentId:event},now);}
@@ -21,6 +21,23 @@ test('tables grow with entries and consolidate after explicit reseating',()=>{le
 test('toke cannot exceed full buy-in and invalid house percentages are rejected',()=>{const {s,event}=setup();assert.throws(()=>act(s,event,{type:'tournament-settings',settings:{...s.tournaments[0].settings,buyIn:500,dealerToke:1000}}),/cannot exceed/);assert.throws(()=>act(s,event,{type:'tournament-settings',settings:{...s.tournaments[0].settings,housePercent:101}}),/between 0 and 100/);});
 test('legacy records keep collected amounts and completed settlement totals',()=>{let {s}=setup(1);const legacy={startingStack:5000,entryPrize:1000,entryHouse:1000,rebuyPrize:2500,rebuyHouse:0,addonPrize:7500,addonHouse:1500,tableCount:2,fixedExpense:2000,seatsPerTable:10,houseContribution:0};s.templates[0].settings={...legacy};const t=s.tournaments[0];t.settings={...legacy};t.entries[0].payments=[{kind:'entry',prize:1000,house:1000,chips:5000,paid:true}];let migrated=upgradeState(s);assert.equal(migrated.tournaments[0].entries[0].payments[0].total,2000);assert.equal(migrated.tournaments[0].settings.buyIn,2000);assert.equal(migrated.templates[0].settings.buyIn,5000);t.status='completed';t.entries[0].payments[0].prize=9000;migrated=upgradeState(s);assert.equal(financials(migrated.tournaments[0]).pool,7000);assert.equal(financials(migrated.tournaments[0]).collected,10000);assert.equal(financials(migrated.tournaments[0]).houseFee,3000);assert.equal(migrated.tournaments[0].settlement.legacy,true);});
 
-test('rebuy display and payments close during a break after the cutoff, when disabled, and at completion',()=>{
- let {s,event}=setup();let t=s.tournaments[0];t.settings.rebuyLastRound=8;t.clock.index=7;assert.equal(rebuyOpen(t,t.clock),true);t.clock.index=8;assert.equal(rebuyOpen(t,t.clock),false);assert.throws(()=>act(s,event,{type:'payment',entryId:t.entries[0].id,kind:'rebuy',paid:true}),/period has closed/);t.clock.index=0;t.settings.rebuyEnabled=false;assert.equal(rebuyOpen(t,t.clock),false);t.settings.rebuyEnabled=true;t.status='completed';assert.equal(rebuyOpen(t,t.clock),false);t.status='open';t.clock.status='ended';assert.equal(rebuyOpen(t,t.clock),false);
+test('rebuys and add-ons remain available through the immediately following break, with closure at next playing round',()=>{
+ let {s,event}=setup();let t=s.tournaments[0];t.settings.rebuyLastRound=8;t.settings.addonEnabled=true;t.settings.addonLastRound=8;t.clock.index=7;
+ assert.equal(rebuyPhase(t,t.clock),'final-round');assert.equal(cutoffHasBreak(t),true);assert.equal(purchaseOpen(t,t.clock,'addon'),true);
+ t.clock.index=8;assert.equal(rebuyPhase(t,t.clock),'final-break');
+ s=act(s,event,{type:'payment',entryId:t.entries[0].id,kind:'rebuy',paid:true});t=s.tournaments[0];s=act(s,event,{type:'payment',entryId:t.entries[0].id,kind:'addon',paid:true});t=s.tournaments[0];assert.equal(financials(t).rebuyCount,1);assert.equal(financials(t).addonCount,1);
+ t.clock.index=9;assert.equal(rebuyPhase(t,t.clock),'closed');for(const kind of ['rebuy','addon'])assert.throws(()=>act(s,event,{type:'payment',entryId:t.entries[1].id,kind,paid:true}),/period has closed/);
+ t.clock.index=0;t.settings.rebuyEnabled=false;assert.equal(rebuyOpen(t,t.clock),false);t.settings.rebuyEnabled=true;t.status='completed';assert.equal(rebuyOpen(t,t.clock),false);t.status='open';t.clock.status='ended';assert.equal(rebuyOpen(t,t.clock),false);
+});
+test('a cutoff without a following break closes at the next level and does not reopen at a later break',()=>{
+ const {s}=setup(),t=s.tournaments[0];t.settings.rebuyLastRound=6;assert.equal(cutoffHasBreak(t),false);t.clock.index=5;assert.equal(rebuyPhase(t,t.clock),'final-round');t.clock.index=6;assert.equal(rebuyPhase(t,t.clock),'closed');t.clock.index=8;assert.equal(rebuyPhase(t,t.clock),'closed');
+});
+test('fractional breaks are rejected while whole-minute breaks and playing durations stay supported',()=>{
+ const template=initialState().templates[0],br=template.levels.find(l=>l.kind==='break');br.minutes=3.5;assert.throws(()=>validateTemplate(template),/whole number/);br.minutes=3;template.levels[0].minutes=0.5;assert.doesNotThrow(()=>validateTemplate(template));
+});
+test('rebuy and add-on cutoff closure follows the resumed clock at break end and survives a delayed tick',()=>{
+ let {s,event}=setup();let t=s.tournaments[0];t.settings.rebuyLastRound=8;t.settings.addonLastRound=8;t.settings.addonEnabled=true;t.clock.index=7;s=act(s,event,{type:'clock',command:'start'});t=s.tournaments[0];
+ let c=clockAt(t,start+900000);assert.equal(c.status,'paused');assert.equal(rebuyPhase(t,c),'final-break');assert.equal(purchaseOpen(t,c,'addon'),true);
+ s=act(s,event,{type:'clock',command:'resume'},start+900000);t=s.tournaments[0];c=clockAt(t,start+1200000);assert.equal(c.status,'paused');assert.equal(rebuyOpen(t,c),false);assert.equal(purchaseOpen(t,c,'addon'),false);
+ t.settings.pauseBreaks=false;t.clock={index:7,status:'running',remainingMs:900000,deadline:start+900000};c=clockAt(t,start+1500000);assert.equal(rebuyPhase(t,c),'closed');
 });

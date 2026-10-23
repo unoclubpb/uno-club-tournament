@@ -11,7 +11,24 @@ export function sampleTemplate() {
   return {id:id(),name:'Uno Club — 15-minute levels',levels,settings:{financeVersion:2,startingStack:5000,buyIn:5000,dealerToke:1000,housePercent:20,rebuyEnabled:true,rebuyAmount:2500,rebuyChips:5000,rebuyLastRound:6,rebuyMax:0,addonEnabled:false,addonAmount:9000,addonChips:20000,addonLastRound:4,anteMode:'off',pauseBreaks:true,seatsPerTable:10,houseContribution:0,payoutMode:'percent',payouts:[65,35]}};
 }
 export const normalizePlayerName=name=>String(name??'').trim().replace(/\s+/gu,' ').toLowerCase();
-export const rebuyOpen=(t,c)=>t.status!=='completed'&&c.status!=='ended'&&t.settings.rebuyEnabled&&roundAt(t,c.index)<=t.settings.rebuyLastRound&&!(t.levels[c.index].kind==='break'&&roundAt(t,c.index)===t.settings.rebuyLastRound);
+// The cutoff includes one break immediately following the last allowed playing round.
+export function purchaseOpen(t,c,kind){
+  if(t.status==='completed'||c.status==='ended'||!t.settings[kind+'Enabled'])return false;
+  const round=roundAt(t,c.index),last=t.settings[kind+'LastRound'];
+  if(round!==last)return round<last;
+  return t.levels[c.index].kind==='play'||t.levels[c.index-1]?.kind==='play';
+}
+export const rebuyOpen=(t,c)=>purchaseOpen(t,c,'rebuy');
+export function cutoffHasBreak(t,kind='rebuy'){
+  let round=0;const index=t.levels.findIndex(l=>l.kind==='play'&&++round===t.settings[kind+'LastRound']);
+  return index>=0&&t.levels[index+1]?.kind==='break';
+}
+export function rebuyPhase(t,c){
+  if(!rebuyOpen(t,c))return 'closed';
+  if(roundAt(t,c.index)!==t.settings.rebuyLastRound)return 'open';
+  return t.levels[c.index].kind==='break'?'final-break':'final-round';
+}
+
 export const initialState=()=>({schemaVersion:1,players:[],templates:[sampleTemplate()],tournaments:[]});
 export const paymentTotal=p=>p.total??((p.prize||0)+(p.house||0));
 export const tablesRequired=t=>Math.ceil(t.entries.filter(e=>!e.eliminatedAt).length/t.settings.seatsPerTable);
@@ -78,7 +95,7 @@ export function validateTemplate(template){
   check(template.name.trim(),'Give the structure a name.');check(template.levels.length>0,'Add at least one level.');
   check(template.levels[0].kind==='play','Start the structure with a playing level.');
   check(template.levels.some(l=>l.kind==='play'),'Add a playing level.');
-  template.levels.forEach(l=>{check(['play','break'].includes(l.kind),'Invalid level type.');check(Number.isFinite(l.minutes)&&l.minutes>=0.1&&l.minutes<=180,'Level length must be between 0.1 and 180 minutes.');check([l.sb,l.bb,l.ante].every(v=>Number.isSafeInteger(v)&&v>=0),'Blinds and antes must be nonnegative whole numbers.');check(l.kind==='break'||l.bb>=l.sb,'Big blind must be at least the small blind.');});
+  template.levels.forEach(l=>{check(['play','break'].includes(l.kind),'Invalid level type.');check(Number.isFinite(l.minutes)&&l.minutes>=0.1&&l.minutes<=180,'Level length must be between 0.1 and 180 minutes.');check(l.kind!=='break'||Number.isInteger(l.minutes),'Break length must be a whole number of minutes (1–180).');check([l.sb,l.bb,l.ante].every(v=>Number.isSafeInteger(v)&&v>=0),'Blinds and antes must be nonnegative whole numbers.');check(l.kind==='break'||l.bb>=l.sb,'Big blind must be at least the small blind.');});
   const s=template.settings;
   ['startingStack','buyIn','dealerToke','rebuyAmount','rebuyChips','rebuyLastRound','rebuyMax','addonAmount','addonChips','addonLastRound','seatsPerTable','houseContribution'].forEach(k=>check(Number.isSafeInteger(s[k])&&s[k]>=0,`Invalid ${k} setting.`));
   check(s.dealerToke<=s.buyIn,'Dealer toke cannot exceed the full buy-in.');
@@ -132,7 +149,7 @@ export function execute(state,action,now=Date.now()){
   if(['payment','paid','eliminate','seat'].includes(a.type))check(e,'Player entry not found.');
   if(a.type==='payment'){
     check(['rebuy','addon'].includes(a.kind),'Unknown payment type.');check(!e.eliminatedAt,'Player has been eliminated.');const k=a.kind;
-    if(k==='rebuy')check(rebuyOpen(t,c),'Rebuy period has closed.');
+    check(purchaseOpen(t,c,k),`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
     check(t.settings[k+'Enabled'],`${k==='rebuy'?'Rebuys':'Add-ons'} are turned off.`);
     check(roundAt(t,c.index)<=t.settings[k+'LastRound'],`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
     if(k==='rebuy'&&t.settings.rebuyMax>0)check(e.payments.filter(p=>p.kind==='rebuy').length<t.settings.rebuyMax,'Player has reached the rebuy limit.');
