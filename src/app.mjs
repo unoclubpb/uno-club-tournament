@@ -1,5 +1,6 @@
 import {createClient} from '@supabase/supabase-js';
 import {id,clone,initialState,sampleTemplate,execute,clockAt,roundAt,financials,prizes,statsFor,paymentTotal,tablesRequired,tablesInUse,upgradeState,normalizePlayerName,rebuyOpen,rebuyPhase,cutoffHasBreak,playerNumberLabel} from './domain.mjs';
+import {mergeBrowserWorkspace} from './workspace.mjs';
 import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -10,8 +11,10 @@ const tvMoney=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',
 const num=n=>Number(n||0).toLocaleString('en-US');
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const app=$('#app'),dlg=$('#dialog');
-const localKey='uno-tournament-practice-v1';
-let state=loadPractice(),version=0,session=null,mode='practice',busy=false,channel=null,online=false,serverSample=null,lastSync=null,remoteError='',clockTimer,editor=null;
+const legacyKey='uno-tournament-practice-v1',migrationKey='uno-tournament-browser-imported';
+let state=initialState(),version=0,session=null,authReady=false,authError='',connectedUser='',legacyError='';
+let legacy=readBrowserData(),legacyPending=!!legacy&&!localStorage.getItem(migrationKey);
+let busy=false,channel=null,online=false,serverSample=null,lastSync=null,remoteError='',clockTimer,editor=null;
 let selected=localStorage.getItem('uno-tournament-selected')||'',view=new URLSearchParams(location.search).get('view')||'home';
 const requestedTournament=new URLSearchParams(location.search).get('tournament');if(requestedTournament)selected=requestedTournament;
 let playerSearch='',signupSearch='',registrationPanel='find',playerDetail=null,showArchived=false,tab='players',lastClockKey='',sound=false;
@@ -22,13 +25,17 @@ const current=()=>state.tournaments.find(t=>t.id===selected);
 const pName=e=>state.players.find(p=>p.id===e.playerId)?.name||'Archived player';
 const active=t=>t.entries.filter(e=>!e.eliminatedAt);
 const timeNow=()=>serverSample?serverSample.epoch+(performance.now()-serverSample.mono):Date.now();
-function loadPractice(){try{const value=JSON.parse(localStorage.getItem(localKey));if(value?.schemaVersion===1)return upgradeState(value);}catch{}return initialState();}
+function readBrowserData(){try{const raw=localStorage.getItem(legacyKey);if(!raw)return null;const value=JSON.parse(raw);if(value?.schemaVersion!==1||!['players','templates','tournaments'].every(k=>Array.isArray(value[k])))throw new Error();return upgradeState(value);}catch{legacyError='Saved data on this device could not be read. The original copy has been kept.';return null;}}
+function authForm(){return `<form id="auth-form"><label>Email<input type="email" name="email" autocomplete="email" required></label><label>Password<input type="password" name="password" autocomplete="current-password" minlength="8" required></label><div class="button-row"><button class="button primary" name="authAction" value="login">Sign in</button><button class="button secondary" name="authAction" value="signup">Create account</button></div><p id="auth-feedback" class="muted" role="status">${esc(authError||'New here? Create an account, confirm your email if prompted, then sign in.')}</p></form>`;}
+function signInScreen(){return `<div class="auth-shell"><a class="brand" href="${APP_ROOT}"><span>UNO CLUB<small>TOURNAMENT DIRECTOR</small></span></a><section class="panel auth-panel"><p class="eyebrow">COMPUTER & PHONE ACCESS</p><h1>${authReady?'Sign in to Uno Club':'Opening Uno Club…'}</h1><p class="muted">Use the same account on your computer and phone for your players, tournament structures and clock.</p>${authReady?authForm():'<p role="status">Checking your sign-in…</p>'}${legacyPending?'<p class="import-note">Your saved players and tournaments on this device will be brought into your account after sign-in. The browser copy will be kept.</p>':''}${legacyError?`<p class="import-note">${esc(legacyError)}</p>`:''}</section><p class="muted auth-footnote">Your tournament information saves to Supabase.</p></div>`;}
+function importNotice(){return legacyPending?`<div class="mode-note warning">Saved players and tournaments on this device are ready to bring into your account. <button data-action="import-browser" ${busy||!online?'disabled':''}>Bring over saved data</button>${legacyError?`<p>${esc(legacyError)}</p>`:''}</div>`:legacyError?`<div class="mode-note warning">${esc(legacyError)}</div>`:'';}
+
 function toast(message,error=false){const el=$('#toast');el.textContent=message;el.className=error?'show error':'show';clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.className='',5000);}
 function chooseTournament(value){selected=value;localStorage.setItem('uno-tournament-selected',value);editor=null;render();}
 function go(next){view=next;editor=null;playerDetail=null;history.pushState({},'',`${APP_ROOT}?view=${encodeURIComponent(next)}${selected?'&tournament='+encodeURIComponent(selected):''}`);render();}
 function dateLabel(value){return new Date(value+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
 function statusLabel(t){if(t.status==='completed')return 'Completed';return {ready:'Ready to start',running:'In progress',paused:'Paused',ended:'Clock finished'}[clockAt(t,timeNow()).status];}
-function header(){const showContext=!['home','players'].includes(view);return `<header class="header"><a class="brand" href="${APP_ROOT}?view=home" data-go="home"><span>UNO CLUB<small>TOURNAMENT DIRECTOR</small></span></a><div class="header-right"><button class="connection" data-action="account"><i class="dot ${mode==='cloud'?(online?'green':'red'):'gold'}"></i>${mode==='cloud'?(online?'Connected':'Reconnect'):'Practice · Sign in'}</button></div></header>${showContext?`<div class="context"><div><span class="eyebrow">TOURNAMENT</span><select id="current-tournament" aria-label="Current tournament"><option value="">Select a tournament</option>${state.tournaments.slice().reverse().map(t=>`<option value="${t.id}" ${t.id===selected?'selected':''}>${esc(t.name)}${t.status==='completed'?' · Completed':''}</option>`).join('')}</select></div><div class="context-actions"><button class="button small dark" data-action="open-clock">${icon('clock')} Open clock window</button></div></div>`:''}${mode==='cloud'&&!online?`<div class="mode-note warning">${esc(remoteError||'Connection interrupted. Reconnect to save changes.')} <button data-action="refresh">Retry</button></div>`:''}`;}
+function header(){const showContext=!['home','players'].includes(view);return `<header class="header"><a class="brand" href="${APP_ROOT}?view=home" data-go="home"><span>UNO CLUB<small>TOURNAMENT DIRECTOR</small></span></a><div class="header-right"><button class="connection" data-action="account"><i class="dot ${online?'green':'red'}"></i>${online?'Connected':'Reconnect'}</button></div></header>${showContext?`<div class="context"><div><span class="eyebrow">TOURNAMENT</span><select id="current-tournament" aria-label="Current tournament"><option value="">Select a tournament</option>${state.tournaments.slice().reverse().map(t=>`<option value="${t.id}" ${t.id===selected?'selected':''}>${esc(t.name)}${t.status==='completed'?' · Completed':''}</option>`).join('')}</select></div><div class="context-actions"><button class="button small dark" data-action="open-clock">${icon('clock')} Open clock window</button></div></div>`:''}${!online?`<div class="mode-note warning">${esc(remoteError||'Connection interrupted. Reconnect to save changes.')} <button data-action="refresh">Retry</button></div>`:''}`;}
 
 function nav(){return `<nav class="nav" aria-label="Tournament pages">${['home','setup','players','signup','manage'].map(k=>`<button class="${view===k?'active':''}" data-go="${k}">${icon(k)}<span>${names[k]}</span></button>`).join('')}</nav>`;}
 function pageHeading(kicker,title,description='',extra=''){return `<div class="page-heading"><div><p class="eyebrow">${kicker}</p><h1>${title}</h1>${description?`<p class="muted">${description}</p>`:''}</div>${extra}</div>`;}
@@ -63,7 +70,7 @@ function clockSidebar(t,c){
   return `<div class="tv-players"><span>PLAYERS REMAINING</span><strong style="font-size:min(${open?9:7.5}vw,${52/count.length}vw)">${count}</strong>${!open?`<small class="tv-rebuy-count">Rebuys: ${financials(t).rebuyCount}</small>`:''}</div>${open?`<div class="tv-rebuys-open">${notice}</div>`:`<div class="tv-pool"><span>PRIZE POOL</span><strong style="font-size:min(7.5vw,${52/pool.length}vw)">${pool}</strong></div><div class="tv-prizes"><span>PAYOUTS</span><div class="tv-payout-list">${prizes(t).map((v,i)=>`<p><span>${ordinal(i+1)}</span><strong>${tvMoney(v)}</strong></p>`).join('')}</div></div>`}`;
 }
 
-function clockScreen(){const t=current(),c=t?clockAt(t,timeNow()):null;return `<div class="tv-shell"><div class="tv-toolbar"><button data-go="home">← Home</button><span class="tv-mode">${mode==='practice'?'PRACTICE · THIS BROWSER ONLY':online?'CONNECTED':'CONNECTION INTERRUPTED'}</span><button data-action="sound">Sound: ${sound?'on':'off'}</button><button data-action="fullscreen">Full screen ⛶</button></div>${!t?`<div class="tv-empty"><h1>Choose a tournament</h1><p>Open a tournament in the control room, then open its clock display.</p><button class="button gold" data-go="home">Open home screen</button></div>`:`<header class="tv-heading"><div><span>UNO CLUB</span><h1>${esc(t.name)}</h1></div><div id="tv-level">ROUND 1</div></header><main class="tv-grid"><section class="tv-time-panel"><span class="tv-time-label">TIME REMAINING</span><div class="tv-status" id="tv-status"></div><div class="tv-time" id="tv-time">15:00</div><div class="tv-progress"><div id="tv-progress"></div></div><div class="tv-break" id="tv-break"></div></section><section class="tv-blinds-panel"><span id="tv-game">CURRENT BLINDS</span><strong id="tv-blinds">25 / 50</strong><div id="tv-ante">Antes off</div><p class="tv-next-row"><span id="tv-next-label">NEXT BLINDS</span><strong id="tv-next"></strong></p></section><aside class="tv-side ${rebuyOpen(t,c)?'pre-rebuys':'post-rebuys'}" data-rebuy-phase="${rebuyPhase(t,c)}">${clockSidebar(t,c)}</aside></main>`}</div>`;}
+function clockScreen(){const t=current(),c=t?clockAt(t,timeNow()):null;return `<div class="tv-shell"><div class="tv-toolbar"><button data-go="home">← Home</button><span class="tv-mode">${online?'CONNECTED':'CONNECTION INTERRUPTED'}</span><button data-action="sound">Sound: ${sound?'on':'off'}</button><button data-action="fullscreen">Full screen ⛶</button></div>${!t?`<div class="tv-empty"><h1>Choose a tournament</h1><p>Open a tournament in the control room, then open its clock display.</p><button class="button gold" data-go="home">Open home screen</button></div>`:`<header class="tv-heading"><div><span>UNO CLUB</span><h1>${esc(t.name)}</h1></div><div id="tv-level">ROUND 1</div></header><main class="tv-grid"><section class="tv-time-panel"><span class="tv-time-label">TIME REMAINING</span><div class="tv-status" id="tv-status"></div><div class="tv-time" id="tv-time">15:00</div><div class="tv-progress"><div id="tv-progress"></div></div><div class="tv-break" id="tv-break"></div></section><section class="tv-blinds-panel"><span id="tv-game">CURRENT BLINDS</span><strong id="tv-blinds">25 / 50</strong><div id="tv-ante">Antes off</div><p class="tv-next-row"><span id="tv-next-label">NEXT BLINDS</span><strong id="tv-next"></strong></p></section><aside class="tv-side ${rebuyOpen(t,c)?'pre-rebuys':'post-rebuys'}" data-rebuy-phase="${rebuyPhase(t,c)}">${clockSidebar(t,c)}</aside></main>`}</div>`;}
 
 function registrationSnapshot(){
   if(view!=='signup'||$('.signup-layout')?.dataset.tournament!==selected)return null;
@@ -76,7 +83,7 @@ function restoreRegistration(snapshot){
 }
 function fitRegistrationViewport(){document.body.style.setProperty('--registration-height',`${window.visualViewport?.height||window.innerHeight}px`);}
 window.addEventListener('resize',fitRegistrationViewport);window.visualViewport?.addEventListener('resize',fitRegistrationViewport);fitRegistrationViewport();
-function render(){const registration=registrationSnapshot();clearInterval(clockTimer);document.body.classList.toggle('registration-page',view==='signup'&&!!current());document.body.classList.toggle('tv',view==='clock');document.body.classList.toggle('home-page',view==='home');if(view==='clock'){app.innerHTML=clockScreen();}else{app.innerHTML=header()+`<div class="workspace">${view==='home'?'':nav()}<main class="content">${({home,setup,players,signup,manage}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.2.6 · ${mode==='cloud'?'Saved to Supabase':'Practice mode'}</span></footer></div>`;}restoreRegistration(registration);tick();clockTimer=setInterval(tick,250);}
+function render(){if(!session){clearInterval(clockTimer);document.body.classList.remove('registration-page','tv','home-page');app.innerHTML=signInScreen();return;}const registration=registrationSnapshot();clearInterval(clockTimer);document.body.classList.toggle('registration-page',view==='signup'&&!!current());document.body.classList.toggle('tv',view==='clock');document.body.classList.toggle('home-page',view==='home');if(view==='clock'){app.innerHTML=clockScreen();}else{app.innerHTML=header()+importNotice()+`<div class="workspace">${view==='home'?'':nav()}<main class="content">${({home,setup,players,signup,manage}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.2.7 · ${online?'Saved online':'Connection interrupted'}</span></footer></div>`;}restoreRegistration(registration);tick();clockTimer=setInterval(tick,250);}
 function setText(selector,text){const el=$(selector);if(el&&el.textContent!==String(text))el.textContent=text;}
 function formatTime(ms){const sec=Math.max(0,Math.ceil(ms/1000));return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}
 function nextBreak(t,c){if(t.levels[c.index].kind==='break')return 'Break in progress';let ms=c.remainingMs;for(let i=c.index+1;i<t.levels.length;i++){if(t.levels[i].kind==='break')return 'Next break in '+formatTime(ms);ms+=t.levels[i].minutes*60000;}return 'No further breaks scheduled';}
@@ -88,31 +95,65 @@ function tick(){const t=current();if(!t)return;const c=clockAt(t,timeNow()),l=t.
   $('#tv-time')?.classList.toggle('urgent',c.remainingMs<=60000&&c.status==='running');if($('#tv-progress'))$('#tv-progress').style.width=(100*Math.min(1,c.remainingMs/(l.minutes*60000)))+'%';
   const b=$('#clock-main');if(b){const command=c.status==='running'?'pause':c.status==='ready'?'start':'resume';b.dataset.clock=command;b.textContent=c.status==='running'?'Pause clock':c.status==='ready'?'Start tournament':'Resume clock';b.disabled=busy||c.status==='ended'||t.status==='completed';}
   const key=`${t.id}/${c.index}/${c.status}`;if(lastClockKey&&key!==lastClockKey&&view==='clock'&&sound)beep();lastClockKey=key;
-  if(view==='clock'&&mode==='cloud') {setText('#tv-footer-status',online?'Live · Connected':remoteError?'Offline · Clock continues; changes not received':'Connecting…');setText('.tv-mode',online?'CLOUD CONNECTED':'CONNECTION INTERRUPTED');}
+  if(view==='clock') {setText('#tv-footer-status',online?'Live · Connected':remoteError?'Offline · Clock continues; changes not received':'Connecting…');setText('.tv-mode',online?'CLOUD CONNECTED':'CONNECTION INTERRUPTED');}
 }
 function beep(){try{const C=window.AudioContext||window.webkitAudioContext;const ctx=new C();const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=660;g.gain.value=.12;o.start();o.stop(ctx.currentTime+.35);o.onended=()=>ctx.close();}catch{}}
-async function commit(action){if(busy)return false;busy=true;document.body.classList.add('saving');try{
-    if(mode==='cloud'&&!online)throw new Error('Reconnect before making changes. The clock will continue.');
+async function commit(action){if(busy)return false;const user=session?.user.id;busy=true;document.body.classList.add('saving');try{
+    if(!session)throw new Error('Sign in before making changes.');
+    if(!online)throw new Error('Reconnect before making changes. The clock will continue.');
     const next=execute(state,action,timeNow());
-    if(mode==='cloud'){
+    {
       const {data,error}=await db.rpc('td_save_workspace',{p_expected_version:version,p_state:next});
+      if(session?.user.id!==user)return false;
       if(error){if(error.message.includes('TD_CONFLICT')){await refresh(true);throw new Error('Another device changed the tournament. Review the latest information and try again.');}throw error;}
       const saved=Array.isArray(data)?data[0]:data;if(!saved?.state)throw new Error('Save response was incomplete. Refresh before retrying.');
       state=upgradeState(saved.state);version=Number(saved.version);lastSync=Date.now();online=true;
-    }else{state=next;localStorage.setItem(localKey,JSON.stringify(state));}
+    }
     render();return true;
   }catch(error){toast(error.message||'Could not save. Please retry.',true);return false;}finally{busy=false;document.body.classList.remove('saving');tick();}}
-async function synchronizeTime(){const before=performance.now();const {data,error}=await db.rpc('td_server_time');if(!error)serverSample={epoch:Date.parse(data),mono:(before+performance.now())/2};}
-async function refresh(force=false){if(mode!=='cloud'||!session||(busy&&!force))return;try{
-    const {data,error}=await db.from('td_workspaces').select('state,version,updated_at').eq('owner_id',session.user.id).maybeSingle();if(error)throw error;
+async function synchronizeTime(){if(!session)return;const user=session.user.id,before=performance.now();const {data,error}=await db.rpc('td_server_time');if(!error&&session?.user.id===user)serverSample={epoch:Date.parse(data),mono:(before+performance.now())/2};}
+async function refresh(force=false){if(!session||(busy&&!force))return;const user=session.user.id;try{
+    const {data,error}=await db.from('td_workspaces').select('state,version,updated_at').eq('owner_id',session.user.id).maybeSingle();if(session?.user.id!==user)return;if(error)throw error;
     let changed=false;if(data&&Number(data.version)>version){state=upgradeState(data.state);version=Number(data.version);changed=true;}
     const wasOffline=!online;online=true;remoteError='';lastSync=Date.now();
     if((changed||wasOffline)&&!dlg.open&&!editor&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))render();
-  }catch(e){const changed=online;online=false;remoteError=e.message||'Could not reach Supabase.';if(changed&&!dlg.open&&!editor)render();}}
-async function enterCloud(){if(channel){await db.removeChannel(channel);channel=null;}mode='cloud';version=0;state=initialState();serverSample=null;online=false;remoteError='Connecting to your saved tournaments…';render();await synchronizeTime();await refresh();channel=db.channel('workspace-'+session.user.id).on('postgres_changes',{event:'*',schema:'public',table:'td_workspaces',filter:'owner_id=eq.'+session.user.id},()=>refresh()).subscribe();render();}
-async function enterPractice(){if(channel){await db.removeChannel(channel);channel=null;}mode='practice';state=loadPractice();version=0;serverSample=null;online=false;editor=null;render();}
+  }catch(e){if(session?.user.id!==user)return;const changed=online;online=false;remoteError=e.message||'Could not reach Supabase.';if(changed&&!dlg.open&&!editor)render();}}
+function markBrowserImported(){legacyPending=false;legacyError='';try{localStorage.setItem(migrationKey,session.user.id);}catch{}}
+async function saveInitialWorkspace(){
+  if(!session||!online||version!==0)return;
+  const user=session.user.id;busy=true;
+  try{
+    const {data,error}=await db.rpc('td_save_workspace',{p_expected_version:0,p_state:legacyPending?legacy:state});
+    if(session?.user.id!==user)return;if(error)throw error;const saved=Array.isArray(data)?data[0]:data;if(!saved?.state)throw new Error('Save response was incomplete.');
+    state=upgradeState(saved.state);version=Number(saved.version);if(legacyPending){markBrowserImported();toast('Your saved players and tournaments are now saved online.');}
+  }catch(error){if(error.message.includes('TD_CONFLICT'))await refresh(true);else{online=false;remoteError='Could not save your starting data. Retry the connection; your browser copy is kept.';}}
+  finally{busy=false;render();}
+}
+async function importBrowserData(){
+  if(!legacyPending||!session||!online||busy)return;busy=true;const user=session.user.id;
+  try{
+    const next=version===0?legacy:mergeBrowserWorkspace(state,legacy);
+    const {data,error}=await db.rpc('td_save_workspace',{p_expected_version:version,p_state:next});
+    if(session?.user.id!==user)return;if(error)throw error;const saved=Array.isArray(data)?data[0]:data;if(!saved?.state)throw new Error('Save response was incomplete.');
+    state=upgradeState(saved.state);version=Number(saved.version);markBrowserImported();toast('Saved players and tournaments brought into your account.');
+  }catch(error){if(error.message.includes('TD_CONFLICT')){await refresh(true);legacyError='Another device saved a change. Review your account and try bringing over the saved data again.';}else legacyError=error.message||'Could not bring over saved data. The browser copy is kept.';}
+  finally{busy=false;render();}
+}
+async function enterCloud(){
+  const user=session?.user.id;if(!user)return;if(channel){await db.removeChannel(channel);channel=null;}
+  version=0;state=initialState();serverSample=null;online=false;remoteError='Opening your saved tournaments…';render();await synchronizeTime();if(session?.user.id!==user)return;await refresh();if(session?.user.id!==user)return;
+  if(online&&version===0)await saveInitialWorkspace();if(session?.user.id!==user)return;
+  channel=db.channel('workspace-'+user).on('postgres_changes',{event:'*',schema:'public',table:'td_workspaces',filter:'owner_id=eq.'+user},()=>refresh()).subscribe();render();
+}
+function acceptSession(next){
+  authReady=true;authError='';const user=next?.user?.id||'';session=next;
+  if(user===connectedUser){if(!user)render();return;}
+  connectedUser=user;
+  if(!user){const previous=channel;channel=null;if(previous)void db.removeChannel(previous);state=initialState();version=0;online=false;editor=null;serverSample=null;if(dlg.open)dlg.close();render();return;}
+  return enterCloud();
+}
 function modal(title,body){dlg.innerHTML=`<div class="modal-heading"><h2>${title}</h2><button type="button" class="icon-button" data-action="close-modal" aria-label="Close dialog">×</button></div>${body}`;if(!dlg.open)dlg.showModal();}
-function showAccount(){modal('Computer & phone access',`<p class="muted">Sign in to the same Tournament Director data account on your computer and phone. Your Supabase dashboard password is separate.</p>${session?`<div class="account-status"><strong>${esc(session.user.email)}</strong><p>${mode==='cloud'?'Using your shared tournament data.':'Currently using practice data.'}</p><button class="button primary" data-action="use-cloud">Use shared tournaments</button><button class="button secondary" data-action="signout">Sign out of data account</button></div>`:`<form id="auth-form"><label>Email<input type="email" name="email" autocomplete="email" required></label><label>Password<input type="password" name="password" autocomplete="current-password" minlength="8" required></label><div class="button-row"><button class="button primary" name="authAction" value="login">Sign in</button><button class="button secondary" name="authAction" value="signup">Create data account</button></div><p id="auth-feedback" class="muted" role="status">For a new account, confirm your email if prompted, then sign in here on each device.</p></form>`}<hr><h3>Try it first</h3><p class="muted">Practice data stays in this browser. It is separate from cloud tournaments and does not sync to your phone.</p><button class="button secondary" data-action="use-practice">Use practice mode</button>`);}
+function showAccount(){if(!session){render();return;}modal('Your Uno Club account',`<div class="account-status"><strong>${esc(session.user.email)}</strong><p>Players, tournament structures and results save to your account. Sign in with this same account on your phone and computer.</p><button class="button secondary" data-action="signout">Sign out</button></div>`);}
 function newTournament(templateId){modal('Create a tournament',`<form id="new-tournament-form"><label>Tournament name<input name="name" placeholder="Wednesday tournament" required maxlength="120"></label><label>Tournament date<input type="date" name="date" value="${today()}" required></label><label>Saved structure<select name="templateId">${state.templates.map(s=>`<option value="${s.id}" ${s.id===templateId?'selected':''}>${esc(s.name)}</option>`).join('')}</select></label><p class="muted">This creates an independent copy. You can change its settings without changing the saved structure.</p><button class="button primary full">Create tournament</button></form>`);}
 function newPlayer(){modal('Add a player',`<form id="player-form"><label>Player name<input name="name" value="${esc(view==='signup'?signupSearch:'')}" maxlength="100" placeholder="Name or nickname" autocomplete="off" required></label><p class="name-feedback" id="player-name-feedback" role="status"></p><label>Phone number (optional)<input type="tel" name="phone" maxlength="40" autocomplete="tel"></label><label>Notes (optional)<textarea name="notes" maxlength="1000"></textarea></label><button class="button primary full">Save player</button></form>`);}
 function editTemplate(templateId,copy=false){const value=clone(state.templates.find(t=>t.id===templateId));if(copy){value.id=id();value.name+=' — copy';}editor={value,isNew:copy,event:false,version};view='setup';render();}
@@ -122,6 +163,7 @@ function seatDialog(entryId){const t=current(),e=t.entries.find(e=>e.id===entryI
 function openClock(){const target=view==='home'?(homeTournament()||current()):current();if(target&&target.id!==selected){selected=target.id;localStorage.setItem('uno-tournament-selected',selected);}if(!target){toast('Choose or create a tournament first.',true);return;}const url=`${APP_ROOT}?view=clock&tournament=${encodeURIComponent(selected)}`;const win=window.open(url,'uno-clock-'+selected,'popup=yes,width=1280,height=800');if(!win)toast('Allow pop-ups for this site to open the clock window.',true);else win.focus();}
 
 document.addEventListener('click',async event=>{const el=event.target.closest('button,a[data-go]');if(!el||el.disabled)return;try{
+  if(!session&&el.dataset.action!=='account'&&el.dataset.action!=='close-modal')return;
   if(el.dataset.go){event.preventDefault();go(el.dataset.go);return;}
   if(el.dataset.registrationPanel){registrationPanel=el.dataset.registrationPanel;$('.signup-layout').dataset.panel=registrationPanel;for(const button of document.querySelectorAll('[data-registration-panel]'))button.setAttribute('aria-pressed',String(button.dataset.registrationPanel===registrationPanel));return;}
   if(el.dataset.resume){chooseTournament(el.dataset.resume);go('signup');return;}
@@ -143,9 +185,9 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   if(el.dataset.levelDelete!==undefined||el.dataset.levelUp!==undefined||el.dataset.levelDown!==undefined){captureEditor();const l=editor.value.levels;if(el.dataset.levelDelete!==undefined)l.splice(Number(el.dataset.levelDelete),1);else{const i=Number(el.dataset.levelUp??el.dataset.levelDown),j=i+(el.dataset.levelUp!==undefined?-1:1);if(j>=0&&j<l.length)[l[i],l[j]]=[l[j],l[i]];}render();return;}
   switch(el.dataset.action){
     case 'account':showAccount();break;case 'close-modal':dlg.close();break;case 'new-tournament':newTournament();break;case 'add-player':newPlayer();break;
-    case 'players-back':playerDetail=null;render();break;case 'open-clock':openClock();break;case 'refresh':await refresh();break;
-    case 'use-cloud':dlg.close();if(session)await enterCloud();break;case 'use-practice':dlg.close();await enterPractice();break;
-    case 'signout':await db.auth.signOut();session=null;dlg.close();await enterPractice();break;
+    case 'players-back':playerDetail=null;render();break;case 'open-clock':openClock();break;case 'refresh':await refresh();if(online&&version===0)await saveInitialWorkspace();break;
+    case 'import-browser':await importBrowserData();break;
+    case 'signout':{const {error}=await db.auth.signOut();if(error)throw error;acceptSession(null);break;}
     case 'new-structure':{const value=sampleTemplate();value.name='New tournament structure';editor={value,isNew:true,event:false,version};view='setup';render();break;}
     case 'event-settings':{const t=current();editor={event:true,version,value:{id:t.id,name:t.name,settings:clone(t.settings),levels:clone(t.levels)}};view='setup';render();break;}
     case 'close-editor':editor=null;render();break;
@@ -156,12 +198,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
     case 'finish':if(confirm('Confirm the winner and final payouts? This locks the tournament results.'))await commit({type:'finish',tournamentId:selected});break;
     case 'fullscreen':if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else toast('Use your browser’s full-screen option.');break;
     case 'sound':sound=!sound;if(sound)beep();render();break;
-    case 'practice-demo':{
-      if(mode==='cloud')throw new Error('Switch to practice mode first to create a sample tournament.');
-      const eventId=id();let next=execute(state,{type:'tournament-create',id:eventId,name:'Practice tournament',date:today(),templateId:state.templates[0].id},timeNow());
-      for(let i=1;i<=4;i++){let p=next.players.find(p=>p.name==='Practice Player '+i);if(!p){const pid=id();next=execute(next,{type:'player-save',id:pid,name:'Practice Player '+i});p=next.players.find(p=>p.id===pid);}next=execute(next,{type:'register',tournamentId:eventId,playerId:p.id,paid:true},timeNow());}
-      state=next;localStorage.setItem(localKey,JSON.stringify(state));chooseTournament(eventId);go('manage');toast('Practice tournament ready. Try starting the clock.');break;
-    }
+
   }
 }catch(e){toast(e.message||'Something went wrong.',true);}});
 function formatChipInput(input){
@@ -182,14 +219,14 @@ document.addEventListener('submit',async event=>{event.preventDefault();const fo
     const feedback=$('#auth-feedback');feedback.textContent='Connecting…';const method=event.submitter?.value==='signup'?'signUp':'signInWithPassword';
     const buttons=form.querySelectorAll('button');buttons.forEach(b=>b.disabled=true);
     try{const payload={email:String(fd.get('email')),password:String(fd.get('password'))};if(method==='signUp')payload.options={emailRedirectTo:location.origin+APP_ROOT};const {data,error}=await db.auth[method](payload);if(error)throw error;
-      if(data.session){session=data.session;dlg.close();await enterCloud();toast('Signed in. Open this site and use the same data account on your phone.');}
+      if(data.session){if(dlg.open)dlg.close();await acceptSession(data.session);toast('Signed in. Use this same account on your phone and computer.');}
       else feedback.textContent='Check your email to confirm the account, then return here and sign in.';
     }catch(e){feedback.textContent=e.message;}finally{buttons.forEach(b=>b.disabled=false);}return;
   }
   if(form.id==='player-form'){if(await commit({type:'player-save',id:fd.get('id')||id(),name:fd.get('name'),phone:fd.get('phone'),notes:fd.get('notes')})){if(dlg.open)dlg.close();toast('Player saved.');render();}return;}
   if(form.id==='new-tournament-form'){const eventId=id();if(await commit({type:'tournament-create',id:eventId,name:fd.get('name'),date:fd.get('date'),templateId:fd.get('templateId')})){dlg.close();chooseTournament(eventId);go('signup');toast('Tournament created.');}return;}
   if(form.id==='structure-form'){
-    if(mode==='cloud'&&editor.version!==version)throw new Error('Data changed on another device. Reopen this editor before saving.');captureEditor();const saved=clone(editor);
+    if(editor.version!==version)throw new Error('Data changed on another device. Reopen this editor before saving.');captureEditor();const saved=clone(editor);
     const action=saved.event?{type:'tournament-settings',tournamentId:saved.value.id,settings:saved.value.settings,...(form.querySelector('[data-level]')?{levels:saved.value.levels}:{})}:{type:'template-save',template:saved.value};
     if(await commit(action)){editor=null;render();toast(saved.event?'Tournament settings saved.':'Structure saved.');}return;
   }
@@ -198,11 +235,11 @@ document.addEventListener('submit',async event=>{event.preventDefault();const fo
   if(form.id==='seat-form'){const value=fd.get('seat'),[table,seat]=value==='unseated'?[null,null]:value.split('/').map(Number);if(await commit({type:'seat',tournamentId:selected,entryId:fd.get('entryId'),table,seat})){dlg.close();toast('Seat saved.');}return;}
 }catch(e){toast(e.message,true);}});
 window.addEventListener('popstate',()=>{view=new URLSearchParams(location.search).get('view')||'home';editor=null;render();});
-window.addEventListener('storage',event=>{if(mode==='practice'&&event.key===localKey){state=loadPractice();if(!editor&&!dlg.open)render();}});
 window.addEventListener('online',()=>refresh());
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){synchronizeTimeIfCloud();refresh();tick();}});
-function synchronizeTimeIfCloud(){if(mode==='cloud')synchronizeTime();}
-setInterval(()=>refresh(),2500);setInterval(synchronizeTimeIfCloud,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){synchronizeTimeIfSignedIn();refresh();tick();}});
+function synchronizeTimeIfSignedIn(){if(session)synchronizeTime();}
+setInterval(()=>refresh(),2500);setInterval(synchronizeTimeIfSignedIn,60000);
 render();
-db.auth.getSession().then(async({data,error})=>{if(error){toast('Cloud sign-in unavailable. You can use practice mode.',true);return;}session=data.session;if(session)await enterCloud();});
-db.auth.onAuthStateChange((event,newSession)=>{session=newSession;if(event==='TOKEN_REFRESHED')refresh();if(event==='SIGNED_OUT'&&mode==='cloud')enterPractice();});
+let authEventSeen=false;
+db.auth.onAuthStateChange((event,newSession)=>{authEventSeen=true;setTimeout(()=>{if(event==='TOKEN_REFRESHED'){session=newSession;void refresh();}else void acceptSession(newSession);},0);});
+db.auth.getSession().then(({data,error})=>{if(authEventSeen)return;if(error){authReady=true;authError='Could not restore your sign-in. Please sign in again.';render();return;}void acceptSession(data.session);}).catch(()=>{authReady=true;authError='Could not connect to sign-in. Please try again.';render();});

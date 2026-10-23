@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.2.6
+# Uno Club Tournament Director — v0.2.7
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -15,12 +15,13 @@ This repository contains the tournament app source and prebuilt website files. S
 
 The home screen has Tournament Setup, Player Database, Tournament Registration, Tournament Management and Open Clock Display. Open Clock Display requests a separate browser window, which can be moved to an extended HDMI display. Phone and desktop use responsive management screens.
 
-## Two data modes
+## Account access and storage
 
-- **Practice:** data is stored in localStorage in that browser and does not sync between devices. The home screen starts empty until players are registered.
-- **Cloud:** sign in with the same Supabase data account on each device. This data account is separate from Supabase dashboard access. Accounts are created by the user through the explicit Create Data Account form; confirmation emails may be required. No player roster has been imported from another app. Cloud mode starts without player/tournament data and does not automatically import practice records.
+The app requires a Tournament Director account. Create an account on the opening screen, confirm the email if prompted, and sign in with the same account on the computer and phone. Existing Supabase dashboard access is separate from this app account. The app keeps the signed-in session between visits through Supabase Auth. There is no practice mode or browser-only editing. All changes use authenticated Supabase saves; failed saves retain the previous state and report an error. Signing out clears the displayed workspace and returns to sign-in.
 
-The GitHub repository is public. The application uses Supabase Auth and row security to protect tournament data. Practice mode is browser-local. The publishable key in `src/config.mjs` is intentionally browser-safe. No privileged key or password is in the source. Supabase project: Tournament Director (`jtoeihxodhejqukezwpb`). It was restored from INACTIVE and the new `td_workspaces` table and RPCs were applied via the `tournament_director_base` migration. Existing projects were not modified.
+Existing browser records from earlier versions are read only for transfer. On the first sign-in to an empty account, the complete browser document is saved online with its original internal IDs, tournament references, structures, payments and history. The original browser backup is retained. If the account already contains data, a **Bring over saved data** action merges new records without replacing existing ones, assigns unused visible numbers to incoming players, and rejects conflicting names or differing versions before saving anything. A successful transfer is marked on that browser so it does not repeat. No roster is imported from other Uno Club apps.
+
+The GitHub repository is public. The browser publishable key in `src/config.mjs` is intentionally browser-safe; no privileged key or password is in the source. Supabase project: Tournament Director (`jtoeihxodhejqukezwpb`). Owner row security and atomic expected-version saves protect each account.
 
 ## Persistence and concurrency
 
@@ -41,9 +42,9 @@ Document storage is an initial implementation choice, not the earlier relational
 ## Validation
 
 - Node scenario tests cover delayed starts, pause/resume, catch-up, break boundaries, last level, template isolation, optional antes, payments, payouts, eliminations, undo, seating, completion and stable player identities.
-- jsdom scenarios exercise home visibility, player add/edit/duplicate checks, phone persistence, permanent IDs, registration, separate clock-window requests, clock start, automatic pre/post-rebuy layout transitions and cross-window practice updates. Auth is stubbed; these tests do not prove hosted sign-in or Realtime delivery.
+- jsdom scenarios exercise home visibility, player add/edit/duplicate checks, phone persistence, permanent IDs, registration, separate clock-window requests, clock start, automatic pre/post-rebuy layout transitions and account updates. Supabase Auth and data calls are stubbed; these tests cover the signed-out gate, session restoration, email confirmation, sign-out, local-record import, save failures and stale-write retry, but do not prove hosted email delivery or cross-device Realtime delivery.
 - `backend/verify-rls.sql` passed against hosted Supabase. It runs inside a rolled-back transaction and tests create/update, stale revisions, owner reassignment, cross-user reads/writes and anonymous denial. Security Advisor returned no lints.
-- Rendered browser QA was blocked by browser access restrictions. Real-device sign-in, email confirmation, cross-device delivery, pop-up/fullscreen behavior, visual layout on Windows/TV and iPhone, and alert audio still require a practice run.
+- Rendered browser QA was blocked by browser access restrictions. Real-device sign-in, email confirmation, cross-device delivery, pop-up/fullscreen behavior, visual layout on Windows/TV and iPhone, and alert audio still require an on-device check.
 
 ## v0.1.2 compatibility
 
@@ -95,3 +96,9 @@ Practice records upgrade when loaded and persist with the next save. The cloud i
 ## v0.2.6 registration scrolling
 
 Tournament Registration fills the available viewport. Available and registered players scroll inside independently sized regions while search, payment selection and navigation remain in place. Filtering resets only the available-player list's scroll; its region no longer shrinks with result count. Registration rerenders retain list scroll, payment selection and focused search/caret. Phones switch between Find a player and Registered lists. Dynamic viewport sizing follows the phone keyboard; short viewports compact the header and summary to leave room for search and results. Other pages retain normal document scrolling.
+
+## v0.2.7 normal account-based use
+
+Removed practice mode and sample-event shortcuts. The opening screen requires sign-in or account creation, and normal screens always use Supabase. Existing browser data transfers to an empty account after sign-in, with a guarded merge option if the account already has records. The app retains the old browser copy and never falls back to local editing on connection or save failure. Sign-out clears the displayed workspace. Auth state callbacks defer API work outside the callback to avoid SDK deadlocks. Database policies and existing workspace storage remain unchanged.
+
+Release validation: 38 automated scenarios passed, including the cloud-only gate, initial import, existing-account merge, conflicts and failed saves. The hosted project is active; email signup is enabled with confirmation required; database checks reject anonymous reads/writes and saves without a signed-in identity. Security Advisor returned no lints. The Supabase dashboard requires a separate login, and automatic browser approval rejected starting that login through GitHub. The email redirect allowlist was therefore not inspected or changed. After confirming email, return to the app and sign in if the email link does not reopen it. End-to-end email delivery and a real two-device session still require the organizer's first account setup; no account or password was created on their behalf.
