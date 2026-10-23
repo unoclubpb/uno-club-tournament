@@ -93,3 +93,25 @@ test('player phone numbers normalize ten digits and reject malformed values with
  }
  s=execute(s,{type:'player-save',id:'phone-player',name:'Phone Player',phone:''});assert.equal(s.players[0].phone,'');assert.equal(s.players[0].id,'phone-player');
 });
+
+test('seat capacity is per tournament, preserves valid assignments and relocates removed seats',()=>{
+ let {s,event}=setup(20);s=act(s,event,{type:'auto-seat'});const before=clone(s.tournaments[0]),valid=before.entries.filter(e=>e.seat<=9);
+ s=act(s,event,{type:'seating-settings',seatsPerTable:9});const t=s.tournaments[0];assert.equal(t.settings.seatsPerTable,9);assert.equal(tablesRequired(t),3);assert.equal(tablesInUse(t),3);assert.equal(s.templates[0].settings.seatsPerTable,10);assert.deepEqual(t.clock,before.clock);
+ for(const old of valid){const entry=t.entries.find(e=>e.id===old.id);assert.equal(entry.table,old.table);assert.equal(entry.seat,old.seat);}
+ assert.ok(t.entries.every(e=>e.table>=1&&e.table<=3&&e.seat>=1&&e.seat<=9));assert.equal(new Set(t.entries.map(e=>`${e.table}/${e.seat}`)).size,20);assert.deepEqual(t.entries.map(e=>e.playerId),before.entries.map(e=>e.playerId));
+ const seats=t.entries.map(e=>[e.table,e.seat]);s=act(s,event,{type:'seating-settings',seatsPerTable:10});assert.deepEqual(s.tournaments[0].entries.map(e=>[e.table,e.seat]),seats);
+ for(const seatsPerTable of [0,1,13,1.5,NaN,'9'])assert.throws(()=>act(s,event,{type:'seating-settings',seatsPerTable}),/2–12/);
+});
+
+test('balanced seating accounts for empty, uneven and full tables at nine or ten seats',()=>{
+ for(const capacity of [9,10])for(const players of [0,1,9,10,12,13,18,19,20,21]){
+  let {s,event}=setup(players);s=act(s,event,{type:'seating-settings',seatsPerTable:capacity});s=act(s,event,{type:'auto-seat'});const t=s.tournaments[0],count=tablesRequired(t),loads=Array.from({length:count},(_,i)=>t.entries.filter(e=>e.table===i+1).length);
+  assert.equal(count,Math.ceil(players/capacity));assert.equal(loads.reduce((n,v)=>n+v,0),players);if(count)assert.ok(Math.max(...loads)-Math.min(...loads)<=1);assert.ok(t.entries.every(e=>e.seat<=capacity));
+  if(players===12)assert.deepEqual(loads,[6,6]);if(players===13)assert.deepEqual(loads,[7,6]);
+ }
+});
+
+test('undo elimination never restores a removed seat and finished tournaments lock capacity',()=>{
+ let {s,event}=setup(20);s=act(s,event,{type:'auto-seat'});const victim=s.tournaments[0].entries.find(e=>e.seat===10).id;s=act(s,event,{type:'eliminate',entryId:victim});s=act(s,event,{type:'seating-settings',seatsPerTable:9});s=act(s,event,{type:'undo-elimination'});const restored=s.tournaments[0].entries.find(e=>e.id===victim);assert.equal(restored.eliminatedAt,null);assert.equal(restored.table,null);assert.equal(restored.seat,null);
+ const one=setup(1);const finished=act(one.s,one.event,{type:'finish'});assert.throws(()=>act(finished,one.event,{type:'seating-settings',seatsPerTable:9}),/locked/);
+});

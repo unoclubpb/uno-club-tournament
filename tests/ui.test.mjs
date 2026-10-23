@@ -263,3 +263,16 @@ test('phone add and edit fields format plain digits and block invalid saves; arc
   form=ui.q('#player-form');ui.input(form.elements.phone,'');assert.equal(form.elements.phone.checkValidity(),true);await ui.submit(form);assert.equal(ui.stored().players.find(p=>p.id===player.id).phone,'');assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
+
+test('seats are configured in management, display capacity and balance twelve players six per table',async()=>{
+ let s=initialState();for(let i=1;i<=13;i++)s=execute(s,{type:'player-save',id:'p'+i,name:'Seat Player '+i});s=execute(s,{type:'tournament-create',id:'t1',name:'Seating',templateId:s.templates[0].id});for(let i=1;i<=12;i++)s=execute(s,{type:'register',tournamentId:'t1',playerId:'p'+i});
+ const ui=await boot('https://example.test/uno-club-tournament/',s,'setup','t1');
+ try{
+  ui.click('[data-edit-template]');assert.equal(ui.q('#structure-form [name=seatsPerTable]'),null);ui.click('[data-action=close-editor]');ui.click('[data-action=event-settings]');assert.equal(ui.q('#structure-form [name=seatsPerTable]'),null);ui.click('[data-action=close-editor]');
+  ui.click('[data-go=manage]');ui.click('[data-tab=tables]');let form=ui.q('#seating-settings-form');assert.equal(form.elements.seatsPerTable.value,'10');ui.input(form.elements.seatsPerTable,'9');await ui.submit(form);
+  assert.equal(ui.stored().tournaments[0].settings.seatsPerTable,9);assert.equal(ui.w.document.querySelectorAll('.seat-table').length,2);assert.equal(ui.w.document.querySelectorAll('.seat-number').length,18);assert.match(ui.q('.seating-plan').textContent,/6 \/ 6/);
+  ui.click('[data-action=auto-seat]');await flush();assert.deepEqual([...ui.w.document.querySelectorAll('.seat-table h3 small')].map(e=>e.textContent),['6 of 9 seats filled','6 of 9 seats filled']);assert.equal(ui.q('.seat-table .text-button').textContent,'Move');
+  await ui.storage(execute(ui.stored(),{type:'register',tournamentId:'t1',playerId:'p13'}));form=ui.q('#seating-settings-form');ui.input(form.elements.seatsPerTable,'10');await ui.submit(form);assert.equal(ui.w.document.querySelectorAll('.seat-number').length,20);assert.match(ui.q('.seating-plan').textContent,/7 \/ 6/);
+  ui.click('[data-action=auto-seat]');await flush();assert.deepEqual([...ui.w.document.querySelectorAll('.seat-table h3 small')].map(e=>e.textContent),['7 of 10 seats filled','6 of 10 seats filled']);assert.equal(ui.stored().templates[0].settings.seatsPerTable,10);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});

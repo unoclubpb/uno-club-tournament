@@ -167,6 +167,18 @@ export function execute(state,action,now=Date.now()){
     check(Number.isSafeInteger(a.count*t.settings.rebuyAmount)&&Number.isSafeInteger(a.count*t.settings.rebuyChips),'Rebuy count is too large.');
     t.rebuyCount=a.count;return s;
   }
+  if(a.type==='seating-settings'){
+    check(Number.isSafeInteger(a.seatsPerTable)&&a.seatsPerTable>=2&&a.seatsPerTable<=12,'Use 2–12 seats per table.');
+    t.settings.seatsPerTable=a.seatsPerTable;
+    const remaining=t.entries.filter(e=>!e.eliminatedAt),displaced=remaining.filter(e=>e.seat>a.seatsPerTable);
+    for(const entry of displaced){entry.table=null;entry.seat=null;}
+    const count=tablesInUse(t);
+    for(const entry of displaced){
+      const available=Array.from({length:count},(_,i)=>({table:i+1,entries:remaining.filter(e=>e.table===i+1)})).filter(v=>v.entries.length<a.seatsPerTable).sort((a,b)=>a.entries.length-b.entries.length||a.table-b.table)[0];
+      check(available,'No seat is available.');entry.table=available.table;entry.seat=Array.from({length:a.seatsPerTable},(_,i)=>i+1).find(seat=>!available.entries.some(e=>e.seat===seat));
+    }
+    return s;
+  }
   const e=t.entries.find(e=>e.id===a.entryId);
   if(['payment','eliminate','seat'].includes(a.type))check(e,'Player entry not found.');
   if(a.type==='payment'){
@@ -183,7 +195,7 @@ export function execute(state,action,now=Date.now()){
   }
   if(a.type==='undo-elimination'){
     const undo=t.eliminationUndo.pop();check(undo,'No elimination to undo.');const p=t.entries.find(e=>e.id===undo.entryId);check(p,'Entry not found.');p.eliminatedAt=null;p.place=null;
-    if(!t.entries.some(e=>!e.eliminatedAt&&e.table===undo.table&&e.seat===undo.seat)){p.table=undo.table;p.seat=undo.seat;}return s;
+    if(undo.table&&undo.seat>=1&&undo.seat<=t.settings.seatsPerTable&&!t.entries.some(e=>!e.eliminatedAt&&e.table===undo.table&&e.seat===undo.seat)){p.table=undo.table;p.seat=undo.seat;}return s;
   }
   if(a.type==='seat'){
     check(!e.eliminatedAt,'Only remaining players can be seated.');

@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.5
+# Uno Club Tournament Director — v0.3.6
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -148,3 +148,10 @@ Player details show Phone number and a read-only Last played date on the same ro
 ## v0.3.5 phone validation and red archive labels
 
 Optional player phone numbers accept exactly ten digits or the matching `###-###-####` form. Ten plain digits automatically format; letters, extra or missing digits, country codes and other separators are rejected. The same rule applies to add/edit forms, player-save actions and the installed Supabase player-integrity trigger, which also normalizes plain digits before storage. No existing phone numbers needed correction at deployment. Profile `(Archived)` and player-list `Archived` labels are red.
+
+
+## v0.3.6 seats managed at the tables
+
+Seats per table is configured under Tournament Management → Tables & seats, with an Apply seats action. Removed it from reusable structure and tournament setup forms. Capacity stays per event, accepts 2–12 seats and updates displayed seats and calculated table count. Changing capacity retains valid assignments; players occupying removed seat numbers move into free seats, preferring tables with fewer players. Eliminated players keep their results, and undo never restores an unavailable seat.
+
+The seating screen distinguishes capacity from occupancy, shows players seated at each table and previews the balanced distribution. Shuffle & seat uses the existing round-robin algorithm: 12 players at nine-seat tables use two tables with six players each; 13 use seven and six. It only moves players when explicitly applied; table count is derived from remaining players rather than configured in setup.
