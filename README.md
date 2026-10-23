@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.2.7
+# Uno Club Tournament Director — v0.2.8
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -102,3 +102,7 @@ Tournament Registration fills the available viewport. Available and registered p
 Removed practice mode and sample-event shortcuts. The opening screen requires sign-in or account creation, and normal screens always use Supabase. Existing browser data transfers to an empty account after sign-in, with a guarded merge option if the account already has records. The app retains the old browser copy and never falls back to local editing on connection or save failure. Sign-out clears the displayed workspace. Auth state callbacks defer API work outside the callback to avoid SDK deadlocks. Database policies and existing workspace storage remain unchanged.
 
 Release validation: 38 automated scenarios passed, including the cloud-only gate, initial import, existing-account merge, conflicts and failed saves. The hosted project is active; email signup is enabled with confirmation required; database checks reject anonymous reads/writes and saves without a signed-in identity. Security Advisor returned no lints. The Supabase dashboard requires a separate login, and automatic browser approval rejected starting that login through GitHub. The email redirect allowlist was therefore not inspected or changed. After confirming email, return to the app and sign in if the email link does not reopen it. End-to-end email delivery and a real two-device session still require the organizer's first account setup; no account or password was created on their behalf.
+
+## v0.2.8 fixed home screen
+
+The signed-in home page fills the available viewport, with no document or menu scrolling. All five menu buttons share the remaining space below the header and optional Current Tournament card. The desktop retains its three-plus-two grid; phones use five compact stacked buttons. Short viewports remove menu descriptions and secondary tournament summary values to retain visible actions. The Current Tournament name truncates within the card and exposes its full name on hover. Shared visual viewport sizing follows window changes; registration retains its independently scrolling lists. Other pages and the signed-out screen retain their existing layouts.
