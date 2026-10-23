@@ -338,3 +338,48 @@ body.saving .seat-lock-button{pointer-events:none;opacity:.6}
 
 /* Keep the management banner, tournament bar and navigation together above the scrolling page. */
 .management-chrome{position:sticky;top:0;z-index:30;background:var(--bg);isolation:isolate}
+
+/* Clock controls disappear with inactivity even when the pointer rests on the TV display. */
+.tv-shell .tv-toolbar{opacity:1;transform:none;visibility:visible;transition:opacity .2s,visibility .2s}
+.tv-shell .tv-toolbar.is-idle{opacity:0;visibility:hidden;pointer-events:none}
+
+/* Page titles and actions share the main banner; Home keeps its original header. */
+.page-banner.header{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) minmax(0,1fr);gap:18px;height:auto;min-height:86px;width:100%;padding:12px 34px}
+.page-banner .brand{min-width:0;font-size:clamp(24px,3vw,40px)}
+.page-banner .brand small{font-size:clamp(7px,.85vw,11px);letter-spacing:1.2px}
+.page-banner-title{min-width:0;text-align:center}
+.page-banner-title h1{font-size:clamp(21px,2.35vw,32px);line-height:1.15;letter-spacing:-.5px;overflow-wrap:anywhere}
+.page-banner-title>small{display:block;color:var(--muted);font-size:11px;margin-top:5px}
+.page-banner .header-right{min-width:0;justify-self:end;flex-direction:row;justify-content:flex-end;flex-wrap:wrap;gap:8px}
+.page-banner .header-right>.button{min-height:36px;font-size:12px;padding:8px 11px;max-width:100%}
+.page-banner .connection{flex-shrink:0}
+/* The clock controls sit above a left-hand section menu and its content pane. */
+.management-layout{display:grid;grid-template-columns:180px minmax(0,1fr);gap:22px;align-items:start;margin-top:24px}
+.management-sidebar{display:flex;flex-direction:column;gap:10px;min-width:0}
+.management-sidebar>button{width:100%;min-height:52px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--muted);font-weight:600;padding:14px 16px;text-align:left;line-height:1.35;overflow-wrap:anywhere}
+.management-sidebar>button.active{color:var(--gold);border-color:var(--gold);background:#d4af3714}
+.management-panel{min-width:0;margin:0}
+.management-panel .section-label{flex-wrap:wrap}
+.management-panel .seat-tables{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.management-panel .form-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
+@media(max-width:1000px){.page-banner.header{padding:10px 22px;gap:12px}.management-layout{grid-template-columns:150px minmax(0,1fr);gap:16px}}
+@media(max-width:700px){
+ .page-banner.header{min-height:76px;padding:8px 14px;gap:8px;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr)}
+ .page-banner .brand{font-size:22px;letter-spacing:0}.page-banner .brand small{font-size:6px;letter-spacing:.5px;margin-top:5px}
+ .page-banner-title h1{font-size:17px;letter-spacing:-.25px}.page-banner-title>small{font-size:9px;margin-top:3px}
+ .page-banner .header-right{flex-direction:column;gap:5px;align-items:flex-end}.page-banner .header-right>.button{min-height:30px;font-size:10px;padding:5px 7px}
+ .page-banner .connection{min-height:26px;font-size:9px;padding:5px 7px}
+ .management-layout{grid-template-columns:90px minmax(0,1fr);gap:10px;margin-top:16px}
+ .management-sidebar{gap:7px}.management-sidebar>button{font-size:12px;min-height:48px;padding:11px 8px;border-radius:7px}
+ .management-panel{padding:12px}.management-panel h2{font-size:19px}.management-panel .section-label{gap:10px}
+ .management-panel .seat-table>.seat-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}
+ .management-panel .seat-row>.seat-player-grip,.management-panel .seat-row>.seat-empty{grid-column:1/-1}
+ .management-panel .seat-row>.seat-lock-button{justify-self:end;max-width:none}
+}
+@media(max-height:650px){
+ .page-banner.header{display:grid;min-height:56px;padding-top:6px;padding-bottom:6px}
+ .page-banner .brand{font-size:23px}.page-banner .brand small{font-size:6px;margin-top:3px}
+ .page-banner-title h1{font-size:18px}.page-banner-title>small{font-size:9px;margin-top:2px}
+ .page-banner .header-right{gap:4px}.page-banner .header-right>.button{min-height:28px;font-size:10px;padding:5px 7px}
+ .page-banner .connection{min-height:24px;font-size:9px;padding:4px 7px}
+}

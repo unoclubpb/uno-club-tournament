@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.11
+# Uno Club Tournament Director — v0.3.12
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -198,3 +198,17 @@ Removed the duplicate Open TV clock button beside the Tournament Management titl
 Tournament Management groups the Uno Club banner, current tournament/clock-window bar and navigation in one sticky header. All content beneath the menu scrolls normally, including the management title, clock controls, tabs and table listings. The header follows its actual responsive height without hardcoded row offsets; other pages retain their existing layouts.
 
 Player dragging uses the visible content boundary beneath that header for upward edge scrolling and rejects destinations covered by the header. The Move Players toggle and seat locks retain their existing protections. Existing navigation and seating tests pass, including a touch-drag scenario that scrolls just below the pinned menu and refuses to drop through it. No saved player or tournament data changes are needed.
+
+
+## v0.3.12 consolidated page banners, management sidebar and clock controls
+
+The clock toolbar (Home, cloud status, Sound and Full screen) fades out after three seconds without activity, even when a mouse rests over the screen. Mouse/pointer movement, touch, scrolling, keyboard use, focus, full-screen changes and viewport changes reveal it and restart the delay. Hidden controls are inert and removed from accessibility navigation until revealed. The round number stays in place underneath.
+
+Clock ticks and cloud rerenders preserve the idle deadline and do not reveal the toolbar. Reopening the clock starts with visible controls. This is local display behavior and never writes tournament data. Automated checks cover idle timing, wake events, focus, toolbar replacement, returning to the clock, continued ticking, remote updates and functioning Sound/Full screen actions. Touch and full-screen interactions are simulated rather than tested on a physical iPad.
+
+
+Main Setup, Player Database, Registration and Management page titles now sit centered in the main banner, with their actions on the right beside account status. Removed the duplicate page-heading rows and Run the Room label. Structure editors keep their editing context in the banner and their save/cancel controls; player profiles keep the player name and red Archived status visible there with Back to players. Home retains its existing header and menu layout.
+
+Below the management clock controls, a vertical sidebar contains Players, Tables & Seats, Payouts and Financial Summary. The selected section appears in the adjacent right pane, with an active button highlight, accessible panel labels and keyboard arrow/Home/End navigation. Responsive widths keep the sidebar on the left on phones as well; seat rows put the player name above the manual Move and Lock controls when the right pane is narrow. The pinned top banner, current tournament bar and primary navigation remain in place.
+
+Validation: 96 automated tests pass, including the new banner actions and sidebar section/keyboard navigation plus the paused clock-toolbar timing and touch-wake tests. Production build and whitespace checks pass. No production workspace rows are edited by these checks.

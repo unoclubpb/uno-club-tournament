@@ -449,3 +449,35 @@ test('management keeps all three header rows together and dragging scrolls below
   ui.click('[data-go=players]');assert.equal(ui.q('.management-chrome'),null);assert.ok(ui.q('#player-search'));assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
+
+test('TV controls hide while the clock keeps running, stay hidden through cloud refresh, and wake on touch',async()=>{
+ const s=manualSeatingFixture();s.tournaments[0].clock={index:0,status:'running',remainingMs:900000,deadline:Date.now()+900000};const ui=await boot('https://example.test/',s,'clock','t1');
+ try{
+  assert.equal(ui.q('.tv-toolbar').getAttribute('aria-hidden'),'false');const start=ui.q('#tv-time').textContent;await new Promise(resolve=>setTimeout(resolve,3100));assert.equal(ui.q('.tv-toolbar').getAttribute('aria-hidden'),'true');assert.notEqual(ui.q('#tv-time').textContent,start);assert.equal(ui.q('#tv-level').textContent,'ROUND 1');
+  const remote=ui.stored();remote.tournaments[0].name='Updated tournament';await ui.storage(remote);assert.match(ui.q('.tv-heading h1').textContent,/Updated tournament/);assert.equal(ui.q('.tv-toolbar').getAttribute('aria-hidden'),'true');ui.w.document.dispatchEvent(new ui.w.Event('touchstart',{bubbles:true}));assert.equal(ui.q('.tv-toolbar').getAttribute('aria-hidden'),'false');assert.equal(ui.q('.tv-toolbar').hasAttribute('inert'),false);
+  ui.click('[data-action=sound]');assert.equal(ui.q('[data-action=sound]').textContent,'Sound: on');let fullscreenCalls=0;ui.w.document.documentElement.requestFullscreen=async()=>{fullscreenCalls++;};ui.click('[data-action=fullscreen]');await flush();assert.equal(fullscreenCalls,1);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('main page titles and actions share the top banner while Home keeps its original layout',async()=>{
+ const ui=await boot('https://example.test/uno-club-tournament/',manualSeatingFixture(),'home','t1');
+ try{
+  const homeHeader=ui.q('.header').outerHTML;assert.equal(ui.q('.page-banner'),null);
+  for(const [page,title] of [['setup','Tournament Setup'],['players','Player Database'],['signup','Tournament Registration'],['manage','Tournament Management']]){
+   ui.click(`[data-go=${page}]`);assert.equal(ui.q('.header h1').textContent,title);assert.equal(ui.w.document.querySelectorAll('h1').length,1);assert.equal(ui.q('.content .page-heading'),null);assert.equal(ui.w.document.querySelectorAll('.nav').length,1);
+   if(page==='setup'){assert.ok(ui.q('.header [data-action=new-tournament]'));ui.click('.header [data-action=new-tournament]');assert.ok(ui.q('#new-tournament-form'));ui.click('[data-action=close-modal]');ui.click('[data-action=new-structure]');assert.equal(ui.q('.header h1').textContent,title);assert.equal(ui.q('.page-banner-title small').textContent,'New structure');ui.click('.header [data-action=close-editor]');assert.ok(ui.q('#saved-structures'));}
+   if(page==='players'){assert.ok(ui.q('.header [data-action=add-player]'));ui.click('.header [data-action=add-player]');assert.ok(ui.q('#player-form'));ui.click('[data-action=close-modal]');}
+  }
+  assert.doesNotMatch(ui.w.document.body.textContent,/RUN THE ROOM/);ui.click('[data-go=home]');assert.equal(ui.q('.header').outerHTML,homeHeader);assert.equal(ui.q('.page-banner'),null);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('management sidebar replaces the right pane and supports keyboard section navigation',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
+ try{
+  assert.equal(ui.q('.management-sidebar').getAttribute('aria-orientation'),'vertical');assert.deepEqual([...ui.w.document.querySelectorAll('.management-sidebar button')].map(b=>b.textContent),['Players','Tables & Seats','Payouts','Financial Summary']);assert.ok(ui.q('.control-panel'));assert.equal(ui.q('.management-layout').contains(ui.q('.control-panel')),false);
+  for(const [tab,selector] of [['tables','#seating-settings-form'],['payouts','#payout-form'],['summary','.summary-grid'],['players','[data-action=undo-elimination]']]){
+   ui.click(`[data-tab=${tab}]`);const panel=ui.q('#management-panel');assert.ok(panel.querySelector(selector));assert.equal(panel.getAttribute('aria-labelledby'),'management-tab-'+tab);assert.equal(ui.q('.management-sidebar [aria-selected=true]').dataset.tab,tab);assert.equal(ui.w.document.activeElement.dataset.tab,tab);
+  }
+  ui.q('[data-tab=players]').dispatchEvent(new ui.w.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true}));assert.ok(ui.q('#seating-settings-form'));assert.equal(ui.w.document.activeElement.dataset.tab,'tables');ui.q('[data-tab=tables]').dispatchEvent(new ui.w.KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));assert.ok(ui.q('.summary-grid'));ui.q('[data-tab=summary]').dispatchEvent(new ui.w.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true}));assert.equal(ui.q('.management-sidebar [aria-selected=true]').dataset.tab,'players');assert.equal(ui.q('#payout-form'),null);assert.equal(ui.q('#seating-settings-form'),null);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
