@@ -10,6 +10,11 @@ export function sampleTemplate() {
   });
   return {id:id(),name:'Uno Club — 15-minute levels',levels,settings:{financeVersion:2,startingStack:5000,buyIn:5000,dealerToke:1000,housePercent:20,rebuyEnabled:true,rebuyAmount:2500,rebuyChips:5000,rebuyLastRound:6,rebuyMax:0,addonEnabled:false,addonAmount:9000,addonChips:20000,addonLastRound:4,anteMode:'off',pauseBreaks:true,seatsPerTable:10,houseContribution:0,payoutMode:'percent',payouts:[65,35]}};
 }
+export const playerNumberLabel=p=>String(p.playerNumber).padStart(3,'0');
+function assignPlayerNumbers(players){
+  let highest=players.reduce((n,p)=>Number.isSafeInteger(p.playerNumber)&&p.playerNumber>0?Math.max(n,p.playerNumber):n,0);
+  for(const p of players)if(!Number.isSafeInteger(p.playerNumber)||p.playerNumber<1)p.playerNumber=++highest;
+}
 export const normalizePlayerName=name=>String(name??'').trim().replace(/\s+/gu,' ').toLowerCase();
 // The cutoff includes one break immediately following the last allowed playing round.
 export function purchaseOpen(t,c,kind){
@@ -42,6 +47,7 @@ function upgradeSettings(old){
 }
 export function upgradeState(value){
   const s=clone(value);
+  assignPlayerNumbers(s.players);
   for(const template of s.templates){
     const starter=template.name==='Uno Club — 15-minute levels'&&template.settings.financeVersion!==2&&template.settings.entryPrize===1000&&template.settings.entryHouse===1000;
     template.settings=upgradeSettings(template.settings);
@@ -107,13 +113,13 @@ export function validateTemplate(template){
   check(s.payoutMode!=='percent'||Math.abs(s.payouts.reduce((a,b)=>a+b,0)-100)<0.001,'Payout percentages must total 100%.');
 }
 export function execute(state,action,now=Date.now()){
-  const s=clone(state), a=action;let t=s.tournaments.find(t=>t.id===a.tournamentId);
+  const s=clone(state), a=action;assignPlayerNumbers(s.players);let t=s.tournaments.find(t=>t.id===a.tournamentId);
   if(a.type==='player-save'){
     const name=String(a.name||'').trim().replace(/\s+/gu,' ');check(name,'Enter a player name.');check(name.length<=100,'Player name is too long.');
     const p=s.players.find(p=>p.id===a.id);
     check(!s.players.some(v=>v.id!==a.id&&normalizePlayerName(v.name)===normalizePlayerName(name)),'That name already exists. Please choose a different name.');
     const phone=String(a.phone??p?.phone??'').trim();check(phone.length<=40,'Phone number is too long.');
-    if(p){p.name=name;p.phone=phone;p.notes=String(a.notes||'').slice(0,1000);}else s.players.push({id:a.id||id(),name,phone,notes:String(a.notes||'').slice(0,1000),archived:false});return s;
+    if(p){p.name=name;p.phone=phone;p.notes=String(a.notes||'').slice(0,1000);}else s.players.push({id:a.id||id(),playerNumber:s.players.reduce((n,p)=>Math.max(n,p.playerNumber),0)+1,name,phone,notes:String(a.notes||'').slice(0,1000),archived:false});return s;
   }
   if(a.type==='player-archive'){const p=s.players.find(p=>p.id===a.id);check(p,'Player not found.');p.archived=!p.archived;return s;}
   if(a.type==='template-save'){const template=clone(a.template);validateTemplate(template);const ix=s.templates.findIndex(v=>v.id===template.id);if(ix<0)s.templates.push(template);else s.templates[ix]=template;return s;}

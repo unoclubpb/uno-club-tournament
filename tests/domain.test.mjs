@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initialState,execute,id,clockAt,financials,prizes,statsFor,clone,tablesRequired,tablesInUse,upgradeState,rebuyOpen,purchaseOpen,rebuyPhase,cutoffHasBreak,validateTemplate} from '../src/domain.mjs';
+import {initialState,execute,id,clockAt,financials,prizes,statsFor,clone,tablesRequired,tablesInUse,upgradeState,rebuyOpen,purchaseOpen,rebuyPhase,cutoffHasBreak,validateTemplate,playerNumberLabel} from '../src/domain.mjs';
 const start=Date.parse('2026-10-15T23:35:00Z');
 function setup(n=3){let s=initialState();const event=id();s=execute(s,{type:'tournament-create',id:event,name:'Test tournament',templateId:s.templates[0].id},start);for(let i=0;i<n;i++){const player=id();s=execute(s,{type:'player-save',id:player,name:'Player '+i},start);s=execute(s,{type:'register',tournamentId:event,playerId:player,paid:true},start);}return {s,event};}
 function act(s,event,a,now=start){return execute(s,{...a,tournamentId:event},now);}
@@ -40,4 +40,16 @@ test('rebuy and add-on cutoff closure follows the resumed clock at break end and
  let c=clockAt(t,start+900000);assert.equal(c.status,'paused');assert.equal(rebuyPhase(t,c),'final-break');assert.equal(purchaseOpen(t,c,'addon'),true);
  s=act(s,event,{type:'clock',command:'resume'},start+900000);t=s.tournaments[0];c=clockAt(t,start+1200000);assert.equal(c.status,'paused');assert.equal(rebuyOpen(t,c),false);assert.equal(purchaseOpen(t,c,'addon'),false);
  t.settings.pauseBreaks=false;t.clock={index:7,status:'running',remainingMs:900000,deadline:start+900000};c=clockAt(t,start+1500000);assert.equal(rebuyPhase(t,c),'closed');
+});
+
+test('player numbers start at 001, remain permanent, and do not reuse archived IDs',()=>{
+ let s=initialState();for(const [id,name] of [['p1','Alpha'],['p2','Beta']])s=execute(s,{type:'player-save',id,name});
+ assert.deepEqual(s.players.map(p=>p.playerNumber),[1,2]);assert.equal(playerNumberLabel(s.players[0]),'001');
+ s=execute(s,{type:'player-save',id:'p1',name:'Renamed',playerNumber:99});assert.equal(s.players[0].playerNumber,1);
+ s=execute(s,{type:'player-archive',id:'p2'});s=execute(s,{type:'player-save',id:'p3',name:'Gamma'});assert.equal(s.players[2].playerNumber,3);
+});
+test('legacy player numbers backfill deterministically without changing references, results or existing numbers',()=>{
+ let {s}=setup();const ids=s.players.map(p=>p.id),entries=clone(s.tournaments[0].entries);s.players.forEach(p=>delete p.playerNumber);
+ s=upgradeState(s);assert.deepEqual(s.players.map(p=>p.playerNumber),[1,2,3]);assert.deepEqual(s.players.map(p=>p.id),ids);assert.deepEqual(s.tournaments[0].entries,entries);assert.deepEqual(upgradeState(s),s);
+ s.players.reverse();assert.deepEqual(upgradeState(s).players.map(p=>p.playerNumber),[3,2,1]);s=execute(s,{type:'player-save',id:'new',name:'Newest'});assert.equal(s.players.at(-1).playerNumber,4);
 });
