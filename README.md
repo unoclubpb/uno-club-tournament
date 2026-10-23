@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.2.1
+# Uno Club Tournament Director — v0.2.2
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -73,3 +73,7 @@ Copied from the working v0.1.1 source at the user’s request. The previous host
 - Break duration inputs have minimum 1 and step 1 minute, and saving rejects fractional break lengths. Existing running clocks are not silently rounded.
 - **Game for all playing levels / Copy game to all levels** applies the entered game to playing rows only. Individual rows can still differ for mixed tournaments. Save the structure to retain the copied names. New playing rows inherit the most recent playing row's game.
 - Automated coverage includes payment acceptance during the break and rejection afterward for both purchase types, paused and automatically advancing break boundaries, no-break cutoffs, final-round and break clock messages, timer-only display transitions, whole-minute spinner behavior/validation and common-game copying with mixed-game edits preserved.
+
+## v0.2.2 saved structure cards
+
+Saved structures use a compact two-column grid capped at 760px, with tighter spacing and two-by-two action buttons. Regular phone widths also show two cards across; screens narrower than 360px use one column for readability. Card titles retain their 20px type size. Structure values and actions are preserved.

@@ -17,3 +17,17 @@ body.tv{background:#050f19;color:#f7f8fb}.tv-shell{height:100dvh;min-height:0;pa
 .game-copy-row{display:flex;align-items:flex-end;gap:16px;margin:20px 0 12px}.game-copy-row label{flex:1;max-width:480px;margin-bottom:0}.game-copy-row .button{flex-shrink:0}.tv-side .tv-rebuys-open>.tv-final-rebuy{color:#ff5757;font-size:clamp(20px,3.35vw,68px);line-height:1.15;white-space:normal}.tv-rebuys-open>.tv-cutoff-detail{font-size:clamp(13px,2.15vw,40px);font-weight:600;line-height:1.35;margin:16px 0 0}.tv-side .tv-rebuys-open{overflow-wrap:break-word}
 @media(max-width:700px){.game-copy-row{align-items:stretch;flex-direction:column;gap:12px}.game-copy-row label{max-width:none}.tv-side .tv-rebuys-open>.tv-final-rebuy{font-size:clamp(14px,3.35vw,30px)}.tv-rebuys-open>.tv-cutoff-detail{font-size:clamp(10px,2.15vw,18px);margin-top:10px}}
 @media(max-aspect-ratio:1/1){.tv-side .tv-rebuys-open>.tv-final-rebuy{font-size:30px}.tv-rebuys-open>.tv-cutoff-detail{font-size:19px}}
+
+/* Compact saved structures: two cards across, including regular phone widths. */
+.structure-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:760px;align-items:stretch}
+.structure-grid .structure-card{min-width:0;margin:0;padding:18px;display:flex;flex-direction:column}
+.structure-card h2{font-size:20px;line-height:1.3;margin:8px 0;overflow-wrap:anywhere}
+.structure-card>p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.structure-card .structure-facts{display:grid;grid-template-columns:1fr;gap:7px;margin:14px 0;padding:12px 0}
+.structure-facts>span{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:10px}
+.structure-facts strong{display:inline;margin:0;font-size:13px;text-align:right}
+.structure-card>.button-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:auto;padding-top:2px}
+.structure-card .button-row>button{min-width:0;min-height:38px;padding:8px 6px;text-align:center;justify-content:center;overflow-wrap:anywhere}
+.structure-card .button-row>.text-button{border:1px solid var(--line);border-radius:7px}
+@media(max-width:700px){.structure-grid{gap:12px}.structure-grid .structure-card{padding:12px}.structure-card h2{font-size:20px}.structure-card .structure-facts{margin:12px 0;padding:10px 0}.structure-card .button-row{gap:6px}.structure-card .button-row>button{min-height:44px}}
+@media(max-width:359px){.structure-grid{grid-template-columns:minmax(0,1fr)}}
