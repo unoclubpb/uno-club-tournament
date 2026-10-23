@@ -270,9 +270,9 @@ test('seats are configured in management, display capacity and balance twelve pl
  try{
   ui.click('[data-edit-template]');assert.equal(ui.q('#structure-form [name=seatsPerTable]'),null);ui.click('[data-action=close-editor]');ui.click('[data-action=event-settings]');assert.equal(ui.q('#structure-form [name=seatsPerTable]'),null);ui.click('[data-action=close-editor]');
   ui.click('[data-go=manage]');ui.click('[data-tab=tables]');let form=ui.q('#seating-settings-form');assert.equal(form.elements.seatsPerTable.value,'10');ui.input(form.elements.seatsPerTable,'9');await ui.submit(form);
-  assert.equal(ui.stored().tournaments[0].settings.seatsPerTable,9);assert.equal(ui.w.document.querySelectorAll('.seat-table').length,2);assert.equal(ui.w.document.querySelectorAll('.seat-number').length,18);assert.match(ui.q('.seating-plan').textContent,/6 \/ 6/);
+  assert.equal(ui.stored().tournaments[0].settings.seatsPerTable,9);assert.equal(ui.w.document.querySelectorAll('.seat-table').length,2);assert.equal(ui.w.document.querySelectorAll('.seat-number').length,18);assert.equal(ui.q('.seating-plan'),null);
   ui.click('[data-action=seat-remaining]');await flush();assert.deepEqual([...ui.w.document.querySelectorAll('.seat-table h3 small')].map(e=>e.textContent),['6 of 9 seats filled','6 of 9 seats filled']);assert.equal(ui.q('.seat-table .text-button').textContent,'Move');
-  await ui.storage(execute(ui.stored(),{type:'register',tournamentId:'t1',playerId:'p13'}));form=ui.q('#seating-settings-form');ui.input(form.elements.seatsPerTable,'10');await ui.submit(form);assert.equal(ui.w.document.querySelectorAll('.seat-number').length,20);assert.match(ui.q('.seating-plan').textContent,/7 \/ 6/);
+  await ui.storage(execute(ui.stored(),{type:'register',tournamentId:'t1',playerId:'p13'}));form=ui.q('#seating-settings-form');ui.input(form.elements.seatsPerTable,'10');await ui.submit(form);assert.equal(ui.w.document.querySelectorAll('.seat-number').length,20);assert.equal(ui.q('.seating-plan'),null);
   ui.click('[data-action=seat-remaining]');await flush();assert.deepEqual([...ui.w.document.querySelectorAll('.seat-table h3 small')].map(e=>e.textContent),['7 of 10 seats filled','6 of 10 seats filled']);assert.equal(ui.stored().templates[0].settings.seatsPerTable,10);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
@@ -282,7 +282,7 @@ function manualSeatingFixture(players=10){let s=initialState();for(let i=1;i<=pl
 test('selecting occupied seats offers swap or insertion slide without saving until chosen',async()=>{
  const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
  try{
-  ui.click('[data-tab=tables]');ui.click('[data-seat-grab=e7]');assert.equal(ui.q('[data-seat-grab=e7]').getAttribute('aria-pressed'),'true');ui.click('[data-seat-grab=e1]');assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.q('[data-seat-move-mode=swap]').disabled,false);assert.equal(ui.q('[data-seat-move-mode=slide]').disabled,false);assert.match(ui.q('.seat-slide-preview').textContent,/Seat 6 → 7/);
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');ui.click('[data-seat-grab=e7]');assert.equal(ui.q('[data-seat-grab=e7]').getAttribute('aria-pressed'),'true');ui.click('[data-seat-grab=e1]');assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.q('[data-seat-move-mode=swap]').disabled,false);assert.equal(ui.q('[data-seat-move-mode=slide]').disabled,false);assert.match(ui.q('.seat-slide-preview').textContent,/Seat 6 → 7/);
   ui.click('[data-seat-move-mode=slide]');await flush();const entries=ui.stored().tournaments[0].entries;assert.equal(entries.find(e=>e.id==='e7').seat,1);assert.equal(entries.find(e=>e.id==='e1').seat,2);assert.equal(entries.find(e=>e.id==='e6').seat,7);assert.equal(entries.find(e=>e.id==='e10').seat,10);assert.equal(ui.w.__fixture.saves,1);assert.equal(ui.q('#dialog').open,false);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
@@ -290,7 +290,7 @@ test('selecting occupied seats offers swap or insertion slide without saving unt
 test('a full tail blocks sliding, permits swapping, and cancellation keeps seating unchanged',async()=>{
  const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
  try{
-  ui.click('[data-tab=tables]');ui.click('[data-seat-grab=e1]');ui.click('[data-seat-grab=e7]');assert.equal(ui.q('[data-seat-move-mode=slide]').disabled,true);assert.match(ui.q('.seat-move-error').textContent,/Seat 10/);ui.click('[data-action=close-modal]');assert.equal(ui.w.__fixture.saves,0);
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');ui.click('[data-seat-grab=e1]');ui.click('[data-seat-grab=e7]');assert.equal(ui.q('[data-seat-move-mode=slide]').disabled,true);assert.match(ui.q('.seat-move-error').textContent,/Seat 10/);ui.click('[data-action=close-modal]');assert.equal(ui.w.__fixture.saves,0);
   ui.click('[data-seat-grab=e1]');ui.click('[data-seat-grab=e7]');ui.click('[data-seat-move-mode=swap]');await flush();assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e1').seat,7);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,1);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
@@ -298,7 +298,7 @@ test('a full tail blocks sliding, permits swapping, and cancellation keeps seati
 test('empty-seat moves, selecting the original seat and canceling selections do not misplace players',async()=>{
  const ui=await boot('https://example.test/',manualSeatingFixture(7),'manage','t1');
  try{
-  ui.click('[data-tab=tables]');ui.click('[data-seat-grab=e7]');ui.click('[data-seat-grab=e7]');assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.q('[data-seat-grab=e7]').getAttribute('aria-pressed'),'false');
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');ui.click('[data-seat-grab=e7]');ui.click('[data-seat-grab=e7]');assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.q('[data-seat-grab=e7]').getAttribute('aria-pressed'),'false');
   ui.click('[data-seat-grab=e7]');ui.click('[data-action=cancel-seat-pick]');assert.equal(ui.w.__fixture.saves,0);ui.click('[data-seat-grab=e7]');ui.click('[data-table="1"][data-seat="9"] [data-seat-target-button]');await flush();assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,9);assert.equal(ui.q('[data-table="1"][data-seat="7"] [data-seat-target-button]').textContent.trim(),'7Empty');assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
@@ -306,16 +306,16 @@ test('empty-seat moves, selecting the original seat and canceling selections do 
 test('the Move menu supports occupied seats and stale confirmations cannot overwrite remote seating',async()=>{
  const s=manualSeatingFixture(),ui=await boot('https://example.test/',s,'manage','t1');
  try{
-  ui.click('[data-tab=tables]');ui.click('[data-seat=e7]');let form=ui.q('#seat-form');assert.equal(form.elements.seat.querySelector('[value="1/1"]').disabled,false);form.elements.seat.value='1/1';await ui.submit(form);assert.ok(ui.q('[data-seat-move-mode=swap]'));
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');ui.click('[data-seat=e7]');let form=ui.q('#seat-form');assert.equal(form.elements.seat.querySelector('[value="1/1"]').disabled,false);form.elements.seat.value='1/1';await ui.submit(form);assert.ok(ui.q('[data-seat-move-mode=swap]'));
   const remote=execute(s,{type:'seat-move',tournamentId:'t1',entryId:'e2',table:1,seat:3,mode:'swap'});await ui.storage(remote);ui.click('[data-seat-move-mode=slide]');await flush();assert.equal(ui.w.__fixture.saves,0);assert.match(ui.q('#toast').textContent,/Seating changed/);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,7);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e2').seat,3);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
 
-function dispatchPointer(ui,target,type,{x=100,y=300,id=1,pointerType='mouse'}={}){const event=new ui.w.MouseEvent(type,{bubbles:true,cancelable:true,button:0,clientX:x,clientY:y});Object.defineProperties(event,{pointerId:{value:id},pointerType:{value:pointerType},isPrimary:{value:true}});target.dispatchEvent(event);}
+function dispatchPointer(ui,target,type,{x=100,y=300,id=1,pointerType='mouse'}={}){const event=new ui.w.MouseEvent(type,{bubbles:true,cancelable:true,button:0,clientX:x,clientY:y});Object.defineProperties(event,{pointerId:{value:id},pointerType:{value:pointerType},isPrimary:{value:true}});target.dispatchEvent(event);return event;}
 for(const pointerType of ['mouse','touch'])test(pointerType+' dragging highlights an occupied target, then asks before moving',async()=>{
  const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
  try{
-  ui.click('[data-tab=tables]');const handle=ui.q('[data-seat-grab=e7]'),target=ui.q('[data-table="1"][data-seat="1"]');ui.w.document.elementFromPoint=()=>target;
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');const handle=ui.q('[data-seat-grab=e7]'),target=ui.q('[data-table="1"][data-seat="1"]');ui.w.document.elementFromPoint=()=>target;
   dispatchPointer(ui,handle,'pointerdown',{pointerType});dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:200,pointerType});assert.equal(ui.q('.seat-drop-target'),target);assert.ok(ui.q('.seat-drag-ghost'));assert.equal(ui.w.__fixture.saves,0);
   dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:200,pointerType});await flush();assert.equal(ui.q('.seat-drag-ghost'),null);assert.ok(ui.q('[data-seat-move-mode=swap]'));assert.equal(ui.w.__fixture.saves,0);ui.click('[data-seat-move-mode=swap]');await flush();assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,1);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
@@ -324,7 +324,7 @@ for(const pointerType of ['mouse','touch'])test(pointerType+' dragging highlight
 test('canceling a drag, dropping outside seats and a remote update during dragging never save',async()=>{
  const s=manualSeatingFixture(),ui=await boot('https://example.test/',s,'manage','t1');
  try{
-  ui.click('[data-tab=tables]');ui.w.document.elementFromPoint=()=>null;let handle=ui.q('[data-seat-grab=e7]');dispatchPointer(ui,handle,'pointerdown');dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:200});dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:200});await flush();assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.q('.seat-drag-ghost'),null);
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');ui.w.document.elementFromPoint=()=>null;let handle=ui.q('[data-seat-grab=e7]');dispatchPointer(ui,handle,'pointerdown');dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:200});dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:200});await flush();assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.q('.seat-drag-ghost'),null);
   handle=ui.q('[data-seat-grab=e7]');dispatchPointer(ui,handle,'pointerdown');dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:200});dispatchPointer(ui,ui.w.document,'pointercancel');assert.equal(ui.q('.seat-drag-ghost'),null);assert.equal(ui.w.__fixture.saves,0);
   dispatchPointer(ui,ui.q('[data-seat-grab=e7]'),'pointerdown');dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:200});await ui.storage(execute(s,{type:'seat-move',tournamentId:'t1',entryId:'e2',table:1,seat:3,mode:'swap'}));assert.equal(ui.q('.seat-drag-ghost'),null);dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:200});await flush();assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,7);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
@@ -333,7 +333,7 @@ test('canceling a drag, dropping outside seats and a remote update during draggi
 test('a failed swap save leaves both players in place and can be retried explicitly',async()=>{
  const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
  try{
-  ui.click('[data-tab=tables]');ui.click('[data-seat-grab=e7]');ui.click('[data-seat-grab=e1]');ui.w.__fixture.saveError={message:'Connection interrupted during save'};ui.click('[data-seat-move-mode=swap]');await flush();assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,7);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e1').seat,1);assert.equal(ui.q('#dialog').open,true);assert.match(ui.q('#toast').textContent,/Connection interrupted/);
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');ui.click('[data-seat-grab=e7]');ui.click('[data-seat-grab=e1]');ui.w.__fixture.saveError={message:'Connection interrupted during save'};ui.click('[data-seat-move-mode=swap]');await flush();assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,7);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e1').seat,1);assert.equal(ui.q('#dialog').open,true);assert.match(ui.q('#toast').textContent,/Connection interrupted/);
   ui.w.__fixture.saveError=null;ui.click('[data-seat-move-mode=swap]');await flush();assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e7').seat,1);assert.equal(ui.stored().tournaments[0].entries.find(e=>e.id==='e1').seat,7);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
@@ -341,7 +341,7 @@ test('a failed swap save leaves both players in place and can be retried explici
 test('dragging near the screen edge scrolls and Escape cancels the pending drag',async()=>{
  const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
  try{
-  ui.click('[data-tab=tables]');const frames=[];let scrolled=0,canceled=0;ui.w.requestAnimationFrame=callback=>(frames.push(callback),frames.length);ui.w.cancelAnimationFrame=()=>{canceled++;};ui.w.scrollBy=(x,y)=>{scrolled+=y;};ui.w.document.elementFromPoint=()=>ui.q('[data-table="1"][data-seat="1"]');
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');const frames=[];let scrolled=0,canceled=0;ui.w.requestAnimationFrame=callback=>(frames.push(callback),frames.length);ui.w.cancelAnimationFrame=()=>{canceled++;};ui.w.scrollBy=(x,y)=>{scrolled+=y;};ui.w.document.elementFromPoint=()=>ui.q('[data-table="1"][data-seat="1"]');
   dispatchPointer(ui,ui.q('[data-seat-grab=e7]'),'pointerdown');dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:ui.w.innerHeight-10});frames.shift()();assert.ok(scrolled>0);assert.ok(ui.q('.seat-drag-ghost'));
   ui.w.document.dispatchEvent(new ui.w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(ui.q('.seat-drag-ghost'),null);assert.ok(canceled>0);dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:200});await flush();assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
@@ -350,7 +350,7 @@ test('dragging near the screen edge scrolls and Escape cancels the pending drag'
 test('a cloud update deferred while typing refreshes the displayed seats before another player is picked',async()=>{
  const s=manualSeatingFixture(),ui=await boot('https://example.test/',s,'manage','t1');
  try{
-  ui.click('[data-tab=tables]');ui.q('#seating-settings-form [name=seatsPerTable]').focus();const remote=execute(s,{type:'seat-move',tournamentId:'t1',entryId:'e7',table:1,seat:1,mode:'swap'});await ui.storage(remote);
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');ui.q('#seating-settings-form [name=seatsPerTable]').focus();const remote=execute(s,{type:'seat-move',tournamentId:'t1',entryId:'e7',table:1,seat:1,mode:'swap'});await ui.storage(remote);
   assert.ok(ui.q('[data-table="1"][data-seat="7"] [data-seat-grab=e7]'));ui.click('[data-seat-grab=e7]');assert.equal(ui.w.__fixture.saves,0);assert.ok(ui.q('[data-table="1"][data-seat="1"] [data-seat-grab=e7]'));assert.match(ui.q('#toast').textContent,/Seating changed/);assert.equal(ui.q('[data-seat-grab=e7]').getAttribute('aria-pressed'),'false');assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
@@ -360,7 +360,7 @@ test('Seat Players becomes Seat Remaining Players and preserves every already se
  const ui=await boot('https://example.test/',s,'manage','t1');
  try{
   ui.click('[data-tab=tables]');assert.equal(ui.q('[data-action=seat-remaining]').textContent,'Seat Players');assert.equal(ui.q('[data-action=combine-tables]').disabled,true);
-  ui.click('[data-seat=e1]');ui.q('#seat-form').elements.seat.value='1/9';await ui.submit(ui.q('#seat-form'));assert.equal(ui.q('[data-action=seat-remaining]').textContent,'Seat Remaining Players');
+  ui.click('[data-action=toggle-move-players]');ui.click('[data-seat=e1]');ui.q('#seat-form').elements.seat.value='1/9';await ui.submit(ui.q('#seat-form'));assert.equal(ui.q('[data-action=seat-remaining]').textContent,'Seat Remaining Players');
   ui.click('[data-seat-lock=e1]');await flush();ui.click('[data-action=seat-remaining]');await flush();const entries=ui.stored().tournaments[0].entries;assert.equal(entries[0].seat,9);assert.equal(entries[0].seatLocked,true);assert.ok(entries.every(e=>e.table));assert.equal(ui.q('[data-action=seat-remaining]').disabled,true);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
@@ -375,7 +375,7 @@ test('Combine Tables merges three into two only after confirmation and never off
 test('Lock in seat toggles to red Locked, persists after reload and stops manual moves until unlocked',async()=>{
  const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
  try{
-  ui.click('[data-tab=tables]');ui.click('[data-seat-lock=e3]');await flush();assert.equal(ui.q('[data-seat-lock=e3]').textContent,'Locked');assert.equal(ui.q('[data-seat-lock=e3]').classList.contains('is-locked'),true);assert.equal(ui.q('[data-seat-lock=e3]').getAttribute('aria-pressed'),'true');assert.equal(ui.q('[data-seat-grab=e3]').disabled,true);assert.equal(ui.q('[data-seat=e3]').disabled,true);
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');ui.click('[data-seat-lock=e3]');await flush();assert.equal(ui.q('[data-seat-lock=e3]').textContent,'Locked');assert.equal(ui.q('[data-seat-lock=e3]').classList.contains('is-locked'),true);assert.equal(ui.q('[data-seat-lock=e3]').getAttribute('aria-pressed'),'true');assert.equal(ui.q('[data-seat-grab=e3]').disabled,true);assert.equal(ui.q('[data-seat=e3]').disabled,true);
   ui.click('[data-seat-grab=e7]');ui.click('[data-seat-grab=e1]');assert.equal(ui.q('[data-seat-move-mode=slide]').disabled,true);assert.match(ui.q('.seat-move-error').textContent,/Unlock.*Seat 3/);ui.click('[data-action=close-modal]');
   const reloaded=await boot('https://example.test/',ui.stored(),'manage','t1');try{reloaded.click('[data-tab=tables]');assert.equal(reloaded.q('[data-seat-lock=e3]').textContent,'Locked');assert.equal(reloaded.q('[data-seat-grab=e3]').disabled,true);}finally{reloaded.close();}
   await ui.storage(ui.stored());ui.click('[data-seat-lock=e3]');await flush();assert.equal(ui.q('[data-seat-lock=e3]').textContent,'Lock in seat');assert.equal(ui.q('[data-seat-grab=e3]').disabled,false);assert.equal(ui.stored().tournaments[0].entries[2].seatLocked,false);assert.deepEqual(ui.errors,[]);
@@ -401,5 +401,40 @@ test('failed seat locks never appear saved and stale displayed seats require rev
  try{
   ui.click('[data-tab=tables]');ui.w.__fixture.saveError={message:'Could not save lock'};ui.click('[data-seat-lock=e1]');await flush();assert.equal(ui.q('[data-seat-lock=e1]').textContent,'Lock in seat');assert.equal(ui.stored().tournaments[0].entries[0].seatLocked,undefined);assert.match(ui.q('#toast').textContent,/Could not save lock/);ui.w.__fixture.saveError=null;
   ui.q('#seating-settings-form [name=seatsPerTable]').focus();await ui.storage(execute(s,{type:'seat-move',tournamentId:'t1',entryId:'e1',table:1,seat:2,mode:'swap'}));ui.click('[data-seat-lock=e1]');await flush();assert.equal(ui.w.__fixture.saves,0);assert.match(ui.q('#toast').textContent,/Seating changed/);assert.equal(ui.q('[data-seat-lock=e1]').closest('[data-seat-target]').dataset.seat,'2');ui.click('[data-seat-lock=e1]');await flush();assert.equal(ui.stored().tournaments[0].entries[0].seatLocked,true);assert.equal(ui.stored().tournaments[0].entries[0].seat,2);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('tables show the retained drag instruction and movement toggle without the explanatory paragraphs',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(15),'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');assert.doesNotMatch(ui.q('.seat-tables').parentElement.textContent,/This is the number of available seats|tables needed for|Balanced distribution|Seat Remaining Players keeps existing seats/);
+  assert.equal(ui.q('#seat-move-instructions').textContent,'Drag a player to another seat, or select a player and then a seat.');assert.equal(ui.q('[data-action=toggle-move-players]').parentElement,ui.q('#seat-move-instructions').parentElement);assert.equal(ui.q('[aria-describedby=seating-capacity-help]'),null);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+for(const pointerType of ['mouse','touch'])test(`${pointerType} gestures while Move Players is off never capture pointers, block scrolling or change seats`,async()=>{
+ const seed=manualSeatingFixture(7),ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');const toggle=ui.q('[data-action=toggle-move-players]');assert.equal(toggle.getAttribute('aria-pressed'),'false');assert.equal(toggle.classList.contains('is-active'),false);
+  let captured=0;const handle=ui.q('[data-seat-grab=e7]');handle.setPointerCapture=()=>captured++;ui.w.document.elementFromPoint=()=>ui.q('[data-table="1"][data-seat="9"]');
+  assert.equal(handle.disabled,true);assert.equal(ui.q('[data-seat=e7]').disabled,true);assert.equal(ui.q('[data-seat-target-button]').disabled,true);
+  dispatchPointer(ui,handle,'pointerdown',{pointerType});const move=dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:100,pointerType});dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:100,pointerType});
+  ui.click('[data-seat-grab=e7]');ui.click('[data-seat=e7]');await flush();assert.equal(move.defaultPrevented,false);assert.equal(captured,0);assert.equal(ui.q('.seat-drag-ghost'),null);assert.equal(ui.q('.seat-drop-target'),null);assert.equal(ui.q('#dialog').open,false);assert.equal(ui.q('[data-seat-grab=e7]').getAttribute('aria-pressed'),'false');assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.stored(),seed);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('the green toggle enables moves and turning it off cancels selections and touch drags',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(7),'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');assert.equal(ui.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'true');assert.equal(ui.q('[data-action=toggle-move-players]').classList.contains('is-active'),true);assert.equal(ui.q('[data-seat-grab=e7]').disabled,false);assert.equal(ui.q('[data-seat=e7]').disabled,false);
+  ui.click('[data-seat-grab=e7]');assert.equal(ui.q('[data-seat-grab=e7]').getAttribute('aria-pressed'),'true');ui.click('[data-action=toggle-move-players]');assert.equal(ui.q('[data-seat-grab=e7]').getAttribute('aria-pressed'),'false');assert.equal(ui.q('#cancel-seat-pick').hidden,true);
+  ui.click('[data-action=toggle-move-players]');ui.w.document.elementFromPoint=()=>ui.q('[data-table="1"][data-seat="9"]');dispatchPointer(ui,ui.q('[data-seat-grab=e7]'),'pointerdown',{pointerType:'touch'});dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:100,pointerType:'touch'});assert.ok(ui.q('.seat-drag-ghost'));
+  ui.click('[data-action=toggle-move-players]');assert.equal(ui.q('.seat-drag-ghost'),null);assert.equal(ui.q('.seat-drop-target'),null);dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:100,pointerType:'touch'});await flush();assert.equal(ui.stored().tournaments[0].entries[6].seat,7);assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'false');assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('movement stays enabled for consecutive moves but resets after leaving tables or reopening the app',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(7),'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');ui.click('[data-seat-grab=e7]');ui.click('[data-table="1"][data-seat="9"] [data-seat-target-button]');await flush();assert.equal(ui.stored().tournaments[0].entries[6].seat,9);assert.equal(ui.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'true');assert.equal(ui.q('[data-seat-grab=e7]').disabled,false);
+  ui.click('[data-tab=players]');ui.click('[data-tab=tables]');assert.equal(ui.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'false');ui.click('[data-action=toggle-move-players]');ui.click('[data-go=home]');ui.click('[data-go=manage]');assert.equal(ui.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'false');
+  ui.click('[data-action=toggle-move-players]');const reopened=await boot('https://example.test/',ui.stored(),'manage','t1');try{reopened.click('[data-tab=tables]');assert.equal(reopened.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'false');assert.equal(reopened.q('[data-seat-grab=e7]').disabled,true);}finally{reopened.close();}assert.equal(ui.w.__fixture.saves,1);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });

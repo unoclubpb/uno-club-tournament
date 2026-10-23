@@ -23,7 +23,7 @@ export function installSeatDragging({getSource,getLabel,onStart,onDrop,onError})
   }
   document.addEventListener('pointerdown',event=>{
     const handle=event.target.closest('[data-seat-grab]');
-    if(!handle||event.button!==0||event.isPrimary===false)return;
+    if(!handle||handle.disabled||event.button!==0||event.isPrimary===false)return;
     try{
       const source=getSource(handle.dataset.seatGrab);if(!source)return;
       cancel();drag={id:event.pointerId,handle,source,startX:event.clientX,startY:event.clientY,x:event.clientX,y:event.clientY,active:false};

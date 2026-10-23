@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.8
+# Uno Club Tournament Director — v0.3.9
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -177,3 +177,12 @@ When forming the final table (Table 1), confirmation offers Keep existing seats 
 Each occupied seat has a Lock in seat button that turns red and reads Locked. Press again to unlock. Locks are saved on tournament entries through the existing atomic, expected-version workspace save, shared between devices and retained after reopening the app. They protect against direct moves, swaps, insertion slides, redraws and capacity reductions. Eliminating a player releases the seat; undo restores the lock only if the original seat is still available. Completed events remain locked.
 
 Validation: 83 automated tests cover balanced initial seating, preservation of seated players, three-to-two and four-to-two merges, both final-table choices, multiple fixed seats, lock conflicts and unlock recovery, saved-lock reloads, manual movement protection, elimination undo, canceled dialogs, stale confirmations and failed saves with explicit retry. UI checks use jsdom fixtures and do not alter production players or tournaments.
+
+
+## v0.3.9 touch scrolling and explicit movement mode
+
+Removed the three explanatory paragraphs above the tables, retaining the drag/select instruction. A Move Players toggle beside that instruction starts off and turns green when enabled. Manual drag, select-and-place, Move and Assign seat controls require this mode. Off mode allows ordinary browser touch scrolling over player names without pointer capture or drag interception. Seat Players, Combine Tables and seat locks keep their separate controls.
+
+Turning movement off cancels any selection or drag. It stays on through consecutive saves in the same tables view, but resets off when leaving the view, switching tournaments, completing the tournament or reopening the app. Movement mode is local to the screen, not a saved tournament setting. Locked players remain protected while movement is enabled.
+
+Validation: all 88 automated tests pass. New scenarios cover removed copy, default-off mouse/touch gestures without prevented scrolling or captured pointers, green enabled state, cancellation during touch dragging, repeated moves, navigation resets and reopening. Existing manual moves, locks, stale-data checks and cloud save-failure scenarios still pass. Touch gestures are simulated in jsdom; physical iPad scrolling has not been tested here.
