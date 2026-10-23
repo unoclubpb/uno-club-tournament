@@ -166,3 +166,67 @@ body.home-page{height:var(--app-height,100dvh);min-height:0;overflow:hidden;over
 @media(max-width:700px){.current-tournament-name{font-size:14px}.registration-page .registration-tabs{margin-top:8px}}
 
 .player-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.player-stats>div{border-bottom:0!important}.rebuy-total-controls{margin-top:18px}.rebuy-total-controls .small-copy{margin-top:8px}.rebuy-stepper{display:flex;align-items:center;gap:12px;margin:0 0 16px}.rebuy-stepper>.button{flex:0 0 48px;font-size:24px;padding:4px;min-height:48px}.rebuy-stepper input{min-width:0;text-align:center;font-size:24px;font-variant-numeric:tabular-nums;appearance:textfield;-moz-appearance:textfield}.rebuy-stepper input::-webkit-inner-spin-button,.rebuy-stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}#rebuy-count-form>.muted{margin-bottom:20px}
+
+/* Setup and player records keep the document still; content scrolls in its own panel. */
+body.fixed-workspace{height:var(--app-height,100dvh);min-height:0;overflow:hidden;overscroll-behavior:none}
+.fixed-workspace #app{height:100%;display:flex;flex-direction:column;overflow:hidden}
+.fixed-workspace .header,.fixed-workspace .context,.fixed-workspace .mode-note,.fixed-workspace .nav,.fixed-workspace .app-footer{flex-shrink:0}
+.fixed-workspace .header{height:86px;width:100%}
+.fixed-workspace .workspace{width:100%;flex:1;min-height:0;display:flex;flex-direction:column}
+.fixed-workspace .nav{padding-top:6px}
+.fixed-workspace .content{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:18px 0;gap:14px}
+.fixed-workspace .page-heading{flex-shrink:0;margin:0}
+.fixed-workspace .page-heading h1{font-size:28px;overflow-wrap:anywhere}
+.fixed-workspace .page-heading .muted{margin-top:6px}
+.fixed-workspace .app-footer{padding:9px 0}
+.setup-page .current-panel{flex-shrink:0;margin:0;padding:14px 18px;gap:16px;min-width:0}
+.setup-page .current-panel>div{min-width:0;flex:1}
+.setup-page .current-panel h2,.setup-page .current-panel p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.setup-page .current-panel h2{margin:4px 0;font-size:19px}
+.setup-page .current-panel>.button{flex-shrink:0}
+.setup-page .content>.section-label{flex-shrink:0;margin:0}
+.setup-page #saved-structures{flex:1;min-height:0;overflow:auto;align-content:start;padding:2px 8px 6px 2px;scrollbar-gutter:stable;overscroll-behavior:contain;overflow-anchor:none}
+.setup-page #structure-form{flex:1;min-height:0;min-width:0;margin:0;padding:18px;display:flex;flex-direction:column;overflow:hidden}
+.setup-page .structure-editor-body{flex:1;min-height:0;overflow:auto;padding:3px 10px 3px 3px;scrollbar-gutter:stable;overscroll-behavior:contain;overflow-anchor:none}
+.setup-page .sticky-save{position:static;flex-shrink:0;margin-top:10px;padding-top:12px}
+.players-page .player-database-panel{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden;margin:0;padding:18px}
+.players-page .search-row{flex-shrink:0;margin:0 0 12px;gap:12px}
+.players-page .search-row .check{margin:0}
+.players-page #player-results{flex:1;min-height:0;overflow:auto;scrollbar-gutter:stable;overscroll-behavior:contain;overflow-anchor:none;padding:2px 6px 2px 2px}
+.players-page .player-row>span:nth-child(2){min-width:0;overflow-wrap:anywhere}
+.players-page .player-profile-body{flex:1;min-height:0;overflow:auto;padding:2px 6px 4px 2px;scrollbar-gutter:stable;overscroll-behavior:contain}
+.players-page .player-profile-body>.metrics{margin:0 0 18px}
+@media(max-width:700px){
+  .fixed-workspace .header{height:62px;padding:8px 14px}.fixed-workspace .brand{font-size:25px}.fixed-workspace .brand small{font-size:8px;margin-top:4px}
+  .fixed-workspace .context{padding:8px 14px}.fixed-workspace .context .eyebrow{display:none}
+  .fixed-workspace .workspace{padding:0 12px}.fixed-workspace .nav{padding-top:0}
+  .fixed-workspace .nav button{padding:8px 5px;gap:4px;font-size:9px}.fixed-workspace .nav svg{width:16px;height:16px}
+  .fixed-workspace .content{padding:10px 0;gap:10px}
+  .fixed-workspace .page-heading{flex-direction:row;align-items:center;gap:10px}
+  .fixed-workspace .page-heading>div{min-width:0}.fixed-workspace .page-heading h1{font-size:21px}
+  .fixed-workspace .page-heading .eyebrow,.fixed-workspace .page-heading .muted{display:none}
+  .fixed-workspace .page-heading>.button{min-height:38px;font-size:11px;padding:8px 10px}
+  .fixed-workspace .app-footer{padding:6px 0;font-size:8px}
+  .setup-page .current-panel{flex-direction:row;align-items:center;padding:10px 12px;gap:8px}
+  .setup-page .current-panel .eyebrow{font-size:8px}.setup-page .current-panel h2{font-size:16px;margin:2px 0}
+  .setup-page .current-panel .muted{display:none}.setup-page .current-panel>.button{min-height:36px;font-size:10px;padding:8px}
+  .setup-page .content>.section-label h2{font-size:17px}
+  .setup-page #saved-structures{padding-right:4px}
+  .setup-page #structure-form{padding:12px}.setup-page .structure-editor-body{padding-right:5px}
+  .setup-page .sticky-save{gap:8px}.setup-page .sticky-save .button{min-height:38px;font-size:11px;padding:8px 10px}
+  .players-page .player-database-panel{padding:12px}.players-page .search-row{gap:10px}
+  .players-page .search{max-width:none}
+}
+@media(max-height:600px){
+  .fixed-workspace .header,.fixed-workspace .app-footer{display:none}
+  .fixed-workspace .context{padding-top:5px;padding-bottom:5px}
+  .fixed-workspace .nav{padding-top:0}.fixed-workspace .nav button{padding-top:7px;padding-bottom:7px}
+  .fixed-workspace .content{padding-top:8px;padding-bottom:8px;gap:8px}
+  .fixed-workspace .page-heading .eyebrow,.fixed-workspace .page-heading .muted{display:none}
+  .fixed-workspace .page-heading h1{font-size:21px}
+  .setup-page .current-panel{padding:8px 12px}.setup-page .current-panel .eyebrow,.setup-page .current-panel .muted{display:none}
+  .setup-page .current-panel h2{font-size:16px;margin:0}
+  .players-page .search-row{flex-direction:row;align-items:center;gap:10px}
+  .players-page .search-row .check{font-size:10px;white-space:nowrap}
+  .players-page .player-database-panel,.setup-page #structure-form{padding:10px}
+}

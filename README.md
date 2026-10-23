@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.0
+# Uno Club Tournament Director — v0.3.1
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -121,3 +121,10 @@ Management has one Rebuy button. It enables at the start of the break after the 
 Older per-player rebuy rows are consolidated once into the tournament count on read and saved with the next action. Player IDs, entry references and completed event settlements are preserved. Existing open-event registrations are treated as paid. No database schema change is required: the aggregate count is stored in the existing authenticated workspace JSON.
 
 Validation: 45 automated scenarios pass, including cutoff-break enablement on timer ticks, repeated total replacement during the break, input bounds, migration without double counting, assumed-paid registration, removed money statistics and existing clock/account behavior. `backend/verify-rebuy-data.sql` checks the new JSON shape against the installed player-integrity trigger inside a rolled-back transaction.
+
+
+## v0.3.1 fixed setup and player database pages
+
+Tournament Setup and Player Database fill the available viewport without document scrolling. Setup keeps its heading and actions fixed while the saved-structure grid scrolls. Editing a structure scrolls the settings panel while Save and Cancel remain available outside that scroll region. Player Database keeps its heading, Add player, search and archive filter fixed; only the names/IDs list scrolls. Player detail forms and history use an internal content region. Compact layouts handle phone keyboards and short screens. Filtering resets only the player list, and cloud refresh retains its position, search focus and caret. Structure editing actions retain the settings panel's scroll position.
+
+The existing automated scenarios, plus player-list focus/scroll refresh coverage, pass. Layout checks use the hosted desktop and phone screens.

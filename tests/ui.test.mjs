@@ -108,7 +108,7 @@ test('starting chips is typed, formats thousands and saves the numeric value thr
   field.value='12,345';field.setSelectionRange(2,2);field.value='192,345';field.setSelectionRange(2,2);field.dispatchEvent(new ui.w.Event('input',{bubbles:true}));assert.equal(field.value,'192,345');assert.equal(field.selectionStart,2);
   input(field,'1.5');assert.equal(field.checkValidity(),false);await submit(q('#structure-form'));assert.equal(ui.stored().templates[0].settings.startingStack,5000);
   input(field,'0');assert.equal(field.checkValidity(),false);input(field,'');assert.equal(field.checkValidity(),false);
-  input(field,'20000');assert.equal(field.value,'20,000');click('[data-action="add-break"]');field=q('[name=startingStack]');assert.equal(field.value,'20,000');
+  input(field,'20000');assert.equal(field.value,'20,000');q('.structure-editor-body').scrollTop=420;click('[data-action="add-break"]');assert.equal(q('.structure-editor-body').scrollTop,420);field=q('[name=startingStack]');assert.equal(field.value,'20,000');
   await submit(q('#structure-form'));assert.equal(ui.stored().templates[0].settings.startingStack,20000);assert.equal(typeof ui.stored().templates[0].settings.startingStack,'number');
   click('[data-edit-template]');assert.equal(q('[name=startingStack]').value,'20,000');assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
@@ -234,4 +234,16 @@ test('completed player profiles show finishing history without money statistics 
  let s=initialState();s=execute(s,{type:'player-save',id:'p1',name:'Alex'});s=execute(s,{type:'tournament-create',id:'t1',name:'Finished Event',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'t1',playerId:'p1'});s=execute(s,{type:'finish',tournamentId:'t1'});
  const ui=await boot('https://example.test/',s,'players');
  try{ui.click('[data-player=p1]');assert.match(ui.q('.player-stats').textContent,/Wins1/);assert.match(ui.w.document.body.textContent,/Finished #1/);assert.doesNotMatch(ui.w.document.body.textContent,/winnings|net result|recorded costs|cashes|\$/i);assert.equal('winnings' in ui.stored().tournaments[0].entries[0],false);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+});
+
+test('player list filtering and cloud refresh preserve the fixed search and independent list position',async()=>{
+ let s=initialState();for(let i=1;i<=30;i++)s=execute(s,{type:'player-save',id:'p'+i,name:'Player '+String(i).padStart(2,'0')});
+ const ui=await boot('https://example.test/uno-club-tournament/',s,'players');
+ try{
+  const list=ui.q('#player-results'),search=ui.q('#player-search');list.scrollTop=250;search.focus();ui.input(search,'Player');assert.equal(list.scrollTop,0);assert.equal(ui.q('#player-search'),search);assert.equal(ui.w.document.activeElement,search);
+  list.scrollTop=180;search.setSelectionRange(2,4);await ui.storage(execute(s,{type:'player-save',id:'p31',name:'Player 31'}));
+  assert.equal(ui.q('#player-results').scrollTop,180);assert.equal(ui.w.document.activeElement,ui.q('#player-search'));assert.equal(ui.q('#player-search').selectionStart,2);assert.equal(ui.q('#player-search').selectionEnd,4);
+  ui.input(ui.q('#player-search'),'Nobody');assert.equal(ui.q('#player-results').scrollTop,0);assert.match(ui.q('#player-results').textContent,/No matching players/);
+  ui.click('[data-go=home]');assert.equal(ui.w.document.body.classList.contains('fixed-workspace'),false);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
 });
