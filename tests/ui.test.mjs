@@ -125,20 +125,20 @@ test('player database displays three-digit IDs and can search by the visible num
  }finally{ui.close();}
 });
 
-test('registration filtering and remote updates retain search focus, payment choice and independent list position',async()=>{
+test('registration filtering and remote updates retain search focus and independent list position',async()=>{
  let s=initialState();for(let i=1;i<=20;i++)s=execute(s,{type:'player-save',id:'p'+i,name:'Player '+String(i).padStart(2,'0')});
  s=execute(s,{type:'tournament-create',id:'t1',name:'Registration test',templateId:s.templates[0].id});
  for(let i=1;i<=10;i++)s=execute(s,{type:'register',tournamentId:'t1',playerId:'p'+i,paid:true});
  const ui=await boot('https://example.test/uno-club-tournament/',s,'signup','t1');
  try{
   const search=ui.q('#signup-search'),registered=ui.q('#registered-results'),available=ui.q('#signup-results');
-  search.focus();ui.q('#registration-paid').checked=false;registered.scrollTop=230;available.scrollTop=150;
+  search.focus();assert.equal(ui.q('#registration-paid'),null);assert.equal(ui.q('[data-paid]'),null);assert.equal(ui.q('[data-rebuy]'),null);registered.scrollTop=230;available.scrollTop=150;
   ui.input(search,'Player 20');assert.equal(ui.q('#signup-search'),search);assert.equal(ui.w.document.activeElement,search);assert.equal(registered.scrollTop,230);assert.equal(available.scrollTop,0);assert.equal(ui.w.document.querySelectorAll('[data-register]').length,1);
   search.setSelectionRange(3,6);await ui.storage(execute(s,{type:'player-save',id:'p21',name:'Player 21'}));
-  assert.equal(ui.w.document.activeElement,ui.q('#signup-search'));assert.equal(ui.q('#signup-search').selectionStart,3);assert.equal(ui.q('#signup-search').selectionEnd,6);assert.equal(ui.q('#signup-search').value,'Player 20');assert.equal(ui.q('#registered-results').scrollTop,230);assert.equal(ui.q('#registration-paid').checked,false);
+  assert.equal(ui.w.document.activeElement,ui.q('#signup-search'));assert.equal(ui.q('#signup-search').selectionStart,3);assert.equal(ui.q('#signup-search').selectionEnd,6);assert.equal(ui.q('#signup-search').value,'Player 20');assert.equal(ui.q('#registered-results').scrollTop,230);assert.equal(ui.q('#registration-paid'),null);
   ui.click('[data-registration-panel=registered]');assert.equal(ui.q('.signup-layout').dataset.panel,'registered');assert.equal(ui.q('[data-registration-panel=registered]').getAttribute('aria-pressed'),'true');
   ui.click('[data-registration-panel=find]');ui.click('[data-register="p20"]');await flush();
-  const t=ui.stored().tournaments[0];assert.equal(t.entries.length,11);assert.equal(t.entries.find(e=>e.playerId==='p20').payments[0].paid,false);assert.equal(ui.q('#registered-results').scrollTop,230);assert.equal(ui.q('#signup-search').value,'');assert.equal(ui.q('#registration-paid').checked,false);
+  const t=ui.stored().tournaments[0];assert.equal(t.entries.length,11);assert.equal(t.entries.find(e=>e.playerId==='p20').payments[0].paid,true);assert.equal(ui.q('#registered-results').scrollTop,230);assert.equal(ui.q('#signup-search').value,'');assert.equal(ui.q('#registration-paid'),null);
   assert.equal(ui.w.document.body.classList.contains('registration-page'),true);ui.click('[data-go=home]');assert.equal(ui.w.document.body.classList.contains('registration-page'),false);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
@@ -206,4 +206,32 @@ test('opening a clock link retains its requested tournament while cloud records 
  let s=initialState();s=execute(s,{type:'player-save',id:'p1',name:'Alex'});s=execute(s,{type:'tournament-create',id:'active-1',name:'Active Event',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'active-1',playerId:'p1',paid:true});s=execute(s,{type:'tournament-create',id:'draft-1',name:'Next Week',templateId:s.templates[0].id});
  const ui=await boot('https://example.test/',s,'clock','draft-1');
  try{assert.equal(ui.q('.tv-heading h1').textContent,'Next Week');assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+});
+
+
+test('management records an editable rebuy total from the cutoff break, with zero default and plus/minus input',async()=>{
+ let s=initialState();for(const [id,name] of [['p1','Alex'],['p2','Casey']])s=execute(s,{type:'player-save',id,name});s=execute(s,{type:'tournament-create',id:'t1',name:'Rebuy total',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'t1',playerId:'p1'});s=execute(s,{type:'register',tournamentId:'t1',playerId:'p2'});
+ const t=s.tournaments[0];t.settings.rebuyLastRound=8;t.clock={index:7,status:'paused',remainingMs:900000,deadline:null};
+ const ui=await boot('https://example.test/',s,'manage','t1');
+ try{
+  assert.equal(ui.q('#record-rebuys').disabled,true);assert.equal(ui.q('[data-paid]'),null);assert.equal(ui.q('[data-rebuy]'),null);
+  t.clock.index=8;await ui.storage(s);assert.equal(ui.q('#record-rebuys').disabled,false);ui.click('#record-rebuys');let f=ui.q('#rebuy-count-form');assert.equal(f.elements.count.value,'0');
+  ui.click('[data-rebuy-step="-1"]');assert.equal(f.elements.count.value,'0');ui.click('[data-rebuy-step="1"]');assert.equal(f.elements.count.value,'1');ui.click('[data-rebuy-step="1"]');ui.click('[data-rebuy-step="-1"]');assert.equal(f.elements.count.value,'1');
+  ui.input(f.elements.count,'4');await ui.submit(f);assert.equal(ui.stored().tournaments[0].rebuyCount,4);assert.ok(ui.stored().tournaments[0].entries.every(e=>e.payments.length===1));assert.match(ui.q('.metrics').textContent,/4/);
+  ui.click('#record-rebuys');f=ui.q('#rebuy-count-form');assert.equal(f.elements.count.value,'4');ui.input(f.elements.count,'2');await ui.submit(f);assert.equal(ui.stored().tournaments[0].rebuyCount,2);
+  ui.click('#record-rebuys');f=ui.q('#rebuy-count-form');ui.input(f.elements.count,'1.5');await ui.submit(f);assert.equal(ui.stored().tournaments[0].rebuyCount,2);assert.equal(ui.q('#dialog').open,true);
+  ui.input(f.elements.count,'0');await ui.submit(f);assert.equal(ui.stored().tournaments[0].rebuyCount,0);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('rebuy control becomes available as the cutoff break starts without a reload',async()=>{
+ let s=initialState();s=execute(s,{type:'tournament-create',id:'t1',name:'Timed cutoff',templateId:s.templates[0].id});const t=s.tournaments[0];t.settings.rebuyLastRound=1;t.settings.pauseBreaks=false;t.levels.splice(1,0,{kind:'break',minutes:0.01,sb:0,bb:0,ante:0,game:'',chipUp:false});t.clock={index:0,status:'running',remainingMs:0,deadline:Date.now()+700};
+ const ui=await boot('https://example.test/',s,'manage','t1');
+ try{assert.equal(ui.q('#record-rebuys').disabled,true);await new Promise(r=>setTimeout(r,850));assert.equal(ui.q('#record-rebuys').disabled,false);await new Promise(r=>setTimeout(r,950));assert.equal(ui.q('#record-rebuys').disabled,false);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+});
+
+test('completed player profiles show finishing history without money statistics or winnings',async()=>{
+ let s=initialState();s=execute(s,{type:'player-save',id:'p1',name:'Alex'});s=execute(s,{type:'tournament-create',id:'t1',name:'Finished Event',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'t1',playerId:'p1'});s=execute(s,{type:'finish',tournamentId:'t1'});
+ const ui=await boot('https://example.test/',s,'players');
+ try{ui.click('[data-player=p1]');assert.match(ui.q('.player-stats').textContent,/Wins1/);assert.match(ui.w.document.body.textContent,/Finished #1/);assert.doesNotMatch(ui.w.document.body.textContent,/winnings|net result|recorded costs|cashes|\$/i);assert.equal('winnings' in ui.stored().tournaments[0].entries[0],false);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });

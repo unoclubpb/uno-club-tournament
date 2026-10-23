@@ -24,6 +24,8 @@ export function purchaseOpen(t,c,kind){
   return t.levels[c.index].kind==='play'||t.levels[c.index-1]?.kind==='play';
 }
 export const rebuyOpen=(t,c)=>purchaseOpen(t,c,'rebuy');
+export const canRecordRebuys=(t,c)=>t.status!=='completed'&&t.settings.rebuyEnabled&&c.status!=='ready'&&(rebuyPhase(t,c)==='final-break'||!rebuyOpen(t,c));
+export const tournamentRebuyCount=t=>(Number.isSafeInteger(t.rebuyCount)&&t.rebuyCount>=0?t.rebuyCount:0)+t.entries.flatMap(e=>e.payments||[]).filter(p=>p.kind==='rebuy').length;
 export function cutoffHasBreak(t,kind='rebuy'){
   let round=0;const index=t.levels.findIndex(l=>l.kind==='play'&&++round===t.settings[kind+'LastRound']);
   return index>=0&&t.levels[index+1]?.kind==='break';
@@ -54,13 +56,17 @@ export function upgradeState(value){
     if(starter)template.settings.buyIn=5000;
   }
   for(const t of s.tournaments){
-    if(t.settings.financeVersion===2)continue;
-    if(t.status==='completed'&&!t.settlement){
-      const paid=t.entries.flatMap(e=>e.payments).filter(p=>p.paid),collected=paid.reduce((n,p)=>n+paymentTotal(p),0),fees=paid.reduce((n,p)=>n+(p.house||0),0)+(t.settings.fixedExpense||0);
-      t.settlement={collected,owed:t.entries.flatMap(e=>e.payments).filter(p=>!p.paid).reduce((n,p)=>n+paymentTotal(p),0),dealerTokes:0,houseBase:collected,houseFee:fees,housePercent:null,pool:Math.max(0,collected-fees+(t.settings.houseContribution||0)),legacy:true};
+    if(t.settings.financeVersion!==2){
+      if(t.status==='completed'&&!t.settlement){
+        const paid=t.entries.flatMap(e=>e.payments).filter(p=>p.paid),collected=paid.reduce((n,p)=>n+paymentTotal(p),0),fees=paid.reduce((n,p)=>n+(p.house||0),0)+(t.settings.fixedExpense||0);
+        t.settlement={collected,owed:t.entries.flatMap(e=>e.payments).filter(p=>!p.paid).reduce((n,p)=>n+paymentTotal(p),0),dealerTokes:0,houseBase:collected,houseFee:fees,housePercent:null,pool:Math.max(0,collected-fees+(t.settings.houseContribution||0)),legacy:true};
+      }
+      t.settings=upgradeSettings(t.settings);
+      for(const e of t.entries)for(const p of e.payments){p.total=paymentTotal(p);p.dealerToke=p.kind==='entry'?(p.house||0):0;delete p.prize;delete p.house;}
     }
-    t.settings=upgradeSettings(t.settings);
-    for(const e of t.entries)for(const p of e.payments){p.total=paymentTotal(p);p.dealerToke=p.kind==='entry'?(p.house||0):0;delete p.prize;delete p.house;}
+    // Rebuys belong to the tournament. Move old records into its total exactly once.
+    t.rebuyCount=tournamentRebuyCount(t);
+    for(const e of t.entries){e.payments=(e.payments||[]).filter(p=>p.kind!=='rebuy');if(t.status!=='completed')for(const p of e.payments)p.paid=true;}
   }
   return s;
 }
@@ -79,16 +85,15 @@ export function clockAt(t,now) {
   c.remainingMs=Math.max(0,c.deadline-now); return c;
 }
 export function financials(t){
-  const payments=t.entries.flatMap(e=>e.payments);
-  const paid=payments.filter(p=>p.paid);
-  const collected=paid.reduce((n,p)=>n+paymentTotal(p),0);
-  const owed=payments.filter(p=>!p.paid).reduce((n,p)=>n+paymentTotal(p),0);
-  const dealerTokes=paid.filter(p=>p.kind==='entry').reduce((n,p)=>n+(p.dealerToke||0),0);
+  const payments=t.entries.flatMap(e=>e.payments||[]).filter(p=>p.kind!=='rebuy');
+  const rebuyCount=tournamentRebuyCount(t),rebuyTotal=rebuyCount*t.settings.rebuyAmount;
+  const collected=payments.reduce((n,p)=>n+paymentTotal(p),0)+rebuyTotal;
+  const dealerTokes=payments.filter(p=>p.kind==='entry').reduce((n,p)=>n+(p.dealerToke||0),0);
   const houseBase=Math.max(0,collected-dealerTokes);
   const houseFee=Math.round(houseBase*t.settings.housePercent/100);
   const pool=Math.max(0,houseBase-houseFee+t.settings.houseContribution);
-  const amounts=t.status==='completed'&&t.settlement?t.settlement:{collected,owed,dealerTokes,houseBase,houseFee,pool,housePercent:t.settings.housePercent};
-  return {...amounts,rebuyCount:payments.filter(p=>p.kind==='rebuy').length,addonCount:payments.filter(p=>p.kind==='addon').length,chips:payments.reduce((n,p)=>n+p.chips,0)};
+  const amounts=t.status==='completed'&&t.settlement?t.settlement:{collected,owed:0,dealerTokes,houseBase,houseFee,pool,housePercent:t.settings.housePercent};
+  return {...amounts,rebuyCount,rebuyTotal,addonCount:payments.filter(p=>p.kind==='addon').length,chips:payments.reduce((n,p)=>n+p.chips,0)+rebuyCount*t.settings.rebuyChips};
 }
 export function prizes(t){
   if(t.settings.payoutMode==='fixed') return t.settings.payouts;
@@ -113,7 +118,7 @@ export function validateTemplate(template){
   check(s.payoutMode!=='percent'||Math.abs(s.payouts.reduce((a,b)=>a+b,0)-100)<0.001,'Payout percentages must total 100%.');
 }
 export function execute(state,action,now=Date.now()){
-  const s=clone(state), a=action;assignPlayerNumbers(s.players);let t=s.tournaments.find(t=>t.id===a.tournamentId);
+  const s=upgradeState(state), a=action;let t=s.tournaments.find(t=>t.id===a.tournamentId);
   if(a.type==='player-save'){
     const name=String(a.name||'').trim().replace(/\s+/gu,' ');check(name,'Enter a player name.');check(name.length<=100,'Player name is too long.');
     const p=s.players.find(p=>p.id===a.id);
@@ -126,7 +131,7 @@ export function execute(state,action,now=Date.now()){
   if(a.type==='template-delete'){check(s.templates.length>1,'Keep at least one saved structure.');s.templates=s.templates.filter(v=>v.id!==a.id);return s;}
   if(a.type==='tournament-create'){
     const template=s.templates.find(v=>v.id===a.templateId);check(template,'Choose a saved structure.');validateTemplate(template);check(String(a.name||'').trim(),'Give the tournament a name.');
-    s.tournaments.push({id:a.id||id(),name:String(a.name).trim().slice(0,120),date:a.date||new Date(now).toISOString().slice(0,10),templateName:template.name,levels:clone(template.levels),settings:clone(template.settings),entries:[],eliminationUndo:[],status:'open',clock:{index:0,status:'ready',remainingMs:template.levels[0].minutes*60000,deadline:null},createdAt:now});return s;
+    s.tournaments.push({id:a.id||id(),name:String(a.name).trim().slice(0,120),date:a.date||new Date(now).toISOString().slice(0,10),templateName:template.name,levels:clone(template.levels),settings:clone(template.settings),entries:[],rebuyCount:0,eliminationUndo:[],status:'open',clock:{index:0,status:'ready',remainingMs:template.levels[0].minutes*60000,deadline:null},createdAt:now});return s;
   }
   check(t,'Choose a tournament first.');
   if(a.type==='tournament-settings'){
@@ -149,20 +154,24 @@ export function execute(state,action,now=Date.now()){
   }
   if(a.type==='register'){
     check(s.players.some(p=>p.id===a.playerId&&!p.archived),'Choose an active player.');check(!t.entries.some(e=>e.playerId===a.playerId),'Player is already registered.');
-    t.entries.push({id:a.id||id(),playerId:a.playerId,registeredAt:now,eliminatedAt:null,place:null,table:null,seat:null,payments:[{id:id(),kind:'entry',total:t.settings.buyIn,dealerToke:t.settings.dealerToke,chips:t.settings.startingStack,paid:!!a.paid,at:now}]});t.eliminationUndo=[];return s;
+    t.entries.push({id:a.id||id(),playerId:a.playerId,registeredAt:now,eliminatedAt:null,place:null,table:null,seat:null,payments:[{id:id(),kind:'entry',total:t.settings.buyIn,dealerToke:t.settings.dealerToke,chips:t.settings.startingStack,paid:true,at:now}]});t.eliminationUndo=[];return s;
+  }
+  if(a.type==='rebuy-count'){
+    check(canRecordRebuys(t,c),'Enter the rebuy total during the break after the final rebuy round, or afterward.');
+    check(Number.isSafeInteger(a.count)&&a.count>=0,'Enter a whole number of rebuys, zero or greater.');
+    check(Number.isSafeInteger(a.count*t.settings.rebuyAmount)&&Number.isSafeInteger(a.count*t.settings.rebuyChips),'Rebuy count is too large.');
+    t.rebuyCount=a.count;return s;
   }
   const e=t.entries.find(e=>e.id===a.entryId);
-  if(['payment','paid','eliminate','seat'].includes(a.type))check(e,'Player entry not found.');
+  if(['payment','eliminate','seat'].includes(a.type))check(e,'Player entry not found.');
   if(a.type==='payment'){
-    check(['rebuy','addon'].includes(a.kind),'Unknown payment type.');check(!e.eliminatedAt,'Player has been eliminated.');const k=a.kind;
+    check(a.kind==='addon','Record rebuys as a tournament total from the cutoff break onward.');check(!e.eliminatedAt,'Player has been eliminated.');const k=a.kind;
     check(purchaseOpen(t,c,k),`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
     check(t.settings[k+'Enabled'],`${k==='rebuy'?'Rebuys':'Add-ons'} are turned off.`);
     check(roundAt(t,c.index)<=t.settings[k+'LastRound'],`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
-    if(k==='rebuy'&&t.settings.rebuyMax>0)check(e.payments.filter(p=>p.kind==='rebuy').length<t.settings.rebuyMax,'Player has reached the rebuy limit.');
     if(k==='addon')check(!e.payments.some(p=>p.kind==='addon'),'Add-on already recorded.');
-    e.payments.push({id:id(),kind:k,total:t.settings[k+'Amount'],dealerToke:0,chips:t.settings[k+'Chips'],paid:!!a.paid,at:now});return s;
+    e.payments.push({id:id(),kind:k,total:t.settings[k+'Amount'],dealerToke:0,chips:t.settings[k+'Chips'],paid:true,at:now});return s;
   }
-  if(a.type==='paid'){e.payments.forEach(p=>{p.paid=!!a.paid;});return s;}
   if(a.type==='eliminate'){
     check(!e.eliminatedAt,'Player already eliminated.');const active=t.entries.filter(e=>!e.eliminatedAt).length;check(active>1,'Use Finish Tournament to confirm the winner.');
     t.eliminationUndo.push({entryId:e.id,table:e.table,seat:e.seat});e.eliminatedAt=now;e.place=active;e.table=null;e.seat=null;return s;
@@ -185,13 +194,13 @@ export function execute(state,action,now=Date.now()){
   }
   if(a.type==='finish'){
     const remaining=t.entries.filter(e=>!e.eliminatedAt);check(remaining.length===1,'Leave exactly one remaining player before finishing.');
-    const payout=prizes(t);check(payout.reduce((a,b)=>a+b,0)<=financials(t).pool,'Payouts exceed the paid prize pool.');
-    remaining[0].place=1;t.entries.forEach(e=>{e.winnings=payout[e.place-1]||0;});
+    const payout=prizes(t);check(payout.reduce((a,b)=>a+b,0)<=financials(t).pool,'Payouts exceed the prize pool.');
+    remaining[0].place=1;
     t.settlement=financials(t);t.status='completed';t.completedAt=now;c.status='ended';c.deadline=null;c.remainingMs=0;t.eliminationUndo=[];return s;
   }
   throw new Error('Unknown action.');
 }
 export function statsFor(state,playerId){
   const rows=state.tournaments.filter(t=>t.status==='completed').flatMap(t=>t.entries.filter(e=>e.playerId===playerId).map(e=>({t,e})));
-  return {played:rows.length,wins:rows.filter(r=>r.e.place===1).length,cashes:rows.filter(r=>r.e.winnings>0).length,winnings:rows.reduce((n,r)=>n+(r.e.winnings||0),0),cost:rows.reduce((n,r)=>n+r.e.payments.reduce((a,p)=>a+paymentTotal(p),0),0),history:rows};
+  return {played:rows.length,wins:rows.filter(r=>r.e.place===1).length,history:rows};
 }

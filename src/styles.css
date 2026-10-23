@@ -164,3 +164,5 @@ body.home-page{height:var(--app-height,100dvh);min-height:0;overflow:hidden;over
 /* The current tournament is a label rather than a second selection control. */
 .context>div:first-child{flex:1;min-width:0}.context-actions{flex-shrink:0}.current-tournament-name{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:17px;line-height:1.5}
 @media(max-width:700px){.current-tournament-name{font-size:14px}.registration-page .registration-tabs{margin-top:8px}}
+
+.player-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.player-stats>div{border-bottom:0!important}.rebuy-total-controls{margin-top:18px}.rebuy-total-controls .small-copy{margin-top:8px}.rebuy-stepper{display:flex;align-items:center;gap:12px;margin:0 0 16px}.rebuy-stepper>.button{flex:0 0 48px;font-size:24px;padding:4px;min-height:48px}.rebuy-stepper input{min-width:0;text-align:center;font-size:24px;font-variant-numeric:tabular-nums;appearance:textfield;-moz-appearance:textfield}.rebuy-stepper input::-webkit-inner-spin-button,.rebuy-stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}#rebuy-count-form>.muted{margin-bottom:20px}
