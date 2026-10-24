@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.17
+# Uno Club Tournament Director — v0.3.18
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -292,3 +292,10 @@ Tournament Management splits its clock panel into equal-width columns: countdown
 The TV seating chart retains empty seat numbers and leaves their player-name area blank. The shared table action says Combine Tables when the displayed table count can be reduced; otherwise it says Balance Tables. Its dialog, confirmation button and success message use the same distinction. Both actions reuse the existing balanced seating planner and preserve locked seats. Final-table seat retention/redraw options remain available when closing tables to form the final table. No seating or tournament records are changed by deployment.
 
 Validation: 155 automated tests pass, including balancing without closing tables, four-to-three combinations and blank TV seat names with seat numbers preserved. Browser checks verify equal readout/control column widths and matching Rebuy/main-clock widths at 320, 390, 768 and 1280 pixels, alongside existing TV layouts, payout/color controls, synchronization and fullscreen persistence. Automatic placement/fullscreen on the actual Windows wireless HDMI setup remains pending hardware verification.
+
+
+## v0.3.18 in-app elimination confirmation
+
+- Players and Tables & Seats open an app dialog naming the player and finishing place, with Cancel and Confirm Elimination buttons.
+- No elimination is saved until confirmed. If another device changes the tournament while the dialog is open, the organizer must reopen it to confirm the current place.
+- Failed saves leave the dialog available for retry; existing elimination recording, seat release, balancing alerts, undo and player records are preserved.

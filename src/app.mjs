@@ -249,7 +249,7 @@ function selectCurrentTournament(){
 }
 function workspaceScreen(){
   const banner=header()+importNotice(),menu=view==='home'?'':nav();
-  const content=`<main class="content">${({home,setup,players,signup,manage}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.3.17 · ${online?'Saved online':'Connection interrupted'}</span></footer>`;
+  const content=`<main class="content">${({home,setup,players,signup,manage}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.3.18 · ${online?'Saved online':'Connection interrupted'}</span></footer>`;
   if(view==='manage')return `<div class="management-chrome">${banner}<div class="workspace">${menu}</div></div><div class="workspace">${content}</div>`;
   return `${banner}<div class="workspace">${menu}${content}</div>`;
 }
@@ -327,7 +327,14 @@ function acceptSession(next){
   if(!user){const previous=channel;channel=null;if(previous)void db.removeChannel(previous);state=initialState();version=0;online=false;editor=null;serverSample=null;if(dlg.open)dlg.close();render();return;}
   return enterCloud();
 }
-function modal(title,body){dlg.innerHTML=`<div class="modal-heading"><h2>${title}</h2><button type="button" class="icon-button" data-action="close-modal" aria-label="Close dialog">×</button></div>${body}`;if(!dlg.open)dlg.showModal();}
+function modal(title,body){dlg.removeAttribute('aria-labelledby');dlg.removeAttribute('aria-describedby');dlg.innerHTML=`<div class="modal-heading"><h2>${title}</h2><button type="button" class="icon-button" data-action="close-modal" aria-label="Close dialog">×</button></div>${body}`;if(!dlg.open)dlg.showModal();}
+function eliminationDialog(entryId){
+  const t=current(),entry=t?.entries.find(e=>e.id===entryId&&!e.eliminatedAt),place=t?active(t).length:0;
+  if(!entry||t.status==='completed')throw new Error('Choose an active player to eliminate.');
+  if(place<=1)throw new Error('Use Finish Tournament to confirm the winner.');
+  modal('Confirm Elimination',`<form id="elimination-form"><input type="hidden" name="version" value="${version}"><input type="hidden" name="tournamentId" value="${t.id}"><input type="hidden" name="entryId" value="${entry.id}"><input type="hidden" name="place" value="${place}"><p id="elimination-question">Eliminate <strong>${esc(pName(entry))}</strong> in <strong>${ordinal(place)} place</strong>?</p><p id="elimination-feedback" role="status"></p><div class="button-row"><button type="button" class="button secondary" data-action="close-modal" autofocus>Cancel</button><button type="submit" class="button danger">Confirm Elimination</button></div></form>`);
+  dlg.setAttribute('aria-labelledby','elimination-title');dlg.querySelector('h2').id='elimination-title';dlg.setAttribute('aria-describedby','elimination-question');
+}
 function showAccount(){if(!session){render();return;}modal('Your Uno Club account',`<div class="account-status"><strong>${esc(session.user.email)}</strong><p>Players, tournament structures and results save to your account. Sign in with this same account on your phone and computer.</p><button class="button secondary" data-action="signout">Sign out</button></div>`);}
 function newTournament(templateId){modal('Create a tournament',`<form id="new-tournament-form"><label>Tournament name<input name="name" placeholder="Wednesday tournament" required maxlength="120"></label><label>Tournament date<input type="date" name="date" value="${today()}" required></label><label>Saved structure<select name="templateId">${state.templates.map(s=>`<option value="${s.id}" ${s.id===templateId?'selected':''}>${esc(s.name)}</option>`).join('')}</select></label><p class="muted">This creates an independent copy. You can change its settings without changing the saved structure.</p><button class="button primary full">Create tournament</button></form>`);}
 function newPlayer(){modal('Add a player',`<form id="player-form"><label>Player name<input name="name" value="${esc(view==='signup'?signupSearch:'')}" maxlength="100" placeholder="Name or nickname" autocomplete="off" required></label><p class="name-feedback" id="player-name-feedback" role="status"></p><label>Phone number (optional)<input type="tel" name="phone" maxlength="40" autocomplete="tel" data-phone="true" pattern="([0-9]{10}|[0-9]{3}-[0-9]{3}-[0-9]{4})" placeholder="###-###-####" title="Enter exactly 10 digits, such as 555-123-4567."></label><label>Notes (optional)<textarea name="notes" maxlength="1000"></textarea></label><button class="button primary full">Save player</button></form>`);}
@@ -464,7 +471,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   if(el.dataset.payoutStep){const form=el.closest('form'),input=form.elements.paidPlaces;if(input.disabled)return;input.value=String(Math.max(1,Math.min(20,(Number(input.value)||1)+Number(el.dataset.payoutStep))));refreshPayoutPreview(form);return;}
   if(el.dataset.rebuyStep){const input=$('#rebuy-count'),value=Number(input.value);input.value=String(Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,(Number.isSafeInteger(value)?value:0)+Number(el.dataset.rebuyStep))));return;}
   if(el.dataset.undoElimination){const t=current(),e=t.entries.find(e=>e.id===el.dataset.undoElimination),seat=e.eliminationSeat||t.eliminationUndo.find(v=>v.entryId===e.id);if(confirm(`Are you sure you want to undo the elimination of ${pName(e)}? ${seat?.table?'Restore Table '+seat.table+', Seat '+seat.seat+'.':seat?'Restore as an active, unseated player.':'The original seat was not recorded for this older elimination. Restore as unseated?'}`))await commit({type:'undo-elimination',tournamentId:selected,entryId:e.id,allowUnseated:!seat});return;}
-  if(el.dataset.eliminate){const e=current().entries.find(e=>e.id===el.dataset.eliminate);if(confirm(`Eliminate ${pName(e)} in ${ordinal(active(current()).length)} place?`)&&await commit({type:'eliminate',tournamentId:selected,entryId:e.id})&&tableBalanceNeeded(current()))toast('Tables Need Balancing. Please move one player to balance the tables.');return;}
+  if(el.dataset.eliminate){eliminationDialog(el.dataset.eliminate);return;}
   if(el.dataset.archive){await commit({type:'player-archive',id:el.dataset.archive});return;}
   if(el.dataset.seatLock){
     const context=seatingContext(),entry=current().entries.find(e=>e.id===el.dataset.seatLock);checkSeatingContext(context);
@@ -550,6 +557,17 @@ document.addEventListener('submit',async event=>{event.preventDefault();const fo
       if(data.session){if(dlg.open)dlg.close();await acceptSession(data.session);toast('Signed in. Use this same account on your phone and computer.');}
       else feedback.textContent='Check your email to confirm the account, then return here and sign in.';
     }catch(e){feedback.textContent=e.message;}finally{buttons.forEach(b=>b.disabled=false);}return;
+  }
+  if(form.id==='elimination-form'){
+    if(busy||!dlg.open)return;
+    const t=current(),entry=t?.entries.find(e=>e.id===fd.get('entryId')),feedback=form.querySelector('#elimination-feedback');
+    if(Number(fd.get('version'))!==version||t?.id!==fd.get('tournamentId')||!entry||entry.eliminatedAt||t.status==='completed'||active(t).length!==Number(fd.get('place'))){feedback.textContent='Tournament changed. Cancel and select the player again to confirm the current finishing place.';return;}
+    const button=form.querySelector('[type=submit]');button.disabled=true;
+    try{
+      if(await commit({type:'eliminate',tournamentId:t.id,entryId:entry.id})){
+        dlg.close();if(tableBalanceNeeded(current()))toast('Tables Need Balancing. Please move one player to balance the tables.');
+      }else feedback.textContent=$('#toast').textContent||'Could not save the elimination. Please retry.';
+    }finally{button.disabled=false;}return;
   }
   if(form.id==='player-form'){if(await commit({type:'player-save',id:fd.get('id')||id(),name:fd.get('name'),phone:fd.get('phone'),notes:fd.get('notes')})){if(dlg.open)dlg.close();toast('Player saved.');render();}return;}
   if(form.id==='new-tournament-form'){const eventId=id();if(await commit({type:'tournament-create',id:eventId,name:fd.get('name'),date:fd.get('date'),templateId:fd.get('templateId')})){dlg.close();chooseTournament(eventId);go('signup');toast('Tournament created.');}return;}
