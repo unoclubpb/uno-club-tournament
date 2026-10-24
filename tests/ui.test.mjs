@@ -13,13 +13,14 @@ async function boot(base,seed,view='home',selected='',options={}){
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
  if(options.legacy)w.localStorage.setItem(key,JSON.stringify(options.legacy));
  w.__fixture={state:seed?structuredClone(seed):null,version:seed?1:0,session:options.signedOut?null:{user:{id:'organizer-1',email:'organizer@example.test'}},saveError:null,readError:null,saves:0};
+ if(options.cloud)w.__fixture.cloud=options.cloud;
  const stub=`export const createClient=()=>{
   const f=window.__fixture;
   const signIn=async()=>({data:{session:f.session={user:{id:'organizer-1',email:'organizer@example.test'}}}});
-  const query={select(){return query;},eq(){return query;},async maybeSingle(){return {data:f.state?{state:structuredClone(f.state),version:f.version}:null,error:f.readError};}};
+  const query={select(){return query;},eq(){return query;},async maybeSingle(){const source=f.cloud||f;return {data:source.state?{state:structuredClone(source.state),version:source.version}:null,error:f.readError};}};
   return {auth:{getSession:async()=>({data:{session:f.session}}),onAuthStateChange:cb=>(f.auth=cb,{data:{subscription:{unsubscribe(){}}}}),signInWithPassword:signIn,signUp:async()=>f.confirmEmail?{data:{session:null}}:signIn(),signOut:async()=>{f.session=null;f.auth('SIGNED_OUT',null);return {error:null};}},from:()=>query,
-   rpc:async(name,args)=>{if(name==='td_server_time')return {data:new Date().toISOString()};if(f.saveError)return {error:f.saveError};if(args.p_expected_version!==f.version)return {error:{message:'TD_CONFLICT: tournament changed on another device'}};f.state=structuredClone(args.p_state);f.version++;f.saves++;return {data:{state:structuredClone(f.state),version:f.version}};},
-   channel:()=>({on(event,filter,cb){f.notify=cb;return this;},subscribe(){return this;}}),removeChannel:async()=>{}
+   rpc:async(name,args)=>{if(name==='td_server_time')return {data:new Date().toISOString()};if(f.saveError)return {error:f.saveError};const target=f.cloud||f;if(args.p_expected_version!==target.version)return {error:{message:'TD_CONFLICT: tournament changed on another device'}};target.state=structuredClone(args.p_state);target.version++;f.saves++;if(f.cloud)for(const cb of target.listeners)queueMicrotask(cb);return {data:{state:structuredClone(target.state),version:target.version}};},
+   channel:()=>({on(event,filter,cb){f.notify=cb;if(f.cloud)f.cloud.listeners.add(cb);return this;},subscribe(){return this;}}),removeChannel:async()=>{}
   };
  };`;
  const out=await build({entryPoints:['src/app.mjs'],bundle:true,write:false,format:'iife',plugins:[{name:'local-auth-fixture',setup(b){b.onResolve({filter:/^@supabase\/supabase-js$/},()=>({path:'auth-fixture',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:stub,loader:'js'}));}}]});
@@ -28,7 +29,7 @@ async function boot(base,seed,view='home',selected='',options={}){
  const submit=async (f,action)=>{f.dispatchEvent(new w.SubmitEvent('submit',{bubbles:true,cancelable:true,submitter:action?f.querySelector(`[value=${action}]`):null}));await flush();};
  const input=(el,value)=>{el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));};
  const storage=async value=>{w.__fixture.state=structuredClone(value);w.__fixture.version++;await w.__fixture.notify();await flush();};
- return {w,q,click,submit,input,storage,errors,opened:()=>opened,stored:()=>structuredClone(w.__fixture.state),close:()=>w.close()};
+ return {w,q,click,submit,input,storage,errors,opened:()=>opened,stored:()=>structuredClone((w.__fixture.cloud||w.__fixture).state),close:()=>w.close()};
 }
 for(const base of ['https://example.test/','https://example.test/uno-club-tournament/'])test('home, player records, registration and navigation at '+base,async()=>{
  const ui=await boot(base),{q,click,input,submit}=ui;
@@ -52,7 +53,7 @@ for(const base of ['https://example.test/','https://example.test/uno-club-tourna
 });
 test('TV display switches at cutoff without refresh, and follows remote account updates',async()=>{
  let s=initialState();s=execute(s,{type:'player-save',id:'p1',name:'Alex'});s=execute(s,{type:'tournament-create',id:'t1',name:'Wednesday Tournament',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'t1',playerId:'p1',paid:true});
- const t=s.tournaments[0];t.clock={index:5,status:'running',remainingMs:100,deadline:Date.now()+1000};
+ const t=s.tournaments[0];t.tvDisplayMode='full-clock';t.clock={index:5,status:'running',remainingMs:100,deadline:Date.now()+1000};
  const ui=await boot('https://example.test/uno-club-tournament/',s,'clock','t1');
  try{
   assert.equal(ui.q('.tv-final-rebuy').textContent,'Final Rebuy Round');assert.match(ui.q('.tv-cutoff-detail').textContent,/close after this round/);assert.equal(ui.q('.tv-pool'),null);assert.equal(ui.q('.tv-rebuy-count'),null);
@@ -84,7 +85,7 @@ test('structure editor uses whole-minute breaks and copies a common game without
  }finally{ui.close();}
 });
 test('clock announces the final rebuy round, stays open through its break, then reveals prizes',async()=>{
- let s=initialState();s=execute(s,{type:'tournament-create',id:'t1',name:'Cutoff display test',templateId:s.templates[0].id});const t=s.tournaments[0];t.settings.rebuyLastRound=8;t.clock={index:6,status:'paused',remainingMs:900000,deadline:null};
+ let s=initialState();s=execute(s,{type:'tournament-create',id:'t1',name:'Cutoff display test',templateId:s.templates[0].id});const t=s.tournaments[0];t.tvDisplayMode='full-clock';t.settings.rebuyLastRound=8;t.clock={index:6,status:'paused',remainingMs:900000,deadline:null};
  const ui=await boot('https://example.test/',s,'clock','t1');
  try{
   assert.equal(ui.q('.tv-final-rebuy'),null);assert.match(ui.q('.tv-cutoff-detail').textContent,/Includes the following break/);
@@ -94,7 +95,7 @@ test('clock announces the final rebuy round, stays open through its break, then 
  }finally{ui.close();}
 });
 test('clock transitions from final round to cutoff break and then prizes on timer ticks alone',async()=>{
- let s=initialState();s=execute(s,{type:'tournament-create',id:'t1',name:'Automatic cutoff',templateId:s.templates[0].id});const t=s.tournaments[0];t.settings.rebuyLastRound=1;t.settings.pauseBreaks=false;t.levels.splice(1,0,{kind:'break',minutes:0.01,sb:0,bb:0,ante:0,game:'',chipUp:false});t.clock={index:0,status:'running',remainingMs:0,deadline:Date.now()+700};
+ let s=initialState();s=execute(s,{type:'tournament-create',id:'t1',name:'Automatic cutoff',templateId:s.templates[0].id});const t=s.tournaments[0];t.tvDisplayMode='full-clock';t.settings.rebuyLastRound=1;t.settings.pauseBreaks=false;t.levels.splice(1,0,{kind:'break',minutes:0.01,sb:0,bb:0,ante:0,game:'',chipUp:false});t.clock={index:0,status:'running',remainingMs:0,deadline:Date.now()+700};
  // Short in-memory break is only a timer fixture; actual saved break lengths are validated as integers.
  const ui=await boot('https://example.test/',s,'clock','t1');
  try{assert.ok(ui.q('.tv-final-rebuy'));await new Promise(r=>setTimeout(r,850));assert.equal(ui.q('.tv-side').dataset.rebuyPhase,'final-break');assert.match(ui.q('.tv-cutoff-detail').textContent,/when this break ends/);await new Promise(r=>setTimeout(r,950));assert.equal(ui.q('.tv-side').dataset.rebuyPhase,'closed');assert.ok(ui.q('.tv-pool'));assert.deepEqual(ui.errors,[]);}finally{ui.close();}
@@ -207,7 +208,7 @@ test('registration opens the active tournament without a chooser or a saved devi
 test('opening a clock link retains its requested tournament while cloud records load',async()=>{
  let s=initialState();s=execute(s,{type:'player-save',id:'p1',name:'Alex'});s=execute(s,{type:'tournament-create',id:'active-1',name:'Active Event',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'active-1',playerId:'p1',paid:true});s=execute(s,{type:'tournament-create',id:'draft-1',name:'Next Week',templateId:s.templates[0].id});
  const ui=await boot('https://example.test/',s,'clock','draft-1');
- try{assert.equal(ui.q('.tv-heading h1').textContent,'Next Week');assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+ try{assert.equal(ui.q('.tv-seating-heading h1').textContent,'Next Week');assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
 
 
@@ -227,7 +228,7 @@ test('management records an editable rebuy total from the cutoff break, with zer
 });
 
 test('rebuy control becomes available as the cutoff break starts without a reload',async()=>{
- let s=initialState();s=execute(s,{type:'tournament-create',id:'t1',name:'Timed cutoff',templateId:s.templates[0].id});const t=s.tournaments[0];t.settings.rebuyLastRound=1;t.settings.pauseBreaks=false;t.levels.splice(1,0,{kind:'break',minutes:0.01,sb:0,bb:0,ante:0,game:'',chipUp:false});t.clock={index:0,status:'running',remainingMs:0,deadline:Date.now()+700};
+ let s=initialState();s=execute(s,{type:'tournament-create',id:'t1',name:'Timed cutoff',templateId:s.templates[0].id});const t=s.tournaments[0];t.tvDisplayMode='full-clock';t.settings.rebuyLastRound=1;t.settings.pauseBreaks=false;t.levels.splice(1,0,{kind:'break',minutes:0.01,sb:0,bb:0,ante:0,game:'',chipUp:false});t.clock={index:0,status:'running',remainingMs:0,deadline:Date.now()+700};
  const ui=await boot('https://example.test/',s,'manage','t1');
  try{assert.equal(ui.q('#record-rebuys').disabled,true);await new Promise(r=>setTimeout(r,850));assert.equal(ui.q('#record-rebuys').disabled,false);await new Promise(r=>setTimeout(r,950));assert.equal(ui.q('#record-rebuys').disabled,false);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
@@ -477,7 +478,7 @@ test('management keeps all three header rows together and dragging scrolls below
 });
 
 test('TV controls hide while the clock keeps running, stay hidden through cloud refresh, and wake on touch',async()=>{
- const s=manualSeatingFixture();s.tournaments[0].clock={index:0,status:'running',remainingMs:900000,deadline:Date.now()+900000};const ui=await boot('https://example.test/',s,'clock','t1');
+ const s=manualSeatingFixture();s.tournaments[0].tvDisplayMode='full-clock';s.tournaments[0].clock={index:0,status:'running',remainingMs:900000,deadline:Date.now()+900000};const ui=await boot('https://example.test/',s,'clock','t1');
  try{
   assert.equal(ui.q('.tv-toolbar').getAttribute('aria-hidden'),'false');const start=ui.q('#tv-time').textContent;await new Promise(resolve=>setTimeout(resolve,3100));assert.equal(ui.q('.tv-toolbar').getAttribute('aria-hidden'),'true');assert.notEqual(ui.q('#tv-time').textContent,start);assert.equal(ui.q('#tv-level').textContent,'ROUND 1');
   const remote=ui.stored();remote.tournaments[0].name='Updated tournament';await ui.storage(remote);assert.match(ui.q('.tv-heading h1').textContent,/Updated tournament/);assert.equal(ui.q('.tv-toolbar').getAttribute('aria-hidden'),'true');ui.w.document.dispatchEvent(new ui.w.Event('touchstart',{bubbles:true}));assert.equal(ui.q('.tv-toolbar').getAttribute('aria-hidden'),'false');assert.equal(ui.q('.tv-toolbar').hasAttribute('inert'),false);
@@ -581,4 +582,38 @@ test('guaranteed mode fixes the count at two and restoring percentage mode recov
  try{
   ui.click('[data-tab=payouts]');ui.input(ui.q('#paid-places'),'3');for(const [i,v] of [50,30,20].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));ui.click('[value=guaranteed]');assert.equal(ui.q('#paid-places').value,'2');assert.equal(ui.q('#paid-places').disabled,true);assert.ok([...ui.w.document.querySelectorAll('[data-payout-step]')].every(b=>b.disabled));assert.equal(ui.w.document.querySelectorAll('[data-payout-place]').length,2);assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$1,000','$0']);ui.click('[value=percent]');assert.equal(ui.q('#paid-places').disabled,false);assert.equal(ui.q('#paid-places').value,'3');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['50','30','20']);ui.input(ui.q('#paid-places'),'21');await ui.submit(ui.q('#payout-form'));assert.match(ui.q('#toast').textContent,/1–20/);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
+});
+
+test('phone TV buttons update a separate TV session live while preserving the clock and chosen mode',async()=>{
+ const seed=manualSeatingFixture(20),cloud={state:structuredClone(seed),version:1,listeners:new Set()},phone=await boot('https://example.test/',seed,'manage','t1',{cloud}),tv=await boot('https://example.test/',seed,'clock','t1',{cloud});
+ try{
+  assert.ok(phone.q('.management-chrome .tv-display-controls'));assert.equal(phone.q('[data-tv-display=full-clock]').disabled,true);assert.equal(phone.q('[data-tv-display=clock-seating]').getAttribute('aria-pressed'),'true');assert.equal(tv.w.document.querySelectorAll('.tv-seat-table').length,2);assert.match(tv.q('.tv-seating-heading').textContent,/STARTS SOON/);assert.equal(tv.q('.tv-compact-clock'),null);assert.equal(tv.q('[data-tv-table="1"][data-tv-seat="1"] .tv-seat-name').textContent,'Player 1');
+  phone.click('[data-clock=start]');await flush();assert.equal(tv.q('#tv-status').textContent,'');assert.ok(tv.q('.tv-seating-shell'));const deadline=cloud.state.tournaments[0].clock.deadline,clock=structuredClone(cloud.state.tournaments[0].clock);
+  phone.click('[data-tv-display=full-clock]');await flush();assert.ok(tv.q('.tv-grid'));assert.equal(tv.q('.tv-seating-shell'),null);assert.equal(phone.q('[data-tv-display=full-clock]').getAttribute('aria-pressed'),'true');assert.deepEqual(cloud.state.tournaments[0].clock,clock);assert.equal(tv.q('#tv-time').textContent,phone.q('#mini-time').textContent);
+  phone.click('[data-tab=tables]');phone.click('[data-eliminate=e20]');await flush();assert.ok(tv.q('.tv-grid'));assert.equal(cloud.state.tournaments[0].tvDisplayMode,'full-clock');assert.equal(cloud.state.tournaments[0].clock.deadline,deadline);
+  phone.click('[data-tv-display=clock-seating]');await flush();assert.ok(tv.q('.tv-seating-shell'));assert.equal(tv.q('[data-tv-entry=e20]'),null);assert.equal(tv.q('[data-tv-table="2"][data-tv-seat="10"] .tv-seat-name').textContent,'Open seat');
+  phone.click('[data-action=toggle-move-players]');phone.click('[data-seat-grab=e7]');phone.click('[data-seat-grab=e1]');phone.click('[data-seat-move-mode=swap]');await flush();assert.equal(tv.q('[data-tv-table="1"][data-tv-seat="1"] .tv-seat-name').textContent,'Player 7');assert.equal(tv.q('[data-tv-table="1"][data-tv-seat="7"] .tv-seat-name').textContent,'Player 1');assert.equal(cloud.state.tournaments[0].tvDisplayMode,'clock-seating');
+  phone.click('[data-clock=pause]');await flush();assert.match(tv.q('#tv-status').textContent,/PAUSED/);phone.click('[data-clock=resume]');await flush();assert.ok(tv.q('.tv-seating-shell'));assert.deepEqual(tv.errors,[]);assert.deepEqual(phone.errors,[]);assert.equal(tv.w.__fixture.saves,0);
+ }finally{phone.close();tv.close();}
+});
+
+for(const count of [1,2,3])test(`seating TV fits ${count} table columns and keeps every numbered seat and player`,async()=>{
+ const seed=manualSeatingFixture(count*10),ui=await boot('https://example.test/',seed,'clock','t1');
+ try{
+  assert.equal(ui.w.document.querySelectorAll('.tv-seat-table').length,count);assert.equal(ui.w.document.querySelectorAll('[data-tv-seat]').length,count*10);assert.equal(ui.q('.tv-seating-tables').style.getPropertyValue('--tv-table-columns'),String(count));assert.equal(ui.w.document.querySelectorAll('[data-tv-entry]').length,count*10);assert.equal(ui.q(`[data-tv-table="${count}"][data-tv-seat="10"] .tv-seat-name`).textContent,'Player '+count*10);const css=await readFile(new URL('../src/styles.css',import.meta.url),'utf8');assert.match(css,/body.tv .tv-seating-shell\{height:100dvh;min-height:0/);assert.match(css,/grid-template-rows:repeat\(var\(--tv-seat-count\),minmax\(0,1fr\)\)/);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('remote table combinations and player renames refresh seating while preserving the selected TV mode',async()=>{
+ let seed=reducedSeatingFixture(30,[0,1,2,3,4,10,11,12,13,14,20,21,22,23,24]);seed=execute(seed,{type:'clock',tournamentId:'t1',command:'start'});seed.tournaments[0].tvDisplayMode='clock-seating';const ui=await boot('https://example.test/',seed,'clock','t1');
+ try{
+  assert.equal(ui.w.document.querySelectorAll('.tv-seat-table').length,3);seed=execute(seed,{type:'combine-tables',tournamentId:'t1',mode:'combine'});await ui.storage(seed);assert.equal(ui.w.document.querySelectorAll('.tv-seat-table').length,2);assert.equal(ui.w.document.querySelectorAll('[data-tv-entry]').length,15);assert.equal(ui.stored().tournaments[0].tvDisplayMode,'clock-seating');seed=execute(seed,{type:'player-save',id:'p21',name:'Renamed Player'});await ui.storage(seed);assert.equal(ui.q('[data-tv-entry=e21] .tv-seat-name').textContent,'Renamed Player');assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('unseated names appear on TV and failed mode saves do not change either display or clock',async()=>{
+ let seed=manualSeatingFixture(3);seed.tournaments[0].entries[2].table=null;seed.tournaments[0].entries[2].seat=null;seed=execute(seed,{type:'clock',tournamentId:'t1',command:'start'});const ui=await boot('https://example.test/',seed,'clock','t1');
+ try{assert.equal(ui.q('.tv-unseated [data-tv-entry=e3]').textContent,'Player 3');assert.equal(ui.q('[data-tv-entry=e3][data-tv-seat]'),null);assert.equal(ui.w.__fixture.saves,0);}finally{ui.close();}
+ const phone=await boot('https://example.test/',seed,'manage','t1');
+ try{phone.w.__fixture.saveError={message:'Connection unavailable'};phone.click('[data-tv-display=full-clock]');await flush();assert.equal(phone.q('[data-tv-display=clock-seating]').getAttribute('aria-pressed'),'true');assert.deepEqual(phone.stored(),seed);assert.match(phone.q('#toast').textContent,/Connection unavailable/);assert.deepEqual(phone.errors,[]);}finally{phone.close();}
 });

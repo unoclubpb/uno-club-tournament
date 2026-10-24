@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.14
+# Uno Club Tournament Director — v0.3.15
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -239,3 +239,16 @@ Tournament Management → Payouts asks “How many places are paid?” directly 
 Tables & Seats provides Eliminate beside each seated or unseated player, using the same confirmation, recorded finishing place and undo process as the Players pane. Elimination releases seats and locks, updates remaining players and preserves the player database. The last remaining player and completed results cannot be eliminated from these controls. Seats per table accepts only whole numbers from 2 through 10 in both the input and domain validation; its button reads Apply. Gold table headers show the table number on the left and occupied-seat count on the right. Existing saved seating is not rewritten on load.
 
 Validation: 120 automated tests pass, including individual payout inputs and mode/count changes, guarantee and ICM regressions, confirmed/canceled seated and unseated eliminations, lock restoration on undo, completed-result protection, the ten-seat maximum and header contents. Deployment updates static app files only; no player, tournament or database migration is performed.
+
+
+## v0.3.15 remote TV display and seating chart
+
+Tournament Management keeps TV Display controls in its pinned header area, available from the phone while scrolling any management section. Full Clock shows the existing full tournament clock; Clock + Seating shows a compact clock banner above all current tables, numbered seats and player names. The active mode is highlighted. Before the tournament starts the TV automatically shows the seating chart alone, with Full Clock available after the start. Starting the tournament defaults to Clock + Seating. Pause/resume, level changes, eliminations, seat moves, combinations and completion preserve the chosen mode afterward.
+
+The mode is stored on the tournament as tvDisplayMode using the existing owner-protected atomic workspace save. Realtime changes update the separate TV window; the existing 2.5-second polling fallback recovers missed events. The mode action leaves the saved clock object, deadline, seating and finances unchanged. Failed or conflicting saves retain the confirmed choice and show the existing error/retry behavior. No schema or production data migration is needed.
+
+On the computer, open the clock window and move it to the HDMI-connected extended TV screen. Sign into the same tournament account on the phone to operate Tournament Management. The TV window receives the saved mode and current assignments automatically. Browser full screen and sound remain controls on the TV window, with their existing inactivity hiding. Refresh already-open app windows once after this release to load the new controls; subsequent mode and seating changes update without a refresh.
+
+One, two or three tables use one, two or three columns. The chart fills the TV viewport without scrolling, with extra grid rows available for larger events. Long names wrap and fit their available seat row without truncation. Unseated players appear in an Awaiting seat assignment section. Resizing or entering full screen refits the text. Empty seats remain visible, and table capacity/assignments come from the same tournament records as Tables & Seats.
+
+Validation: 129 automated tests pass, including independent phone/TV sessions receiving mode and seating changes, unchanged clock deadlines, start defaults, persistent selections, paused/completed events, failure handling, table combinations, renames, and long-name fitting. Headless Chromium checks passed for pre-start and running layouts with one/two/three tables at 1280×720, 1920×1080, 3840×2160 and 1024×768 (24 layouts), including complete long names and no viewport scrolling. A 390×844 phone check verified pinned controls and remote switching/elimination without TV navigation or deadline changes. backend/verify-tv-display-data.sql passed the installed storage trigger using temporary rows inside a rolled-back transaction. Physical TV/iPad testing remains available to the organizer.

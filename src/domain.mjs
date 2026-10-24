@@ -47,6 +47,8 @@ export const paymentTotal=p=>p.total??((p.prize||0)+(p.house||0));
 export const tablesRequired=t=>Math.ceil(t.entries.filter(e=>!e.eliminatedAt).length/t.settings.seatsPerTable);
 // Keep occupied tables available until the organizer moves those players.
 export const tablesInUse=t=>Math.max(tablesRequired(t),...t.entries.filter(e=>!e.eliminatedAt).map(e=>e.table||0),0);
+export const tournamentStarted=t=>t.startedAt!=null||t.clock.status!=='ready';
+export const tvDisplayMode=t=>tournamentStarted(t)&&t.tvDisplayMode==='full-clock'?'full-clock':'clock-seating';
 function upgradeSettings(old){
   if(old.financeVersion===2)return old;
   const s={...old,financeVersion:2,buyIn:(old.entryPrize||0)+(old.entryHouse||0),dealerToke:old.entryHouse||0,housePercent:20,rebuyAmount:(old.rebuyPrize||0)+(old.rebuyHouse||0),addonAmount:(old.addonPrize||0)+(old.addonHouse||0)};
@@ -225,6 +227,12 @@ export function execute(state,action,now=Date.now()){
     s.tournaments.push({id:a.id||id(),name:String(a.name).trim().slice(0,120),date:a.date||new Date(now).toISOString().slice(0,10),templateName:template.name,levels:clone(template.levels),settings:clone(template.settings),entries:[],rebuyCount:0,eliminationUndo:[],status:'open',clock:{index:0,status:'ready',remainingMs:template.levels[0].minutes*60000,deadline:null},createdAt:now});return s;
   }
   check(t,'Choose a tournament first.');
+  // Display changes must not materialize, pause or otherwise alter the clock.
+  if(a.type==='tv-display'){
+    check(['full-clock','clock-seating'].includes(a.mode),'Choose a TV display mode.');
+    check(tournamentStarted(t)||a.mode==='clock-seating','Full Clock becomes available when the tournament starts.');
+    t.tvDisplayMode=a.mode;return s;
+  }
   if(a.type==='tournament-settings'||a.type==='payout-settings'){
     check(t.status!=='completed','Completed tournament is locked.');
     const template={id:'event',name:t.name,levels:clone(a.levels||t.levels),settings:clone(a.settings)};validateTemplate(template);
@@ -238,7 +246,7 @@ export function execute(state,action,now=Date.now()){
   check(t.status!=='completed','Completed tournament is locked.');
   t.clock=clockAt(t,now);const c=t.clock;
   if(a.type==='clock'){
-    if(a.command==='start'||a.command==='resume'){check(['ready','paused'].includes(c.status),'Clock is already running or finished.');c.status='running';c.deadline=now+c.remainingMs;t.startedAt??=now;}
+    if(a.command==='start'||a.command==='resume'){check(['ready','paused'].includes(c.status),'Clock is already running or finished.');if(!tournamentStarted(t))t.tvDisplayMode='clock-seating';c.status='running';c.deadline=now+c.remainingMs;t.startedAt??=now;}
     else if(a.command==='pause'){check(c.status==='running','Clock is not running.');c.status='paused';c.deadline=null;}
     else if(a.command==='adjust'){check(Number.isFinite(a.seconds)&&Math.abs(a.seconds)<=86400,'Invalid time adjustment.');c.remainingMs=Math.max(0,c.remainingMs+a.seconds*1000);if(c.status==='running')c.deadline=now+c.remainingMs;}
     else if(a.command==='next'||a.command==='previous'){

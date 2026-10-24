@@ -437,3 +437,46 @@ body.saving .seat-lock-button{pointer-events:none;opacity:.6}
 .unseated-player-row{flex-wrap:wrap;gap:12px}
 .unseated-player-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}
 body.saving .seat-player-actions,body.saving .unseated-player-actions{pointer-events:none;opacity:.6}
+
+/* Remote TV controls stay with the pinned management navigation. */
+.tv-display-controls{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line);background:var(--bg)}
+.tv-display-controls>strong{font-size:14px;color:var(--gold);white-space:nowrap}
+.tv-display-buttons{display:flex;gap:8px}.tv-display-buttons>.button{min-height:40px}
+.tv-display-buttons>.is-selected{background:var(--gold);border-color:var(--gold);color:var(--bg)}
+.tv-display-controls>small{color:var(--muted);font-size:11px}
+body.saving [data-tv-display]{pointer-events:none;opacity:.6}
+@media(max-width:700px){.tv-display-controls{gap:8px;flex-wrap:wrap}.tv-display-controls>strong{font-size:12px}.tv-display-buttons{flex:1;gap:6px}.tv-display-buttons>.button{flex:1;font-size:12px;padding:7px 8px;min-height:44px}.tv-display-controls>small{flex-basis:100%;font-size:10px}}
+
+/* Viewport-sized seating display: every table and seat remains on the TV. */
+body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2vw;display:flex;flex-direction:column;gap:1.5dvh;overflow:hidden}
+.tv-seating-heading{display:flex;align-items:center;gap:2vw;flex:0 0 6dvh;min-height:0;color:var(--gold)}
+.tv-seating-heading h1{display:flex;align-items:center;height:100%;flex:1;min-width:0;font-size:clamp(18px,2.6vw,42px);line-height:1.1;letter-spacing:0;overflow-wrap:anywhere}
+.tv-seating-heading>span{font-size:clamp(10px,1.2vw,22px);letter-spacing:.1em}
+.tv-seating-heading>strong{font-size:clamp(12px,1.6vw,28px);white-space:nowrap}
+.tv-compact-clock{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:2vw;flex:0 0 21dvh;min-height:0;padding:1dvh 2vw;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+.tv-compact-clock>div{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5dvh;min-width:0;min-height:0;text-align:center}
+.tv-compact-clock #tv-level{font-size:clamp(12px,1.4vw,28px);color:var(--gold);font-weight:700}
+.tv-compact-time{display:flex;align-items:center;justify-content:center;width:100%;height:11dvh;min-height:0;font-size:9dvh;line-height:1;font-variant-numeric:tabular-nums;color:var(--gold);white-space:nowrap}
+.tv-compact-clock #tv-status{font-size:clamp(9px,1vw,18px);color:var(--muted);min-height:1em}
+.tv-compact-clock #tv-blinds{display:flex;align-items:center;justify-content:center;width:100%;height:8dvh;font-size:5dvh;line-height:1.1;overflow-wrap:anywhere;color:var(--ink)}
+.tv-compact-clock #tv-game,.tv-compact-clock #tv-next-label{color:var(--muted);font-size:clamp(9px,1vw,18px);letter-spacing:.08em}
+.tv-compact-clock #tv-ante{font-size:clamp(10px,1.2vw,22px)}
+.tv-compact-clock #tv-next{display:flex;align-items:center;justify-content:center;width:100%;height:5dvh;font-size:3.5dvh;line-height:1.1;overflow-wrap:anywhere}
+.tv-compact-rebuys{font-size:clamp(9px,1vw,20px);line-height:1.25;color:var(--gold)}
+.tv-compact-rebuys.final-rebuy,.tv-compact-time.urgent{color:#ff7777}
+.tv-seating-area{display:flex;flex-direction:column;gap:1.2dvh;flex:1;min-height:0}
+.tv-seating-tables{display:grid;grid-template-columns:repeat(var(--tv-table-columns),minmax(0,1fr));grid-template-rows:repeat(var(--tv-table-rows),minmax(0,1fr));gap:1.5vw;flex:1;min-height:0}
+.tv-seat-table{display:flex;flex-direction:column;min-width:0;min-height:0;border:1px solid var(--gold);border-radius:10px;overflow:hidden;background:var(--paper)}
+.tv-seat-table>h2{display:flex;justify-content:space-between;align-items:center;gap:1vw;flex:0 0 4.5dvh;min-height:0;padding:0 1vw;background:var(--gold);color:var(--bg);font-size:clamp(10px,1.6vw,32px);letter-spacing:0}
+.tv-seat-table>h2>small{font-size:clamp(8px,.9vw,19px);font-weight:400;text-align:right}
+.tv-seat-list{display:grid;grid-template-rows:repeat(var(--tv-seat-count),minmax(0,1fr));flex:1;min-height:0}
+.tv-seat{display:flex;align-items:center;gap:1vw;min-width:0;min-height:0;padding:.25dvh .8vw;border-top:1px solid var(--line)}
+.tv-seat-number{display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:3.8dvh;height:3.8dvh;max-height:90%;aspect-ratio:1;border:1px solid var(--gold);border-radius:50%;font-weight:800;color:var(--gold);font-size:clamp(9px,2.5dvh,30px);font-variant-numeric:tabular-nums}
+.tv-seat-name{display:flex;align-items:center;flex:1;height:100%;min-width:0;min-height:0;font-size:3.5dvh;line-height:1.05;overflow-wrap:anywhere;font-weight:600}
+.tv-seat.is-empty .tv-seat-name{color:var(--muted);font-weight:400}
+.tv-unseated{display:flex;flex-direction:column;gap:.7dvh;flex:0 1 16dvh;min-height:0;padding:1dvh 1vw;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.tv-unseated h2{font-size:clamp(10px,1.2vw,24px);color:var(--gold)}
+.tv-unseated>div{display:grid;grid-template-columns:repeat(var(--tv-unseated-columns),minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:.5dvh 1vw;flex:1;min-height:0}
+.tv-unseated [data-tv-fit]{display:flex;align-items:center;height:100%;min-width:0;min-height:0;overflow-wrap:anywhere;line-height:1.1}
+.tv-seating-empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:2vw}
+.tv-seating-footer{flex:0 0 1.8dvh;min-height:0;color:var(--muted);font-size:clamp(8px,.8vw,15px);line-height:1.2}
