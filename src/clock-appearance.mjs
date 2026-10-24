@@ -4,12 +4,17 @@ export function clockAppearance(value={}){
   const result={...ORIGINAL_CLOCK_APPEARANCE,...value};
   if(!['solid','separate','gradient','stripes'].includes(result.timerStyle))throw new Error('Choose a countdown style.');
   for(const key of Object.keys(ORIGINAL_CLOCK_APPEARANCE).filter(k=>k!=='timerStyle'))if(!/^#[0-9a-f]{6}$/i.test(result[key]))throw new Error('Choose a valid clock color.');
-  return Object.fromEntries(Object.keys(ORIGINAL_CLOCK_APPEARANCE).map(k=>[k,result[k]]));
+  const stops=value.gradientStops??[{color:result.gradientStart,position:0},{color:result.gradientEnd,position:100}];
+  if(!Array.isArray(stops)||stops.length<2||stops.length>8)throw new Error('Choose 2–8 gradient colors.');
+  const gradientStops=stops.map(stop=>{if(!stop||!/^#[0-9a-f]{6}$/i.test(stop.color)||!Number.isFinite(stop.position)||stop.position<0||stop.position>100)throw new Error('Each gradient color needs a valid color and a position from 0% to 100%.');return {color:stop.color,position:stop.position};}).sort((a,b)=>a.position-b.position);
+  if(gradientStops[0].position!==0||gradientStops.at(-1).position!==100||gradientStops.some((stop,i)=>i>0&&stop.position===gradientStops[i-1].position))throw new Error('Gradient colors need different positions, starting at 0% and ending at 100%.');
+  return {...Object.fromEntries(Object.keys(ORIGINAL_CLOCK_APPEARANCE).map(k=>[k,result[k]])),gradientStart:gradientStops[0].color,gradientEnd:gradientStops.at(-1).color,gradientStops};
 }
 export function applyClockAppearance(node,value){
   if(!node)return;const appearance=clockAppearance(value);
   node.dataset.timerStyle=appearance.timerStyle;
-  for(const [key,color] of Object.entries(appearance))if(key!=='timerStyle')node.style.setProperty('--clock-'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),color);
+  for(const [key,color] of Object.entries(appearance))if(key!=='timerStyle'&&key!=='gradientStops')node.style.setProperty('--clock-'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),color);
+  node.style.setProperty('--clock-gradient',`linear-gradient(100deg,${appearance.gradientStops.map(stop=>`${stop.color} ${stop.position}%`).join(',')})`);
 }
 export function setCountdown(node,text){
   if(!node||node.textContent===text)return;

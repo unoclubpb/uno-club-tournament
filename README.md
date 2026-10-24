@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.24
+# Uno Club Tournament Director — v0.3.25
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -350,3 +350,12 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - The Create a tournament dialog also contains a collapsed Clock Appearance (optional) section. Leave it untouched to inherit the chosen structure/default colors, or customize only that new tournament. Choosing another structure refreshes the inherited appearance.
 - All three locations reuse the same presets, full color controls, countdown styles and previews. Preferred defaults are available inside the editor's appearance dialog, with no separate outside setup control.
 - Validation: 176 automated tests plus browser creation/editing flows and inherited TV/Remote colors.
+
+
+## v0.3.25 smooth multicolor clock gradients
+
+- Countdown styles are now four visible choices: Solid Color, Separate Colors, Multicolor Gradient and Multicolor Stripes. They remain inside structure/tournament appearance settings and the optional new-tournament appearance section.
+- Multicolor Gradient smoothly blends 2–8 editable color stops. Choose Rainbow Blend or Sunset Blend, add/remove colors, adjust each color's position, and see the countdown plus a live blend bar before saving.
+- Saved structures, tournament snapshots, preferred defaults, TV clocks and Tournament Remote share one normalized gradient definition. Existing two-color gradients keep their original endpoint colors and other styles retain their current settings. No player, finance, clock deadline or history changes are made by appearance previews.
+- Validate gradient colors, count, coverage and unique positions before saving. Invalid edits remain a draft with a visible message. The first/last positions remain at 0% and 100%.
+- Validation: 179 automated tests and browser checks cover visible stripes/gradient options, legacy gradients, editable multicolor stops, saving/inheritance, and matching TV/Remote colors.
