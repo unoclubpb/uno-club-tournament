@@ -241,3 +241,16 @@ test('saved guarantee terms copy to events and custom payouts remember their aut
  s=act(s,event,{type:'payout-settings',custom:true,settings:{...s.tournaments[0].settings,payoutMode:'fixed',houseContribution:49400,payouts:[50000,25000]}});
  assert.equal(s.tournaments[0].payoutAutomatic.guaranteeAmount,75000);assert.equal(s.tournaments[0].payoutAutomatic.guaranteePlayers,8);assert.equal(s.tournaments[0].payoutAutomatic.guaranteeContribution,49400);assert.deepEqual(prizes(s.tournaments[0]),[50000,25000]);
 });
+
+
+test('each saved structure snapshots its own appearance and new tournaments keep independent copies',()=>{
+ let {s,event}=setup(3);const existing=clone(s.tournaments[0]);s=execute(s,{type:'clock-appearance-defaults',appearance:{background:'#112233',timerStyle:'separate'}});
+ const first=clone(s.templates[0]);first.clockAppearance={background:'#07182e',timerStyle:'stripes'};s=execute(s,{type:'template-save',template:first});const second=clone(first);second.id='second-color-structure';second.name='Second color structure';second.clockAppearance={background:'#071b15',timerStyle:'gradient'};s=execute(s,{type:'template-save',template:second});
+ s=execute(s,{type:'tournament-create',id:'blue-event',name:'Blue event',templateId:first.id});s=execute(s,{type:'tournament-create',id:'green-event',name:'Green event',templateId:second.id});assert.equal(s.tournaments[1].clockAppearance.background,'#07182e');assert.equal(s.tournaments[1].clockAppearance.timerStyle,'stripes');assert.equal(s.tournaments[2].clockAppearance.background,'#071b15');assert.equal(s.tournaments[2].clockAppearance.timerStyle,'gradient');assert.deepEqual(s.tournaments[0],existing);
+ const updated=clone(s.templates[0]);updated.clockAppearance={background:'#331122',timerStyle:'solid'};s=execute(s,{type:'template-save',template:updated});assert.equal(s.tournaments[1].clockAppearance.background,'#07182e');s=execute(s,{type:'clock-appearance-defaults',appearance:{background:'#ffffff'}});s=execute(s,{type:'tournament-create',id:'blue-event-2',name:'Next blue event',templateId:first.id});assert.equal(s.tournaments[3].clockAppearance.background,'#331122');assert.equal(s.tournaments[2].clockAppearance.background,'#071b15');
+ const invalid=clone(updated);invalid.clockAppearance.background='bad-color';assert.throws(()=>execute(s,{type:'template-save',template:invalid}),/clock color/);
+});
+
+test('legacy structures use preferred defaults until saved, then preserve their own appearance',()=>{
+ let s=initialState();s=execute(s,{type:'clock-appearance-defaults',appearance:{background:'#112233'}});s=execute(s,{type:'tournament-create',id:'legacy-color',name:'Legacy color',templateId:s.templates[0].id});assert.equal(s.tournaments[0].clockAppearance.background,'#112233');s=execute(s,{type:'template-save',template:s.templates[0]});assert.equal(s.templates[0].clockAppearance.background,'#112233');s=execute(s,{type:'clock-appearance-defaults',appearance:{background:'#334455'}});s=execute(s,{type:'tournament-create',id:'saved-color',name:'Saved color',templateId:s.templates[0].id});assert.equal(s.tournaments[1].clockAppearance.background,'#112233');
+});

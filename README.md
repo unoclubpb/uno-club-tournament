@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.22
+# Uno Club Tournament Director — v0.3.23
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -334,3 +334,10 @@ Validation: 155 automated tests pass, including balancing without closing tables
 
 - Remote Pause Clock is red while running; Resume Clock is green while paused. The main Eliminate Player action is red and Payouts / ICM is green.
 - The Remote clock shares the tournament's TV clock appearance: background, timer style/colors, current/next blinds, level and other text. Solid, separate, gradient and stripe countdowns use the same appearance helper/CSS behavior, including live cloud updates without changing the clock deadline.
+
+
+## v0.3.23 clock appearance per saved structure
+
+- Each structure editor includes Clock Appearance with a preview and the existing presets, full color pickers and four countdown styles. Use for This Structure updates the draft; Save structure persists it with that structure's levels and payouts. Canceling the appearance dialog or structure editor does not save color changes.
+- New tournaments snapshot their selected structure's appearance for both TV and Tournament Remote. Duplicating a structure copies its appearance; editing either copy or changing preferred defaults never changes an existing tournament's clock.
+- Older structures without an appearance retain the previous preferred-default fallback until saved, at which point their own appearance is stored. The separate current-tournament override and preferred-default controls remain available.
