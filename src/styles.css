@@ -650,3 +650,12 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
  .points-editing .player-details-panel{display:none}
 }
 .payout-order-error{color:#ff7474!important;font-weight:700}
+/* Show unsaved payout edits distinctly from an acknowledged save. */
+.button.payout-save-dirty{background:#b33434;border-color:#b33434;color:#fff}
+.button.payout-save-dirty:hover:not(:disabled){background:#922929;border-color:#922929}
+.button.payout-save-saved{background:#21794a;border-color:#21794a;color:#fff}
+.button.payout-save-saved:hover:not(:disabled){background:#19623b;border-color:#19623b}
+/* ICM: name and expected points, then chips and proposed payout. */
+.icm-player>strong{grid-column:1;min-width:0;overflow-wrap:anywhere;align-self:center}
+.icm-player>.icm-points{grid-column:2;text-align:right;align-self:center;white-space:nowrap;color:var(--gold);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.icm-player label{font-size:12px}.icm-player input{min-width:0;min-height:44px;font-size:16px}

@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.31
+# Uno Club Tournament Director — v0.3.32
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -412,3 +412,11 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - Management and Remote show a red message naming the offending places and amounts, retain the editable draft and calculated dollars, and disable Save until the order is corrected. Keep exact-prize-pool validation. Reject invalid saves in the shared domain as well as the UI; block an invalid ranked source schedule from being used for winner confirmation or a chop.
 - Keep prize calculation separate from validation so older schedules and revenue changes can be displayed and corrected without blank screens. No automatic sorting, payout replacement or history rewrite is performed. Completed settlements and named-player manual/ICM chop agreements are preserved; those negotiated player amounts are not individual finishing places. Existing whole-dollar rounding, guarantees, points and cloud synchronization remain unchanged.
 - Validation: 220 automated tests and broad browser checks passed. Coverage includes fixed/percentage/mixed inversions, equal awards, actual-dollar and post-rounding checks, structure/save/finish/chop protection, red phone feedback, correction without data loss, and preserving negotiated named-player chop payouts and completed history.
+
+
+## v0.3.32 Payout save feedback and compact ICM rows
+
+- Payout edits turn Save Payouts red in Management and Remote. After the canonical cloud save succeeds, the button turns green and reads Payouts Changed. A new edit returns it to red / Save Payouts. Confirmation cancellation or a failed/stale save never reports success. Receipts are local UI state, scoped to the tournament and the saved payout settings/pool; they survive normal in-tab navigation and unchanged refreshes, and clear on account change. Existing validation still controls whether the button is enabled. Unsaved payout drafts are protected from background rerenders and require review after version conflicts.
+- ICM shows only remaining players: name and expected point award in the first row, chip count and proposed payout in the second. Every remaining player receives the same projected point award, calculated from the remaining finishing bonuses plus participation, independent of chips or money. Four remaining players show 9.50 points each. Remove the separate ICM points-preview section and prior-elimination point rows; winner/manual-chop previews stay unchanged.
+- Proposed payout inputs remain disabled until ICM is calculated, then allow whole-dollar negotiated edits. Existing total validation, chip-change recalculation, prior-place payout reservations, acceptance confirmation, final chip/payout persistence and points scoring remain unchanged. No database schema or tournament-data rewrite is required.
+- Validation: 225 automated tests and browser checks passed, including failed/canceled save feedback, repeat edits and navigation, remaining-only point awards, editable negotiated ICM payouts, and compact two-column rows at 320/390/768/1280px. Existing tournament records were not rewritten. Windows wireless HDMI auto-placement/fullscreen remains pending hardware verification.
