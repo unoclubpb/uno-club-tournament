@@ -577,3 +577,5 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .remote-clock #remote-blinds{color:var(--clock-current-blinds)}
 .remote-clock #remote-next{color:var(--clock-next-blinds)}
 .remote-clock .remote-blind-label,.remote-clock #remote-next-label{color:var(--clock-text)}
+
+.new-tournament-appearance{margin:18px 0;border:1px solid var(--line);border-radius:8px;padding:12px}.new-tournament-appearance>summary{cursor:pointer;font-weight:700}.new-tournament-appearance[open]>summary{margin-bottom:18px}

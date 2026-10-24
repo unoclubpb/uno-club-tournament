@@ -263,7 +263,7 @@ export function execute(state,action,now=Date.now()){
   if(a.type==='template-delete'){check(s.templates.length>1,'Keep at least one saved structure.');s.templates=s.templates.filter(v=>v.id!==a.id);return s;}
   if(a.type==='tournament-create'){
     const template=s.templates.find(v=>v.id===a.templateId);check(template,'Choose a saved structure.');validateTemplate(template);check(String(a.name||'').trim(),'Give the tournament a name.');
-    s.tournaments.push({id:a.id||id(),name:String(a.name).trim().slice(0,120),date:a.date||new Date(now).toISOString().slice(0,10),templateName:template.name,levels:clone(template.levels),settings:clone(template.settings),clockAppearance:clockAppearance(template.clockAppearance||s.clockAppearanceDefaults),entries:[],rebuyCount:0,eliminationUndo:[],status:'open',clock:{index:0,status:'ready',remainingMs:template.levels[0].minutes*60000,deadline:null},createdAt:now});return s;
+    s.tournaments.push({id:a.id||id(),name:String(a.name).trim().slice(0,120),date:a.date||new Date(now).toISOString().slice(0,10),templateName:template.name,levels:clone(template.levels),settings:clone(template.settings),clockAppearance:clockAppearance(a.clockAppearance||template.clockAppearance||s.clockAppearanceDefaults),entries:[],rebuyCount:0,eliminationUndo:[],status:'open',clock:{index:0,status:'ready',remainingMs:template.levels[0].minutes*60000,deadline:null},createdAt:now});return s;
   }
   check(t,'Choose a tournament first.');
   if(a.type==='clock-appearance'){t.clockAppearance=clockAppearance(a.appearance);return s;}
@@ -287,6 +287,7 @@ export function execute(state,action,now=Date.now()){
       if(a.custom&&!t.payoutCustom&&t.settings.payoutMode!=='fixed')t.payoutAutomatic={payoutMode:t.settings.payoutMode,payouts:clone(t.settings.payouts),...guaranteeSettings(t.settings),guaranteeContribution:financials(t).guaranteeContribution};
       t.payoutCustom=!!a.custom;
     }
+    if(a.type==='tournament-settings'&&a.clockAppearance!=null)t.clockAppearance=clockAppearance(a.clockAppearance);
     t.settings=template.settings;return s;
   }
   check(t.status!=='completed','Completed tournament is locked.');

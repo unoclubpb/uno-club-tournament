@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.23
+# Uno Club Tournament Director — v0.3.24
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -341,3 +341,12 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - Each structure editor includes Clock Appearance with a preview and the existing presets, full color pickers and four countdown styles. Use for This Structure updates the draft; Save structure persists it with that structure's levels and payouts. Canceling the appearance dialog or structure editor does not save color changes.
 - New tournaments snapshot their selected structure's appearance for both TV and Tournament Remote. Duplicating a structure copies its appearance; editing either copy or changing preferred defaults never changes an existing tournament's clock.
 - Older structures without an appearance retain the previous preferred-default fallback until saved, at which point their own appearance is stored. The separate current-tournament override and preferred-default controls remain available.
+
+
+## v0.3.24 clock controls inside tournament setup
+
+- Remove the separate Clock Appearance button from the Saved structures heading. Each structure and each individual tournament editor now contains its own Clock Appearance section and preview.
+- Structure colors remain a draft until Save structure; tournament colors remain a draft until Save tournament settings. Updating a running tournament's appearance preserves its actual clock state/deadline, payouts, players and saved source structure.
+- The Create a tournament dialog also contains a collapsed Clock Appearance (optional) section. Leave it untouched to inherit the chosen structure/default colors, or customize only that new tournament. Choosing another structure refreshes the inherited appearance.
+- All three locations reuse the same presets, full color controls, countdown styles and previews. Preferred defaults are available inside the editor's appearance dialog, with no separate outside setup control.
+- Validation: 176 automated tests plus browser creation/editing flows and inherited TV/Remote colors.
