@@ -215,3 +215,29 @@ test('seat locks are per tournament, require a seated active player and restore 
  s=act(s,event,{type:'seat',entryId:s.tournaments[0].entries[1].id,table:1,seat:1});const blocked=clone(s);assert.throws(()=>act(s,event,{type:'undo-elimination'}),/occupied/);assert.deepEqual(s,blocked);assert.throws(()=>act(s,event,{type:'seat-lock',entryId:entry,locked:true}),/seated remaining/);
  const one=manualSeats(1);one.s=act(one.s,one.event,{type:'finish'});assert.throws(()=>act(one.s,one.event,{type:'seat-lock',entryId:one.s.tournaments[0].entries[0].id,locked:true}),/Completed tournament/);
 });
+
+
+test('configurable guarantees trigger at the saved registered count, fund the minimum and revert below it',()=>{
+ const {s}=setup(8),t=s.tournaments[0];t.settings={...t.settings,payoutMode:'guaranteed',guaranteeAmount:75000,guaranteePlayers:8};
+ const below=clone(t);below.entries.pop();assert.equal(financials(below).guaranteeActive,false);assert.equal(financials(below).guaranteeContribution,0);assert.deepEqual(prizes(below),[14500,7900]);assert.equal(below.settings.payoutMode,'guaranteed');
+ assert.equal(financials(t).guaranteeActive,true);assert.equal(financials(t).guaranteeContribution,49400);assert.deepEqual(prizes(t),[75000,0]);
+ t.settings.houseContribution=94400;assert.equal(financials(t).pool,120000);assert.equal(financials(t).guaranteeContribution,0);assert.deepEqual(prizes(t),[78000,42000]);assert.equal(prizes(t).reduce((a,b)=>a+b),financials(t).pool);
+ t.entries.pop();assert.equal(financials(t).guaranteeActive,false);assert.equal(prizes(t).length,2);t.entries.push(clone(s.tournaments[0].entries[0]));assert.equal(financials(t).guaranteeActive,true);
+});
+
+test('legacy guarantees retain $1000 at ten and invalid configurable terms are rejected',()=>{
+ const {s}=setup(10),t=s.tournaments[0];t.settings.payoutMode='guaranteed';delete t.settings.guaranteeAmount;delete t.settings.guaranteePlayers;
+ assert.deepEqual(prizes(t),[100000,0]);assert.equal(financials(t).guaranteeContribution,68000);assert.equal('guaranteeAmount' in t.settings,false);
+ for(const [key,value] of [['guaranteeAmount',0],['guaranteeAmount',75050],['guaranteeAmount',-100],['guaranteePlayers',0],['guaranteePlayers',8.5],['guaranteePlayers',NaN]]){
+  const template=clone(s.templates[0]);template.settings[key]=value;assert.throws(()=>execute(s,{type:'template-save',template}),/guarantee/);
+ }
+});
+
+test('saved guarantee terms copy to events and custom payouts remember their automatic source',()=>{
+ let {s,event}=setup(8);let template=clone(s.templates[0]);Object.assign(template.settings,{payoutMode:'guaranteed',guaranteeAmount:75000,guaranteePlayers:8});
+ s=execute(s,{type:'template-save',template});s=execute(s,{type:'tournament-create',id:'copied',name:'Configured guarantee',templateId:template.id});assert.equal(s.tournaments[1].settings.guaranteeAmount,75000);assert.equal(s.tournaments[1].settings.guaranteePlayers,8);
+ s=act(s,event,{type:'payout-settings',settings:{...s.tournaments[0].settings,...template.settings}});s=act(s,event,{type:'clock',command:'start'});
+ assert.throws(()=>act(s,event,{type:'tournament-settings',settings:{...s.tournaments[0].settings,guaranteePlayers:9}}),/Use Save Payouts/);
+ s=act(s,event,{type:'payout-settings',custom:true,settings:{...s.tournaments[0].settings,payoutMode:'fixed',houseContribution:49400,payouts:[50000,25000]}});
+ assert.equal(s.tournaments[0].payoutAutomatic.guaranteeAmount,75000);assert.equal(s.tournaments[0].payoutAutomatic.guaranteePlayers,8);assert.equal(s.tournaments[0].payoutAutomatic.guaranteeContribution,49400);assert.deepEqual(prizes(s.tournaments[0]),[50000,25000]);
+});

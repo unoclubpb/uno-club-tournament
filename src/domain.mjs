@@ -10,7 +10,7 @@ export function sampleTemplate() {
     levels.push({kind:'play',minutes:15,sb,bb,ante:i>=6?bb:0,game:"No Limit Hold’em",chipUp:false});
     if([7,15,23].includes(i)) levels.push({kind:'break',minutes:({7:5,15:10,23:15})[i],sb:0,bb:0,ante:0,game:'',chipUp:[7,15].includes(i)});
   });
-  return {id:id(),name:'Uno Club — 15-minute levels',levels,settings:{financeVersion:2,startingStack:5000,buyIn:5000,dealerToke:1000,housePercent:20,rebuyEnabled:true,rebuyAmount:2500,rebuyChips:5000,rebuyLastRound:6,rebuyMax:0,addonEnabled:false,addonAmount:9000,addonChips:20000,addonLastRound:4,anteMode:'off',pauseBreaks:true,seatsPerTable:10,houseContribution:0,payoutMode:'percent',payouts:[65,35]}};
+  return {id:id(),name:'Uno Club — 15-minute levels',levels,settings:{financeVersion:2,startingStack:5000,buyIn:5000,dealerToke:1000,housePercent:20,rebuyEnabled:true,rebuyAmount:2500,rebuyChips:5000,rebuyLastRound:6,rebuyMax:0,addonEnabled:false,addonAmount:9000,addonChips:20000,addonLastRound:4,anteMode:'off',pauseBreaks:true,seatsPerTable:10,houseContribution:0,guaranteeAmount:100000,guaranteePlayers:10,payoutMode:'percent',payouts:[65,35]}};
 }
 export const playerNumberLabel=p=>String(p.playerNumber).padStart(3,'0');
 function assignPlayerNumbers(players){
@@ -93,7 +93,8 @@ export function clockAt(t,now) {
   }
   c.remainingMs=Math.max(0,c.deadline-now); return c;
 }
-export const guaranteeEligible=t=>t.entries.length>=10;
+export const guaranteeSettings=s=>({guaranteeAmount:s.guaranteeAmount??100000,guaranteePlayers:s.guaranteePlayers??10});
+export const guaranteeEligible=t=>t.entries.length>=guaranteeSettings(t.settings).guaranteePlayers;
 export function defaultPayouts(count){return ({1:[100],2:[65,35],3:[50,30,20],4:[45,30,15,10]})[count]||Array.from({length:count},(_,i)=>i===0?100:0);}
 export function tableBalanceNeeded(t){if(t.status==='completed')return false;const counts=[...new Set(t.entries.filter(e=>!e.eliminatedAt&&e.table).map(e=>e.table))].map(table=>t.entries.filter(e=>!e.eliminatedAt&&e.table===table).length);return counts.length>1&&Math.max(...counts)-Math.min(...counts)>=2;}
 export function financials(t){
@@ -107,7 +108,7 @@ export function financials(t){
   const manualHouseContribution=t.settings.houseContribution||0;
   const basePool=Math.max(0,tournamentEntries+rebuyTotal+addonTotal-houseFee+manualHouseContribution);
   const guaranteeActive=t.settings.payoutMode==='guaranteed'&&guaranteeEligible(t);
-  const guaranteeContribution=guaranteeActive?Math.max(0,100000-basePool):0;
+  const guaranteeContribution=guaranteeActive?Math.max(0,guaranteeSettings(t.settings).guaranteeAmount-basePool):0;
   let amounts={collected,owed:0,entryTotal,tournamentEntries,dealerTokes,dealerTokesPaidOut:dealerTokes,houseBase,houseFee,manualHouseContribution,guaranteeContribution,houseContribution:manualHouseContribution+guaranteeContribution,basePool,pool:basePool+guaranteeContribution,housePercent:t.settings.housePercent,guaranteeActive,addonTotal};
   // Completed settlements are immutable, including historical accounting rules.
   if(t.status==='completed'&&t.settlement){
@@ -122,7 +123,7 @@ export function prizes(t){
   if(t.status==='completed'&&t.settlement){const pool=t.settlement.pool,old=t.settings.payouts.map(p=>Math.floor(pool*p/100));if(old.length)old[0]+=pool-old.reduce((a,b)=>a+b,0);return old;}
   const f=financials(t),pool=f.pool;
   if(t.settings.payoutMode==='guaranteed'&&f.guaranteeActive){
-    const first=Math.max(100000,Math.floor(pool*65/10000)*100);return [first,pool-first];
+    const first=Math.max(guaranteeSettings(t.settings).guaranteeAmount,Math.floor(pool*65/10000)*100);return [first,pool-first];
   }
   const percentages=t.settings.payoutMode==='guaranteed'?[65,35]:t.settings.payouts;
   return roundLowerFirst(percentages.map(p=>pool*p/100),pool);
@@ -144,7 +145,9 @@ export function validateTemplate(template){
   check(template.levels[0].kind==='play','Start the structure with a playing level.');
   check(template.levels.some(l=>l.kind==='play'),'Add a playing level.');
   template.levels.forEach(l=>{check(['play','break'].includes(l.kind),'Invalid level type.');check(Number.isFinite(l.minutes)&&l.minutes>=0.1&&l.minutes<=180,'Level length must be between 0.1 and 180 minutes.');check(l.kind!=='break'||Number.isInteger(l.minutes),'Break length must be a whole number of minutes (1–180).');check([l.sb,l.bb,l.ante].every(v=>Number.isSafeInteger(v)&&v>=0),'Blinds and antes must be nonnegative whole numbers.');check(l.kind==='break'||l.bb>=l.sb,'Big blind must be at least the small blind.');});
-  const s=template.settings;
+  const s=template.settings,{guaranteeAmount,guaranteePlayers}=guaranteeSettings(s);
+  check(Number.isSafeInteger(guaranteeAmount)&&guaranteeAmount>0&&guaranteeAmount%100===0,'Enter a positive whole-dollar first-place guarantee.');
+  check(Number.isSafeInteger(guaranteePlayers)&&guaranteePlayers>=1,'Enter a positive whole number of players for the guarantee.');
   ['startingStack','buyIn','dealerToke','rebuyAmount','rebuyChips','rebuyLastRound','rebuyMax','addonAmount','addonChips','addonLastRound','seatsPerTable','houseContribution'].forEach(k=>check(Number.isSafeInteger(s[k])&&s[k]>=0,`Invalid ${k} setting.`));
   for(const key of ['buyIn','dealerToke','rebuyAmount','addonAmount','houseContribution'])check(s[key]%100===0,'Enter monetary amounts as whole dollars.');
   check(s.payoutMode!=='fixed'||s.payouts.every(n=>Number.isSafeInteger(n)&&n%100===0),'Fixed payouts must be whole dollars.');
@@ -247,7 +250,7 @@ export function execute(state,action,now=Date.now()){
   }
   if(a.type==='tournament-settings'||a.type==='payout-settings'){
     check(t.status!=='completed','Completed tournament is locked.');
-    if(a.type==='tournament-settings'&&tournamentStarted(t))check(a.settings.payoutMode===t.settings.payoutMode&&JSON.stringify(a.settings.payouts)===JSON.stringify(t.settings.payouts),'Use Save Payouts in Tournament Management to change an active payout agreement.');
+    if(a.type==='tournament-settings'&&tournamentStarted(t))check(a.settings.payoutMode===t.settings.payoutMode&&JSON.stringify(a.settings.payouts)===JSON.stringify(t.settings.payouts)&&JSON.stringify(guaranteeSettings(a.settings))===JSON.stringify(guaranteeSettings(t.settings)),'Use Save Payouts in Tournament Management to change an active payout agreement.');
     const template={id:'event',name:t.name,levels:clone(a.levels||t.levels),settings:clone(a.settings)};validateTemplate(template);
     check(t.clock.status==='ready'||!a.levels,'Level structure can be changed before the clock starts.');
     if(a.levels){t.levels=template.levels;t.clock.remainingMs=t.levels[0].minutes*60000;}
@@ -256,7 +259,7 @@ export function execute(state,action,now=Date.now()){
     if(a.type==='payout-settings'){
       check(payoutBalance({...t,settings:template.settings})===0,'Payouts must exactly match the prize pool.');
       check(!a.custom||template.settings.payoutMode==='fixed','Custom payouts must use fixed dollar amounts.');
-      if(a.custom&&!t.payoutCustom&&t.settings.payoutMode!=='fixed')t.payoutAutomatic={payoutMode:t.settings.payoutMode,payouts:clone(t.settings.payouts),guaranteeContribution:financials(t).guaranteeContribution};
+      if(a.custom&&!t.payoutCustom&&t.settings.payoutMode!=='fixed')t.payoutAutomatic={payoutMode:t.settings.payoutMode,payouts:clone(t.settings.payouts),...guaranteeSettings(t.settings),guaranteeContribution:financials(t).guaranteeContribution};
       t.payoutCustom=!!a.custom;
     }
     t.settings=template.settings;return s;

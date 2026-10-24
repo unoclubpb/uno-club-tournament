@@ -58,6 +58,15 @@ try{
   await phone.evaluate(()=>scrollTo(0,document.body.scrollHeight));const bounds=await phone.locator('.tv-display-controls').boundingBox();assert.ok(bounds.y>=0&&bounds.y+bounds.height<=900);
   const split=await phone.evaluate(()=>{const a=document.querySelector('.mini-clock').getBoundingClientRect(),b=document.querySelector('.management-clock-actions').getBoundingClientRect();return {left:a.width,right:b.width,sideBySide:b.left>=a.right};});assert.ok(split.sideBySide&&Math.abs(split.left-split.right)<1,'Clock readout and controls must share the panel equally at '+width);const widths=await phone.evaluate(()=>[document.querySelector('#clock-main').getBoundingClientRect().width,document.querySelector('#record-rebuys').getBoundingClientRect().width]);assert.ok(Math.abs(widths[0]-widths[1])<1,'Rebuy/Pause width mismatch');console.log('PASS management/table banner',width);
  }
+ for(const width of [320,390,768,1280]){
+  await phone.setViewportSize({width,height:900});await phone.goto(base+'/?view=manage&tournament=t1');await phone.locator('[data-tab=payouts]').click();
+  const alignment=await phone.locator('.payout-formats').evaluate(node=>[...node.querySelectorAll('[type=radio]')].map(radio=>{const r=radio.getBoundingClientRect(),label=radio.nextElementSibling,box=label.getBoundingClientRect(),amount=label.querySelector?.('[name=guaranteeAmount]')?.getBoundingClientRect();return {width:r.width,height:r.height,offset:Math.abs(r.top+r.height/2-(amount?amount.top+amount.height/2:box.top+box.height/2))};}));
+  for(const radio of alignment){assert.equal(radio.width,18);assert.equal(radio.height,18);assert.ok(radio.offset<2,'Radio label misalignment at '+width);}
+  assert.equal(await phone.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'Payout guarantee horizontal overflow at '+width);
+  await phone.locator('[name=guaranteeAmount]').fill('1750');await phone.locator('[name=guaranteePlayers]').fill('12');assert.match(await phone.locator('#guarantee-eligibility').innerText(),/\$1,750.*12 registered players/);assert.equal(state.tournaments[0].settings.payoutMode,'fixed');
+  if(width===390)await phone.screenshot({path:output+'/guarantee-phone.png'});console.log('PASS editable guarantee and radio alignment',width);
+ }
+ await phone.goto(base+'/?view=manage&tournament=t1');await phone.waitForSelector('#clock-main');
  await phone.setViewportSize({width:1280,height:900});await phone.screenshot({path:output+'/clock-controls.png'});await phone.locator('[data-tab=payouts]').click();await phone.locator('#paid-places').fill('4');
  assert.deepEqual(await phone.locator('[data-payout-value]').evaluateAll(nodes=>nodes.map(n=>n.value)),['1,000','600','0','0']);assert.deepEqual(state.tournaments[0].settings.payouts,[100000,60000]);
  for(const [i,n] of [900,500,100,100].entries())await phone.locator(`[data-payout-value="${i}"]`).fill(String(n));

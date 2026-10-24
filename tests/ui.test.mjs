@@ -700,3 +700,22 @@ test('Players elimination uses an in-app dialog, rejects stale places and retain
   ui.w.__fixture.saveError=null;await ui.submit(ui.q('#elimination-form'));assert.equal(ui.q('#dialog').open,false);assert.equal(ui.stored().tournaments[0].entries[0].place,3);assert.deepEqual(ui.stored().players,seed.players);assert.equal(ui.w.__fixture.saves,1);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
+
+
+test('Setup saves editable guarantee amount and count before registration and reuses the structure',async()=>{
+ const ui=await boot('https://example.test/');
+ try{
+  ui.click('[data-go=setup]');ui.click('[data-edit-template]');let form=ui.q('#structure-form');assert.equal(form.querySelector('[value=guaranteed]').disabled,false);
+  ui.input(form.elements.guaranteeAmount,'1250');ui.input(form.elements.guaranteePlayers,'12');ui.click('[value=guaranteed]');assert.equal(form.elements.guaranteeAmount.value,'1,250');assert.equal(form.elements.paidPlaces.value,'2');assert.match(ui.q('#guarantee-eligibility').textContent,/\$1,250.*12 registered players/);assert.equal(ui.q('[data-payout-amount="0"]').textContent,'$1,250 minimum at 12 players');assert.equal(ui.w.__fixture.saves,1);await ui.submit(form);
+  const saved=ui.stored().templates[0];assert.equal(saved.settings.guaranteeAmount,125000);assert.equal(saved.settings.guaranteePlayers,12);ui.click('[data-edit-template]');form=ui.q('#structure-form');assert.equal(form.elements.guaranteeAmount.value,'1,250');assert.equal(form.elements.guaranteePlayers.value,'12');ui.click('[data-action=close-editor]');ui.click('[data-create-template]');form=ui.q('#new-tournament-form');ui.input(form.elements.name,'Variable Guarantee');await ui.submit(form);const t=ui.stored().tournaments[0];assert.equal(t.settings.guaranteeAmount,125000);assert.equal(t.settings.guaranteePlayers,12);assert.equal(t.settings.payoutMode,'guaranteed');assert.deepEqual(t.settings.payouts,[65,35]);assert.deepEqual(t.entries,[]);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('Management previews configured eligibility, saves on confirmation and restores guarantee terms after custom payouts',async()=>{
+ let seed=manualSeatingFixture(10);seed=execute(seed,{type:'clock',tournamentId:'t1',command:'start'});const ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=payouts]');ui.input(ui.q('[name=guaranteeAmount]'),'1500');ui.input(ui.q('[name=guaranteePlayers]'),'12');ui.click('[value=guaranteed]');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$208','$112']);assert.equal(ui.q('#guarantee-funding').textContent,'');
+  ui.input(ui.q('[name=guaranteePlayers]'),'8');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$1,500','$0']);assert.match(ui.q('#guarantee-funding').textContent,/\$1,180/);ui.w.confirm=()=>false;await ui.submit(ui.q('#payout-form'));assert.deepEqual(ui.stored(),seed);ui.w.confirm=()=>true;await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.guaranteeAmount,150000);assert.equal(ui.stored().tournaments[0].settings.guaranteePlayers,8);
+  ui.input(ui.q('#paid-places'),'4');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['1,500','0','0','0']);await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].payoutCustom,true);ui.input(ui.q('[name=guaranteeAmount]'),'2000');ui.input(ui.q('[name=guaranteePlayers]'),'20');await ui.submit(ui.q('#payout-form'));assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[150000,0,0,0]);ui.click('[data-action=recalculate-payouts]');assert.equal(ui.q('[name=guaranteeAmount]').value,'1,500');assert.equal(ui.q('[name=guaranteePlayers]').value,'8');await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.deepEqual(ui.stored().tournaments[0].clock,seed.tournaments[0].clock);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
