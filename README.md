@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.26
+# Uno Club Tournament Director — v0.3.27
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -368,3 +368,10 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - Automatic Balance Tables selects eligible unlocked, non-pending players at random and moves only the excess players into open seats. It preserves the other seats, respects reservations and balances counts to within one. Management's existing deterministic behavior is retained unless a randomized order is explicitly supplied.
 - When a table can be closed, the action reads Combine Tables and retains the existing final-table Keep existing seats / Redraw all seats choices. No automatic table closure or movement is triggered by elimination itself.
 - Validation: 183 automated tests and browser checks cover conditional access, manual moves from the phone, random eligible selection, locked/pending seat protection, final-table choices, and live TV synchronization.
+
+
+## v0.3.27 Remote tap-to-move seating
+
+- Tournament Remote uses tap a player, then tap a destination seat. Dragging is disabled even with Move Players enabled, so touch gestures remain available for scrolling. The Move and Assign seat actions also select the player for tapping a destination.
+- Regular Tournament Management retains drag-and-drop and tap-to-move. Both interfaces reuse existing seat reservations, locks, swap/slide choices and synchronized saves.
+- Validation: 185 automated tests and browser checks passed, including Remote touch/mouse gesture safety, tap-to-move and occupied-seat choices, Management dragging, and TV synchronization.

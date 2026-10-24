@@ -597,3 +597,6 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .remote-seating .seat-player-name{font-size:17px}.remote-seating .seat-player-actions{gap:12px}.remote-seating .button,.remote-seating .seat-lock-button,.remote-seating .seat-player-actions>.text-button{min-height:44px}.remote-seating .seat-lock-button{max-width:none}
 .remote-seating .section-label{align-items:flex-start}.remote-seating .section-label>.button-row{flex-wrap:wrap}.remote-seating .seat-move-help{flex-wrap:wrap}
 @media(max-width:380px){.remote-seating .seat-table-title{font-size:23px}.remote-seating .seat-table h3 small{font-size:11px}}
+
+/* Remote seat selection leaves touch gestures available for scrolling. */
+.remote-seating .seat-tables.moves-enabled .seat-player-grip:not(:disabled){cursor:pointer;touch-action:auto}

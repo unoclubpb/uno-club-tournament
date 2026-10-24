@@ -809,3 +809,16 @@ test('Remote balancing screen keeps the existing final-table combine choices',as
  const seed=manualSeatingFixture(4);seed.tournaments[0].entries[3].table=2;seed.tournaments[0].entries[3].seat=1;const ui=await boot('https://example.test/',seed,'remote','t1');
  try{ui.click('[data-remote-panel=tables]');assert.equal(ui.q('[data-action=combine-tables]').textContent,'Combine Tables');ui.click('[data-action=combine-tables]');assert.equal(ui.q('#dialog h2').textContent,'Form the final table');assert.ok(ui.q('[data-combine-mode=redraw]'));ui.click('[data-combine-mode=combine]');await flush();assert.equal(ui.w.document.querySelectorAll('.remote-seating .seat-table').length,1);assert.ok(ui.stored().tournaments[0].entries.every(e=>e.table===1));assert.deepEqual(ui.stored().tournaments[0].entries.slice(0,3),seed.tournaments[0].entries.slice(0,3));assert.equal(ui.q('#toast').textContent,'Tables combined.');assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
+
+for(const pointerType of ['mouse','touch'])test(`Remote ${pointerType} gestures scroll without dragging, while tapping supports occupied-seat choices`,async()=>{
+ let seed=manualSeatingFixture(20);seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e20'});seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e19'});const ui=await boot('https://example.test/',seed,'remote','t1');
+ try{
+  ui.click('[data-remote-panel=tables]');ui.click('[data-action=toggle-move-players]');
+  assert.equal(ui.q('#seat-move-instructions').textContent,'Tap a player, then tap the destination seat.');assert.equal(ui.q('.seat-grab-icon'),null);
+  const handle=ui.q('[data-seat-grab=e1]');let captures=0;handle.setPointerCapture=()=>captures++;ui.w.document.elementFromPoint=()=>ui.q('[data-table="2"][data-seat="9"]');
+  dispatchPointer(ui,handle,'pointerdown',{pointerType});const move=dispatchPointer(ui,ui.w.document,'pointermove',{x:130,y:200,pointerType});dispatchPointer(ui,ui.w.document,'pointerup',{x:130,y:200,pointerType});await flush();
+  assert.equal(captures,0);assert.equal(move.defaultPrevented,false);assert.equal(ui.q('.seat-drag-ghost'),null);assert.equal(ui.q('.seat-drop-target'),null);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.stored(),seed);
+  ui.click('[data-seat=e1]');assert.equal(ui.q('#seat-form'),null);assert.equal(handle.getAttribute('aria-pressed'),'true');ui.click('[data-action=cancel-seat-pick]');assert.equal(ui.q('#seat-move-instructions').textContent,'Tap a player, then tap the destination seat.');
+  ui.click('[data-seat-grab=e1]');ui.click('[data-seat-grab=e2]');assert.ok(ui.q('[data-seat-move-mode=swap]'));assert.equal(ui.w.__fixture.saves,0);ui.click('[data-seat-move-mode=swap]');await flush();assert.equal(ui.stored().tournaments[0].entries[0].seat,2);assert.equal(ui.stored().tournaments[0].entries[1].seat,1);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
