@@ -401,3 +401,39 @@ body.saving .seat-lock-button{pointer-events:none;opacity:.6}
 .icm-player>strong{grid-column:1/-1}.icm-player label{min-width:0;margin:0}.icm-player input{width:100%}
 #icm-form>p{margin:12px 0}.icm-results{margin-top:14px}
 @media(max-width:700px){.financial-summary>div{gap:8px;padding:12px 0}.financial-summary>div>span{font-size:12px}.financial-summary>div>strong{font-size:19px}.payout-formats{padding:10px}.payout-formats .check{font-size:12px}}
+
+/* Payout format and finishing places share one row on tablet and desktop. */
+.paid-places-label{margin:18px 0 7px}
+.paid-places-control{display:flex;align-items:center;gap:8px;max-width:220px;margin-bottom:5px}
+.paid-places-control input{width:80px;text-align:center;font-variant-numeric:tabular-nums}
+.paid-places-control>.button{width:44px;padding:7px;font-size:20px;flex-shrink:0}
+.payout-editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start;margin:18px 0}
+.payout-format-column,.payout-places-column{min-width:0}
+.payout-format-column .payout-formats{margin:0 0 10px}
+.payout-places-column>h3{font-size:17px;margin-bottom:10px}
+.payout-place-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.payout-place-row:first-child{padding-top:0}
+.payout-place-row>label{min-width:0;margin:0;font-size:13px;gap:6px}
+.payout-place-row .input-wrap{max-width:130px;min-width:0}
+.payout-place-row input{min-width:0;width:100%;font-variant-numeric:tabular-nums}
+.payout-place-row output{font-size:clamp(16px,2vw,23px);font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+.payout-percentage-input>span{left:auto;right:12px}
+.payout-percentage-input input{padding-left:12px;padding-right:30px}
+#payout-place-list[data-mode=fixed] .payout-place-row>label{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;gap:12px}
+#payout-place-list[data-mode=fixed] .input-wrap{width:50%}
+.payout-house-contribution{max-width:320px}
+@media(max-width:700px){.payout-editor-grid{grid-template-columns:minmax(0,1fr);gap:16px}.payout-place-row output{font-size:20px}}
+
+/* Gold table banners and the same elimination control beside every remaining player. */
+.seat-table>h3{background:var(--gold);color:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.seat-table-title{font-size:18px;font-weight:800;text-align:left}
+.seat-table>h3>small{color:var(--bg);font-size:12px;font-weight:600;text-align:right}
+.management-panel .seat-table>.seat-row{display:flex;flex-wrap:wrap}
+.seat-row>.seat-player-grip{flex:1 1 180px}
+.seat-player-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0;flex-wrap:wrap;max-width:100%;margin-left:auto}
+.seat-player-actions>.text-button{padding:8px 4px;min-height:40px}
+.seat-eliminate-button{border:1px solid #a74d4d;border-radius:8px;background:#6b242426;color:#ff9999;min-height:44px;padding:8px;font:inherit;font-size:12px;font-weight:600;flex-shrink:0}
+.seat-eliminate-button:hover:not(:disabled){background:#832c2c55}
+.unseated-player-row{flex-wrap:wrap;gap:12px}
+.unseated-player-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}
+body.saving .seat-player-actions,body.saving .unseated-player-actions{pointer-events:none;opacity:.6}

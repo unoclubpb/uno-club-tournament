@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.13
+# Uno Club Tournament Director — v0.3.14
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -230,3 +230,12 @@ ICM participants retain no invented finishing place or winner. Their chip order 
 Validation includes the $420 ledger example, configurable fee percentages, all guarantee examples and boundaries, required funding, fixed-payout mismatches, lower-place rounding, exact ICM comparisons against independent finishing-order enumeration, completion snapshots, earlier eliminations, canceled and failed/stale acceptance, and tenth-registration eligibility without lost writes. `backend/verify-settlement-data.sql` passed against the installed Supabase player-integrity trigger using only temporary rows and a rolled-back transaction. Production players and tournament rows are not rewritten by deployment or tests. UI tests simulate touch/full-screen behavior; physical iPad validation remains manual.
 
 ICM model reference: [Near-Exact Computation of Independent Chip Model Placement Probabilities for Thousands of Players, section 1](https://arxiv.org/abs/2610.06028). The implemented small-field subset algorithm is independently tested against direct finish-order enumeration.
+
+
+## v0.3.14 payout editor and table controls
+
+Tournament Management → Payouts asks “How many places are paid?” directly below Current Prize Pool. Prize Format and the vertical place list share two equal-width columns on tablet and desktop; they stack on narrow phones. Each place has its own percentage or whole-dollar input. Changing the count or format retains unsaved allocations while editing; the guarantee remains a two-place schedule. The management pane no longer uses the comma-separated amount field or duplicate payout squares. Structure defaults retain their existing editor. Existing total validation, lower-place rounding, guarantee funding, accounting and accepted ICM results remain in place.
+
+Tables & Seats provides Eliminate beside each seated or unseated player, using the same confirmation, recorded finishing place and undo process as the Players pane. Elimination releases seats and locks, updates remaining players and preserves the player database. The last remaining player and completed results cannot be eliminated from these controls. Seats per table accepts only whole numbers from 2 through 10 in both the input and domain validation; its button reads Apply. Gold table headers show the table number on the left and occupied-seat count on the right. Existing saved seating is not rewritten on load.
+
+Validation: 120 automated tests pass, including individual payout inputs and mode/count changes, guarantee and ICM regressions, confirmed/canceled seated and unseated eliminations, lock restoration on undo, completed-result protection, the ten-seat maximum and header contents. Deployment updates static app files only; no player, tournament or database migration is performed.

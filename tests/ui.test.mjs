@@ -279,6 +279,32 @@ test('seats are configured in management, display capacity and balance twelve pl
 
 function manualSeatingFixture(players=10){let s=initialState();for(let i=1;i<=players;i++)s=execute(s,{type:'player-save',id:'p'+i,name:'Player '+i});s=execute(s,{type:'tournament-create',id:'t1',name:'Manual seating',templateId:s.templates[0].id});for(let i=1;i<=players;i++)s=execute(s,{type:'register',id:'e'+i,tournamentId:'t1',playerId:'p'+i});s.tournaments[0].entries.forEach((e,i)=>{e.table=Math.floor(i/10)+1;e.seat=i%10+1;});return s;}
 
+test('table and unseated elimination uses confirmation, records finishes and preserves player records',async()=>{
+ const seed=manualSeatingFixture(3);seed.tournaments[0].entries[0].seatLocked=true;seed.tournaments[0].entries[2].table=null;seed.tournaments[0].entries[2].seat=null;
+ const ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');assert.equal(ui.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'false');assert.equal(ui.w.document.querySelectorAll('[data-eliminate]').length,3);assert.ok(ui.q('.unseated-player-row [data-eliminate=e3]'));
+  let prompt='';ui.w.confirm=message=>{prompt=message;return false;};ui.click('[data-eliminate=e1]');await flush();assert.match(prompt,/Eliminate Player 1 in 3rd place/);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.stored(),seed);
+  ui.w.confirm=()=>true;ui.click('[data-eliminate=e1]');await flush();let t=ui.stored().tournaments[0];assert.equal(t.entries[0].place,3);assert.ok(t.entries[0].eliminatedAt);assert.equal(t.entries[0].seat,null);assert.equal(t.entries[0].table,null);assert.equal(t.entries[0].seatLocked,false);assert.equal(ui.q('[data-seat-grab=e1]'),null);assert.ok(ui.q('[data-seat-target][data-seat="1"] .seat-empty'));assert.equal(ui.q('.seat-table h3 small').textContent,'1 of 10 seats filled');
+  ui.click('[data-eliminate=e3]');await flush();t=ui.stored().tournaments[0];assert.equal(t.entries[2].place,2);assert.equal(ui.q('[data-eliminate=e3]'),null);assert.equal(ui.q('[data-eliminate=e2]').disabled,true);assert.deepEqual(ui.stored().players,seed.players);assert.equal(t.entries.filter(e=>!e.eliminatedAt).length,1);
+  ui.click('[data-tab=players]');ui.click('[data-action=undo-elimination]');await flush();ui.click('[data-action=undo-elimination]');await flush();ui.click('[data-tab=tables]');t=ui.stored().tournaments[0];assert.equal(t.entries[0].seat,1);assert.equal(t.entries[0].seatLocked,true);assert.equal(t.entries[2].eliminatedAt,null);assert.equal(t.entries[2].seat,null);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('table settings reject more than ten seats and headers put table name left and occupancy right',async()=>{
+ const seed=manualSeatingFixture(12),ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=tables]');let form=ui.q('#seating-settings-form'),field=form.elements.seatsPerTable;assert.equal(field.max,'10');assert.equal(form.querySelector('button').textContent,'Apply');ui.input(field,'11');assert.equal(field.checkValidity(),false);await ui.submit(form);assert.match(ui.q('#toast').textContent,/2–10/);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.stored(),seed);
+  ui.input(field,'9');await ui.submit(form);form=ui.q('#seating-settings-form');ui.input(form.elements.seatsPerTable,'10');await ui.submit(form);assert.equal(ui.stored().tournaments[0].settings.seatsPerTable,10);
+  const headers=[...ui.w.document.querySelectorAll('.seat-table>h3')];assert.deepEqual(headers.map(h=>h.firstElementChild.textContent),['Table 1','Table 2']);assert.deepEqual(headers.map(h=>h.lastElementChild.textContent),['9 of 10 seats filled','3 of 10 seats filled']);const css=await readFile(new URL('../src/styles.css',import.meta.url),'utf8');assert.match(css,/\.seat-table>h3\{background:var\(--gold\)/);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('completed tournaments disable seated elimination without altering saved results',async()=>{
+ let seed=manualSeatingFixture(2);seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e2'});seed=execute(seed,{type:'finish',tournamentId:'t1'});const ui=await boot('https://example.test/',seed,'manage','t1');
+ try{ui.click('[data-tab=tables]');assert.equal(ui.q('[data-eliminate=e1]').disabled,true);ui.click('[data-eliminate=e1]');await flush();assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.stored(),seed);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+});
+
 test('selecting occupied seats offers swap or insertion slide without saving until chosen',async()=>{
  const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
  try{
@@ -492,14 +518,14 @@ test('the tenth registration enables the guarantee and saving it shows fully fun
  let seed=manualSeatingFixture(9);seed=execute(seed,{type:'player-save',id:'p10',name:'Player 10'});const ui=await boot('https://example.test/',seed,'manage','t1');
  try{
   ui.click('[data-tab=payouts]');assert.equal(ui.w.document.querySelectorAll('#payout-form [name=payoutMode]').length,3);assert.equal(ui.q('[value=guaranteed]').disabled,true);await ui.storage(execute(seed,{type:'register',id:'e10',tournamentId:'t1',playerId:'p10'}));assert.equal(ui.q('[value=guaranteed]').disabled,false);
-  ui.click('[value=guaranteed]');assert.equal(ui.q('#payout-values-field').hidden,true);assert.match(ui.q('#guarantee-funding').textContent,/Additional house contribution required: \$680/);assert.equal(ui.q('[data-action=icm-chop]').disabled,true);await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.deepEqual([...ui.w.document.querySelectorAll('.prize-preview strong')].map(e=>e.textContent),['$1,000','$0']);ui.click('[data-tab=summary]');const row=[...ui.w.document.querySelectorAll('.financial-summary>div')].find(r=>r.querySelector('span').textContent==='House Contribution');assert.equal(row.querySelector('strong').textContent,'+$680');assert.match(row.textContent,/Includes \$680/);assert.deepEqual(ui.errors,[]);
+  ui.click('[value=guaranteed]');assert.equal(ui.q('#payout-values-field'),null);assert.equal(ui.q('#paid-places').value,'2');assert.match(ui.q('#guarantee-funding').textContent,/Additional house contribution required: \$680/);assert.equal(ui.q('[data-action=icm-chop]').disabled,true);await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$1,000','$0']);ui.click('[data-tab=summary]');const row=[...ui.w.document.querySelectorAll('.financial-summary>div')].find(r=>r.querySelector('span').textContent==='House Contribution');assert.equal(row.querySelector('strong').textContent,'+$680');assert.match(row.textContent,/Includes \$680/);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
 test('guaranteed payouts recalculate on house contribution changes, keep the selected mode, and reject fractional fixed payouts',async()=>{
  const seed=manualSeatingFixture();seed.tournaments[0].settings={...seed.tournaments[0].settings,payoutMode:'guaranteed',housePercent:0,houseContribution:110000};const ui=await boot('https://example.test/',seed,'manage','t1');
  try{
-  ui.click('[data-tab=payouts]');assert.deepEqual([...ui.w.document.querySelectorAll('.prize-preview strong')].map(e=>e.textContent),['$1,000','$500']);ui.input(ui.q('[name=houseContribution]'),'1200');assert.deepEqual([...ui.w.document.querySelectorAll('.prize-preview strong')].map(e=>e.textContent),['$1,040','$560']);await ui.submit(ui.q('#payout-form'));assert.equal(ui.q('[value=guaranteed]').checked,true);assert.equal(ui.stored().tournaments[0].settings.houseContribution,120000);
-  ui.click('[value=fixed]');ui.input(ui.q('[name=payoutValues]'),'1000.50, 599.50');await ui.submit(ui.q('#payout-form'));assert.match(ui.q('#toast').textContent,/whole-dollar/);assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');ui.input(ui.q('[name=payoutValues]'),'1000, 500');await ui.submit(ui.q('#payout-form'));assert.match(ui.q('#toast').textContent,/exactly match/);assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.deepEqual(ui.errors,[]);
+  ui.click('[data-tab=payouts]');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$1,000','$500']);ui.input(ui.q('[name=houseContribution]'),'1200');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$1,040','$560']);await ui.submit(ui.q('#payout-form'));assert.equal(ui.q('[value=guaranteed]').checked,true);assert.equal(ui.stored().tournaments[0].settings.houseContribution,120000);
+  ui.click('[value=fixed]');ui.input(ui.q('[data-payout-value="0"]'),'1000.50');ui.input(ui.q('[data-payout-value="1"]'),'599.50');await ui.submit(ui.q('#payout-form'));assert.match(ui.q('#toast').textContent,/whole dollars/);assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');ui.input(ui.q('[data-payout-value="0"]'),'1000');ui.input(ui.q('[data-payout-value="1"]'),'500');await ui.submit(ui.q('#payout-form'));assert.match(ui.q('#toast').textContent,/exactly match/);assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
 test('ICM dialog supports manual agreements, cancels without saves, then saves chips and completes without points',async()=>{
@@ -533,5 +559,26 @@ test('an accepted guaranteed ICM chop freezes full house funding and shows agree
  let seed=manualSeatingFixture();seed.tournaments[0].settings.payoutMode='guaranteed';for(let i=10;i>=3;i--)seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e'+i});const ui=await boot('https://example.test/',seed,'manage','t1');
  try{
   ui.click('[data-tab=payouts]');ui.click('[data-action=icm-chop]');for(const row of ui.w.document.querySelectorAll('[data-icm-entry]'))ui.input(row.querySelector('[data-icm-chips]'),'5000');ui.click('[data-action=icm-calculate]');await ui.submit(ui.q('#icm-form'));const t=ui.stored().tournaments[0];assert.equal(t.settlement.houseContribution,68000);assert.equal(t.settlement.pool,100000);assert.deepEqual(t.finalPayouts,[50000,50000]);assert.match(ui.q('#guarantee-funding').textContent,/accepted ICM agreement replaces/);assert.doesNotMatch(ui.q('#guarantee-funding').textContent,/First place is at least/);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('payout place count appears below the pool and individual rows save a three-place percentage schedule',async()=>{
+ const seed=manualSeatingFixture(),ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=payouts]');assert.equal(ui.q('#payout-form').previousElementSibling.contains(ui.q('#payout-pool')),true);assert.equal(ui.q('#payout-form').querySelector(':scope>label').textContent,'How many places are paid?');assert.ok(ui.q('.payout-editor-grid>.payout-format-column .payout-formats'));assert.ok(ui.q('.payout-editor-grid>.payout-places-column #payout-place-list'));assert.equal(ui.q('#payout-values-field'),null);assert.equal(ui.q('.management-panel .prize-preview'),null);assert.doesNotMatch(ui.q('.management-panel').textContent,/Amounts in finishing order/);
+  assert.equal(ui.q('#paid-places').value,'2');ui.click('[data-payout-step="1"]');assert.equal(ui.q('#paid-places').value,'3');assert.deepEqual([...ui.w.document.querySelectorAll('.payout-place-label')].map(e=>e.textContent),['First Place','Second Place','Third Place']);for(const [i,v] of [50,30,20].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$160','$96','$64']);await ui.submit(ui.q('#payout-form'));assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[50,30,20]);assert.equal(ui.q('#paid-places').value,'3');assert.deepEqual(ui.stored().tournaments[0].entries,seed.tournaments[0].entries);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('changing place count and format retains unsaved per-place values and fixed dollar schedules',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
+ try{
+  ui.click('[data-tab=payouts]');ui.input(ui.q('#paid-places'),'3');for(const [i,v] of [50,30,20].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));ui.click('[data-payout-step="-1"]');assert.equal(ui.w.document.querySelectorAll('[data-payout-value]').length,2);ui.click('[data-payout-step="1"]');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['50','30','20']);
+  ui.click('[value=fixed]');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['160','96','64']);for(const [i,v] of [150,100,70].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));ui.click('[value=percent]');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['50','30','20']);ui.click('[value=fixed]');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['150','100','70']);await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.payoutMode,'fixed');assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[15000,10000,7000]);assert.equal(ui.q('#paid-places').value,'3');assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('guaranteed mode fixes the count at two and restoring percentage mode recovers the previous place count',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
+ try{
+  ui.click('[data-tab=payouts]');ui.input(ui.q('#paid-places'),'3');for(const [i,v] of [50,30,20].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));ui.click('[value=guaranteed]');assert.equal(ui.q('#paid-places').value,'2');assert.equal(ui.q('#paid-places').disabled,true);assert.ok([...ui.w.document.querySelectorAll('[data-payout-step]')].every(b=>b.disabled));assert.equal(ui.w.document.querySelectorAll('[data-payout-place]').length,2);assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$1,000','$0']);ui.click('[value=percent]');assert.equal(ui.q('#paid-places').disabled,false);assert.equal(ui.q('#paid-places').value,'3');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['50','30','20']);ui.input(ui.q('#paid-places'),'21');await ui.submit(ui.q('#payout-form'));assert.match(ui.q('#toast').textContent,/1–20/);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });

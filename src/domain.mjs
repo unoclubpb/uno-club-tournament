@@ -145,7 +145,7 @@ export function validateTemplate(template){
   check(s.payoutMode!=='fixed'||s.payouts.every(n=>Number.isSafeInteger(n)&&n%100===0),'Fixed payouts must be whole dollars.');
   check(s.dealerToke<=s.buyIn,'Dealer toke cannot exceed the full buy-in.');
   check(Number.isFinite(s.housePercent)&&s.housePercent>=0&&s.housePercent<=100,'House percentage must be between 0 and 100.');
-  check(s.startingStack>0,'Starting chips must be greater than zero.');check(s.seatsPerTable>=2&&s.seatsPerTable<=12,'Use 2–12 seats per table.');
+  check(s.startingStack>0,'Starting chips must be greater than zero.');check(s.seatsPerTable>=2&&s.seatsPerTable<=10,'Use 2–10 seats per table.');
   check(['off','big_blind','per_player'].includes(s.anteMode),'Choose the ante setting.');
   check(['percent','fixed','guaranteed'].includes(s.payoutMode),'Choose a payout mode.');
   check(s.payouts.length>0&&s.payouts.length<=20&&s.payouts.every(v=>Number.isFinite(v)&&v>=0),'Enter valid payouts.');
@@ -256,7 +256,7 @@ export function execute(state,action,now=Date.now()){
     t.rebuyCount=a.count;return s;
   }
   if(a.type==='seating-settings'){
-    check(Number.isSafeInteger(a.seatsPerTable)&&a.seatsPerTable>=2&&a.seatsPerTable<=12,'Use 2–12 seats per table.');
+    check(Number.isSafeInteger(a.seatsPerTable)&&a.seatsPerTable>=2&&a.seatsPerTable<=10,'Use 2–10 seats per table.');
     for(const entry of t.entries.filter(e=>!e.eliminatedAt&&e.seat>a.seatsPerTable))requireUnlocked(entry);
     t.settings.seatsPerTable=a.seatsPerTable;
     const remaining=t.entries.filter(e=>!e.eliminatedAt),displaced=remaining.filter(e=>e.seat>a.seatsPerTable);

@@ -100,7 +100,7 @@ test('seat capacity is per tournament, preserves valid assignments and relocates
  for(const old of valid){const entry=t.entries.find(e=>e.id===old.id);assert.equal(entry.table,old.table);assert.equal(entry.seat,old.seat);}
  assert.ok(t.entries.every(e=>e.table>=1&&e.table<=3&&e.seat>=1&&e.seat<=9));assert.equal(new Set(t.entries.map(e=>`${e.table}/${e.seat}`)).size,20);assert.deepEqual(t.entries.map(e=>e.playerId),before.entries.map(e=>e.playerId));
  const seats=t.entries.map(e=>[e.table,e.seat]);s=act(s,event,{type:'seating-settings',seatsPerTable:10});assert.deepEqual(s.tournaments[0].entries.map(e=>[e.table,e.seat]),seats);
- for(const seatsPerTable of [0,1,13,1.5,NaN,'9'])assert.throws(()=>act(s,event,{type:'seating-settings',seatsPerTable}),/2–12/);
+ for(const seatsPerTable of [0,1,11,12,13,1.5,NaN,'9'])assert.throws(()=>act(s,event,{type:'seating-settings',seatsPerTable}),/2–10/);
 });
 
 test('balanced seating accounts for empty, uneven and full tables at nine or ten seats',()=>{
