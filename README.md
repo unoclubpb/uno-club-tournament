@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.25
+# Uno Club Tournament Director — v0.3.26
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -359,3 +359,12 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - Saved structures, tournament snapshots, preferred defaults, TV clocks and Tournament Remote share one normalized gradient definition. Existing two-color gradients keep their original endpoint colors and other styles retain their current settings. No player, finance, clock deadline or history changes are made by appearance previews.
 - Validate gradient colors, count, coverage and unique positions before saving. Invalid edits remain a draft with a visible message. The first/last positions remain at 0% and 100%.
 - Validation: 179 automated tests and browser checks cover visible stripes/gradient options, legacy gradients, editable multicolor stops, saving/inheritance, and matching TV/Remote colors.
+
+
+## v0.3.26 Remote table balancing
+
+- Replace the Remote's long balancing warning with a Balance Tables button. It appears only when active occupied tables differ by at least two players, after finalized eliminations, and opens a Remote seating screen. There is no permanent Remote tables navigation item; balanced direct links return to the clock. A seating screen already opened stays available to review the result until returning to the clock.
+- The Remote seating screen reuses the existing gold table headers, Move Players toggle, tap/drag/Move actions, swap/slide confirmations, locks and stale-save protections. Moving stays off until enabled so scrolling remains safe. Elimination controls and table-capacity settings stay on their existing screens.
+- Automatic Balance Tables selects eligible unlocked, non-pending players at random and moves only the excess players into open seats. It preserves the other seats, respects reservations and balances counts to within one. Management's existing deterministic behavior is retained unless a randomized order is explicitly supplied.
+- When a table can be closed, the action reads Combine Tables and retains the existing final-table Keep existing seats / Redraw all seats choices. No automatic table closure or movement is triggered by elimination itself.
+- Validation: 183 automated tests and browser checks cover conditional access, manual moves from the phone, random eligible selection, locked/pending seat protection, final-table choices, and live TV synchronization.

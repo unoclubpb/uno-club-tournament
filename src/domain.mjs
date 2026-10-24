@@ -178,16 +178,16 @@ export function planTableSeating(t,{mode='remaining',order=[]}={}){
   for(const entry of active.filter(e=>e.seatLocked)){
     check(entry.table>=1&&entry.table<=count&&entry.seat>=1&&entry.seat<=capacity,`Unlock the player at Table ${entry.table}, Seat ${entry.seat} before combining tables.`);
   }
+  const rank=new Map(order.map((entryId,i)=>[entryId,i]));
   if(mode==='combine')for(let table=1;table<=count;table++){
     const occupants=active.filter(e=>e.table===table),excess=occupants.length-targets[table-1];
-    const candidates=occupants.filter(e=>!e.seatLocked).sort((a,b)=>b.seat-a.seat);
-    check(excess<=candidates.length,`Unlock a player at Table ${table} before balancing tables.`);
+    const candidates=occupants.filter(e=>!e.seatLocked&&!e.pendingElimination).sort((a,b)=>order.length?(rank.get(a.id)??order.length)-(rank.get(b.id)??order.length):b.seat-a.seat);
+    check(excess<=candidates.length,occupants.some(e=>e.pendingElimination)?'Wait for pending eliminations before balancing this table.':`Unlock a player at Table ${table} before balancing tables.`);
     if(excess>0)moving.push(...candidates.slice(0,excess));
   }
   const movingIds=new Set(moving.map(e=>e.id)),occupied=new Set(),loads=Array(count).fill(0);
   for(const entry of active.filter(e=>!movingIds.has(e.id))){occupied.add(`${entry.table}/${entry.seat}`);loads[entry.table-1]++;}
-  const rank=new Map(order.map((entryId,i)=>[entryId,i]));
-  if(mode==='remaining'||redraw)moving.sort((a,b)=>(rank.get(a.id)??order.length)-(rank.get(b.id)??order.length));
+  if(mode==='remaining'||redraw||mode==='combine'&&order.length)moving.sort((a,b)=>(rank.get(a.id)??order.length)-(rank.get(b.id)??order.length));
   const updates=[];
   for(const entry of moving){
     requireUnlocked(entry);
