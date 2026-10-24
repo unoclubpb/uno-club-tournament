@@ -14,6 +14,7 @@ const db=createClient(SUPABASE_URL,SUPABASE_KEY);
 const APP_ROOT=new URL('.',location.href).pathname;
 const $=q=>document.querySelector(q), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:0}).format(n/100);
+function allocationFeedback(pool,total){const difference=pool-total;return difference>0?`${money(difference)} left to distribute`:difference<0?`${money(-difference)} over the prize pool`:`All ${money(pool)} allocated`;}
 const tvMoney=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:0}).format(n/100);
 const num=n=>Number(n||0).toLocaleString('en-US');
 const dollarNumber=value=>Number(String(value).replace(/,/g,''));
@@ -269,7 +270,7 @@ function refreshRulePreview(form){
     const mixed=rules.some(r=>r.mode==='fixed')&&rules.some(r=>r.mode==='percent'),custom=t.payoutCustom||form.dataset.rulesEdited==='true',dirty=JSON.stringify(settings)!==JSON.stringify(t.settings)||form.dataset.rulesEdited==='true';
     setText('#custom-payout-status',custom?(mixed?'Mixed Payouts · ':'')+'Custom Payouts'+(dirty?' — Save to apply':''):mixed?'Structure guarantee':'');
     setText('#mixed-payout-note',mixed?'Fixed awards are set aside first. Percentages divide the remaining prize pool.':'');
-    setText('#payout-feedback',difference>0?`${money(difference)} left to distribute`:difference<0?`${money(-difference)} over the prize pool`:`All ${money(f.pool)} allocated${dirty?' — Save to apply':''}`);
+    setText('#payout-feedback',allocationFeedback(f.pool,total)+(difference===0&&dirty?' — Save to apply':''));
     $('#payout-feedback').classList.toggle('payout-order-error',!!orderError);
     if(orderError)setText('#payout-feedback',orderError+(difference!==0?' '+$('#payout-feedback').textContent:''));
     if(manual)manual.disabled=!!orderError||dirty||difference!==0||active(t).length<2||hasPendingEliminations(t);
@@ -481,7 +482,7 @@ function selectCurrentTournament(){
 }
 function workspaceScreen(){
   const banner=header()+importNotice(),menu=view==='home'?'':nav();
-  const content=`<main class="content">${({home,setup,players,signup,manage,leaderboard}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.3.32 · ${online?'Saved online':'Connection interrupted'}</span></footer>`;
+  const content=`<main class="content">${({home,setup,players,signup,manage,leaderboard}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.3.33 · ${online?'Saved online':'Connection interrupted'}</span></footer>`;
   if(view==='manage')return `<div class="management-chrome">${banner}<div class="workspace">${menu}</div></div><div class="workspace">${content}</div>`;
   return `${banner}<div class="workspace">${menu}${content}</div>`;
 }
@@ -624,7 +625,7 @@ function icmDialog(){
   if(!online||busy)throw new Error('Reconnect and wait for the current save before opening an ICM chop.');
   const t=current(),remaining=active(t);if(remaining.length<2||remaining.length>20)throw new Error('Calculate an ICM chop with 2–20 remaining players.');icmReview=null;
   const expectedPoints=pointsLabel(chopPoints(remaining.length));
-  modal('ICM Chop',`<form id="icm-form"><input type="hidden" name="version" value="${version}"><input type="hidden" name="tournamentId" value="${selected}"><p>Enter chips, calculate, then adjust payouts if needed.</p><div class="icm-player-list">${remaining.map(e=>`<div class="icm-player" data-icm-entry="${e.id}"><strong>${esc(pName(e))}</strong><span class="icm-points" title="Expected tournament points, including participation" aria-label="${expectedPoints} expected points">${expectedPoints} pts</span><label>Chip count<input type="text" inputmode="numeric" data-chips="true" data-icm-chips aria-label="Chip count for ${esc(pName(e))}" value="" autocomplete="off" required></label><label>Proposed payout ($)<input type="text" inputmode="numeric" data-money="true" data-icm-payout aria-label="Proposed payout for ${esc(pName(e))}" disabled></label></div>`).join('')}</div><p id="icm-feedback" class="muted" role="status">Enter chip counts to calculate proposed payouts.</p><button type="button" class="button secondary" data-action="icm-calculate">Calculate ICM</button><button class="button primary full" id="icm-accept" disabled>Accept ICM Chop & End Tournament</button></form>`);
+  modal('ICM Chop',`<form id="icm-form"><input type="hidden" name="version" value="${version}"><input type="hidden" name="tournamentId" value="${selected}"><div class="icm-player-list">${remaining.map(e=>`<div class="icm-player" data-icm-entry="${e.id}"><strong>${esc(pName(e))}</strong><span class="icm-points" title="Expected tournament points, including participation" aria-label="${expectedPoints} expected points">${expectedPoints} pts</span><label>Chip count<input type="text" inputmode="numeric" data-chips="true" data-icm-chips aria-label="Chip count for ${esc(pName(e))}" value="" autocomplete="off" required></label><label>Proposed payout ($)<input type="text" inputmode="numeric" data-money="true" data-icm-payout aria-label="Proposed payout for ${esc(pName(e))}" disabled></label></div>`).join('')}</div><p id="icm-feedback" class="payout-allocation" role="status"></p><button type="button" class="button secondary" data-action="icm-calculate">Calculate ICM</button><button class="button primary full" id="icm-accept" disabled>Accept ICM Chop & End Tournament</button></form>`);
 }
 function calculateIcm(){
   const form=$('#icm-form'),context={version:Number(form.elements.version.value),tournamentId:form.elements.tournamentId.value};checkIcmContext(context);
@@ -633,9 +634,9 @@ function calculateIcm(){
   updateIcmReview();form.querySelector('.icm-player-list').scrollTop=0;
 }
 function updateIcmReview(target){
-  if(target?.hasAttribute('data-icm-chips')){icmReview=null;$('#icm-accept').disabled=true;setText('#icm-feedback','Chip counts changed. Calculate ICM again before accepting.');return;}
+  if(target?.hasAttribute('data-icm-chips')){icmReview=null;$('#icm-accept').disabled=true;setText('#icm-feedback','Calculate ICM again.');return;}
   if(!icmReview)return;
-  try{checkIcmContext(icmReview);const rows=icmRows();if(!rows.every(v=>Number.isSafeInteger(v.payout)&&v.payout>=0))throw new Error('Enter every proposed payout as whole dollars.');const total=rows.reduce((n,v)=>n+v.payout,0),pool=icmReview.proposal.chopPool;$('#icm-accept').disabled=total!==pool;setText('#icm-feedback',`Proposed payouts: ${money(total)} / ${money(pool)} available for the chop.${icmReview.proposal.reservedPayouts.length?' Earlier-place payouts remain reserved.':''}${total!==pool?' Adjust the amounts so the total matches exactly.':''}`);}catch(error){$('#icm-accept').disabled=true;setText('#icm-feedback',error.message);}
+  try{checkIcmContext(icmReview);const rows=icmRows();if(!rows.every(v=>Number.isSafeInteger(v.payout)&&v.payout>=0))throw new Error('Enter every proposed payout as whole dollars.');const total=rows.reduce((n,v)=>n+v.payout,0),pool=icmReview.proposal.chopPool;$('#icm-accept').disabled=total!==pool;setText('#icm-feedback',allocationFeedback(pool,total));}catch(error){$('#icm-accept').disabled=true;setText('#icm-feedback',error.message);}
 }
 function seatSource(entryId){
   if(!seatMovesEnabled())throw new Error('Turn on Move Players before moving a player.');

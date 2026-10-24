@@ -935,3 +935,19 @@ test('ICM rows show only remaining players and their equal expected points, with
  let seed=remotePayoutFixture();for(let i=10;i>=5;i--)seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e'+i});const ui=await boot('https://example.test/',seed,'remote','t1');
  try{ui.click('[data-remote-panel=payouts]');ui.click('[data-action=icm-chop]');assert.equal(ui.w.document.querySelectorAll('[data-icm-entry]').length,4);assert.equal(ui.q('#icm-form .points-preview'),null);for(let i=5;i<=10;i++)assert.equal(ui.q(`[data-icm-entry=e${i}]`),null);for(const [i,row] of [...ui.w.document.querySelectorAll('[data-icm-entry]')].entries()){assert.equal(row.querySelector('.icm-points').textContent,'9.50 pts');assert.equal(row.querySelector('[data-icm-payout]').disabled,true);assert.equal(row.children[0].tagName,'STRONG');assert.ok(row.children[1].classList.contains('icm-points'));ui.input(row.querySelector('[data-icm-chips]'),String((i+1)*1000));}ui.click('[data-action=icm-calculate]');const rows=[...ui.w.document.querySelectorAll('[data-icm-entry]')];assert.ok(rows.every(row=>!row.querySelector('[data-icm-payout]').disabled));const first=rows[0].querySelector('[data-icm-payout]'),last=rows[3].querySelector('[data-icm-payout]'),a=Number(first.value.replace(/,/g,'')),b=Number(last.value.replace(/,/g,''));ui.input(first,String(a-1));assert.equal(ui.q('#icm-accept').disabled,true);ui.input(last,String(b+1));assert.equal(ui.q('#icm-accept').disabled,false);assert.ok(rows.every(row=>row.querySelector('.icm-points').textContent==='9.50 pts'));assert.deepEqual(ui.stored(),seed);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
+
+for(const view of ['manage','remote'])for(const reserved of [false,true])test(`${view} ICM reports exact unallocated and excess dollars${reserved?' with earlier payouts reserved':''}`,async()=>{
+ let seed=remotePayoutFixture('fixed',3);
+ if(reserved){seed.tournaments[0].settings.payouts=[100000,50000,10000];seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e3'});}
+ const pool=reserved?1500:1600,ui=await boot('https://example.test/',seed,view,'t1');
+ try{
+  if(view==='manage')ui.click('[data-tab=payouts]');else ui.click('[data-remote-panel=payouts]');
+  ui.click('[data-action=icm-chop]');assert.equal(ui.q('#icm-feedback').textContent,'');assert.doesNotMatch(ui.q('#icm-form').textContent,/Enter chips, calculate|Earlier-place payouts|available for the chop/);
+  for(const input of ui.w.document.querySelectorAll('[data-icm-chips]'))ui.input(input,'1000');ui.click('[data-action=icm-calculate]');assert.equal(ui.q('#icm-feedback').textContent,`All $${pool.toLocaleString('en-US')} allocated`);assert.equal(ui.q('#icm-accept').disabled,false);
+  const input=ui.q('[data-icm-payout]'),original=Number(input.value.replace(/,/g,''));ui.input(input,String(original-25));assert.equal(ui.q('#icm-feedback').textContent,'$25 left to distribute');assert.equal(ui.q('#icm-accept').disabled,true);
+  ui.input(input,String(original+1234));assert.equal(ui.q('#icm-feedback').textContent,'$1,234 over the prize pool');assert.equal(ui.q('#icm-accept').disabled,true);
+  ui.input(input,'12.50');assert.equal(ui.q('#icm-feedback').textContent,'Enter every proposed payout as whole dollars.');assert.equal(ui.q('#icm-accept').disabled,true);
+  ui.input(input,String(original));assert.equal(ui.q('#icm-feedback').textContent,`All $${pool.toLocaleString('en-US')} allocated`);assert.equal(ui.q('#icm-accept').disabled,false);
+  ui.input(ui.q('[data-icm-chips]'),'2000');assert.equal(ui.q('#icm-feedback').textContent,'Calculate ICM again.');assert.equal(ui.q('#icm-accept').disabled,true);assert.deepEqual(ui.stored(),seed);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});

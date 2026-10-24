@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.32
+# Uno Club Tournament Director — v0.3.33
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -420,3 +420,10 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - ICM shows only remaining players: name and expected point award in the first row, chip count and proposed payout in the second. Every remaining player receives the same projected point award, calculated from the remaining finishing bonuses plus participation, independent of chips or money. Four remaining players show 9.50 points each. Remove the separate ICM points-preview section and prior-elimination point rows; winner/manual-chop previews stay unchanged.
 - Proposed payout inputs remain disabled until ICM is calculated, then allow whole-dollar negotiated edits. Existing total validation, chip-change recalculation, prior-place payout reservations, acceptance confirmation, final chip/payout persistence and points scoring remain unchanged. No database schema or tournament-data rewrite is required.
 - Validation: 225 automated tests and browser checks passed, including failed/canceled save feedback, repeat edits and navigation, remaining-only point awards, editable negotiated ICM payouts, and compact two-column rows at 320/390/768/1280px. Existing tournament records were not rewritten. Windows wireless HDMI auto-placement/fullscreen remains pending hardware verification.
+
+
+## v0.3.33 Concise ICM allocation feedback
+
+- Reuse the payout editor's allocation message in ICM: dollars left to distribute, dollars over the prize pool, or the fully allocated amount. Update immediately after negotiated payout edits, and keep acceptance disabled until the amounts balance exactly. Earlier eliminated paid places remain reserved; the feedback compares only the available chop pool.
+- Remove the ICM introduction and repetitive total/reservation/adjustment descriptions. Keep necessary whole-dollar, changed-chip and stale-tournament validation. No payout calculations, points, cloud data or history are changed.
+- Validation: 229 automated tests and browser checks passed. Management and Remote cover under/over allocation, exact totals, reserved earlier-place payouts, whole-dollar input errors and chip-change recalculation. Phone, iPad and desktop checks confirm the compact ICM layout and live balance feedback.
