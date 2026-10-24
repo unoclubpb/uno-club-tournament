@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.27
+# Uno Club Tournament Director — v0.3.28
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -375,3 +375,10 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - Tournament Remote uses tap a player, then tap a destination seat. Dragging is disabled even with Move Players enabled, so touch gestures remain available for scrolling. The Move and Assign seat actions also select the player for tapping a destination.
 - Regular Tournament Management retains drag-and-drop and tap-to-move. Both interfaces reuse existing seat reservations, locks, swap/slide choices and synchronized saves.
 - Validation: 185 automated tests and browser checks passed, including Remote touch/mouse gesture safety, tap-to-move and occupied-seat choices, Management dragging, and TV synchronization.
+
+
+## v0.3.28 Remote balancing controls
+
+- Remove the Move Players toggle from the Remote seating screen. Tap a player and then a destination seat immediately; touch gestures still scroll without dragging. Regular Tournament Management keeps its safety toggle and drag-and-drop.
+- Show the conditional Remote Balance Tables alert button in red. Existing seat locks, pending reservations, swap/slide confirmations, automatic balancing and cloud synchronization are retained.
+- Validation: all 185 automated tests and browser checks pass, including immediate Remote seat selection, touch scrolling, the red balancing alert, unchanged Management controls, and synchronized TV seating.
