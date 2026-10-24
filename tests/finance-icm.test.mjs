@@ -13,8 +13,8 @@ test('summary matches the requested $420 example and only net entries attract th
  t.settings.housePercent=12.5;f=financials(t);assert.equal(f.houseFee,5000);assert.equal(f.pool,45000);checkLedger(f);t.rebuyCount=8;assert.equal(financials(t).houseFee,5000);
  t.entries[0].payments.push({kind:'addon',total:9000,dealerToke:0,chips:20000});t.settings.houseContribution=10000;f=financials(t);assert.equal(f.addonTotal,9000);assert.equal(f.houseFee,5000);checkLedger(f);
 });
-test('the guarantee is unavailable at nine registrations and becomes available at ten, including eliminated entrants',()=>{
- let s=fixture(9),settings={...event(s).settings,payoutMode:'guaranteed',payouts:[65,35]};assert.equal(guaranteeEligible(event(s)),false);assert.throws(()=>act(s,{type:'payout-settings',settings}),/at least 10/);
+test('the saved guarantee is inactive at nine and activates at ten, including eliminated entrants',()=>{
+ let s=fixture(9),settings={...event(s).settings,payoutMode:'guaranteed',payouts:[65,35]};assert.equal(guaranteeEligible(event(s)),false);s=act(s,{type:'payout-settings',settings});assert.equal(financials(event(s)).guaranteeActive,false);assert.equal(event(s).settings.payoutMode,'guaranteed');assert.deepEqual(prizes(event(s)),[18700,10100]);
  s=execute(s,{type:'player-save',id:'p10',name:'Player 10'},now);s=act(s,{type:'register',id:'e10',playerId:'p10'});s=act(s,{type:'eliminate',entryId:'e1'});assert.equal(guaranteeEligible(event(s)),true);s=act(s,{type:'payout-settings',settings});assert.equal(event(s).settings.payoutMode,'guaranteed');assert.equal(prizes(event(s)).length,2);
 });
 test('all guarantee examples and the $1539 threshold recalculate with lower-place dollar rounding',()=>{

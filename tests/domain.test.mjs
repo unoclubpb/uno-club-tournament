@@ -121,7 +121,7 @@ test('balanced seating accounts for empty, uneven and full tables at nine or ten
 });
 
 test('undo elimination never restores a removed seat and finished tournaments lock capacity',()=>{
- let {s,event}=setup(20);s=act(s,event,{type:'auto-seat'});const victim=s.tournaments[0].entries.find(e=>e.seat===10).id;s=act(s,event,{type:'eliminate',entryId:victim});s=act(s,event,{type:'seating-settings',seatsPerTable:9});s=act(s,event,{type:'undo-elimination'});const restored=s.tournaments[0].entries.find(e=>e.id===victim);assert.equal(restored.eliminatedAt,null);assert.equal(restored.table,null);assert.equal(restored.seat,null);
+ let {s,event}=setup(20);s=act(s,event,{type:'auto-seat'});const victim=s.tournaments[0].entries.find(e=>e.seat===10).id;s=act(s,event,{type:'eliminate',entryId:victim});s=act(s,event,{type:'seating-settings',seatsPerTable:9});const before=clone(s);assert.throws(()=>act(s,event,{type:'undo-elimination'}),/original seat no longer exists/);assert.deepEqual(s,before);
  const one=setup(1);const finished=act(one.s,one.event,{type:'finish'});assert.throws(()=>act(finished,one.event,{type:'seating-settings',seatsPerTable:9}),/locked/);
 });
 
@@ -212,6 +212,6 @@ test('locks prevent direct moves, swaps, insertion slides, unseating and removin
 test('seat locks are per tournament, require a seated active player and restore safely on elimination undo',()=>{
  let {s,event}=manualSeats(3);const entry=s.tournaments[0].entries[0].id;s=act(s,event,{type:'seat-lock',entryId:entry,locked:true});s=act(s,event,{type:'eliminate',entryId:entry});assert.equal(s.tournaments[0].entries[0].seatLocked,false);assert.throws(()=>act(s,event,{type:'seat-lock',entryId:entry,locked:true}),/seated remaining/);
  const restored=act(s,event,{type:'undo-elimination'});assert.equal(restored.tournaments[0].entries[0].seatLocked,true);assert.equal(restored.tournaments[0].entries[0].seat,1);
- s=act(s,event,{type:'seat',entryId:s.tournaments[0].entries[1].id,table:1,seat:1});s=act(s,event,{type:'undo-elimination'});assert.equal(s.tournaments[0].entries[0].seatLocked,false);assert.equal(s.tournaments[0].entries[0].table,null);assert.throws(()=>act(s,event,{type:'seat-lock',entryId:entry,locked:true}),/seated remaining/);
+ s=act(s,event,{type:'seat',entryId:s.tournaments[0].entries[1].id,table:1,seat:1});const blocked=clone(s);assert.throws(()=>act(s,event,{type:'undo-elimination'}),/occupied/);assert.deepEqual(s,blocked);assert.throws(()=>act(s,event,{type:'seat-lock',entryId:entry,locked:true}),/seated remaining/);
  const one=manualSeats(1);one.s=act(one.s,one.event,{type:'finish'});assert.throws(()=>act(one.s,one.event,{type:'seat-lock',entryId:one.s.tournaments[0].entries[0].id,locked:true}),/Completed tournament/);
 });

@@ -480,3 +480,43 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .tv-unseated [data-tv-fit]{display:flex;align-items:center;height:100%;min-width:0;min-height:0;overflow-wrap:anywhere;line-height:1.1}
 .tv-seating-empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:2vw}
 .tv-seating-footer{flex:0 0 1.8dvh;min-height:0;color:var(--muted);font-size:clamp(8px,.8vw,15px);line-height:1.2}
+
+/* Management controls and summary refinements. */
+.context-actions{display:flex;align-items:center;justify-content:flex-end;gap:14px;flex-wrap:wrap}
+.context .tv-display-controls{border:0;padding:0;gap:10px;flex-shrink:0;background:transparent}
+.context .tv-display-controls>strong{color:var(--gold)}
+.clock-controls #clock-main{flex-basis:100%;width:100%}
+.rebuy-total-controls{display:block;width:100%;margin-top:12px}.rebuy-total-controls>#record-rebuys{width:100%}
+#record-rebuys.rebuy-available{background:#28603c;color:#fff;border-color:#3a8b54}
+.table-balance-alert{padding:12px 16px;border:1px solid var(--gold);border-radius:8px;background:#6d521d33;color:var(--gold);margin:14px 0}
+.payout-current-pool{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 0 18px}.payout-current-pool>span{font-size:14px;color:var(--muted)}
+.payout-current-pool>strong,.payout-place-row output,#payout-place-list[data-mode=fixed] input{font-size:clamp(18px,2vw,24px);font-variant-numeric:tabular-nums}
+.payout-current-pool>strong{color:#77d69d}.custom-payout-status{color:var(--gold);font-weight:700;margin:12px 0}
+.seat-table>h3,.seat-table>h3>small{color:#000}.seat-table-title{font-size:22px;letter-spacing:.2px}.seat-table>h3>small{font-size:12px}
+@media(max-width:900px){.context{flex-wrap:wrap;gap:12px}.context .context-actions{width:100%;justify-content:flex-start}.context .tv-display-controls{flex:1;min-width:0}.context .tv-display-buttons{flex-wrap:wrap}.context .tv-display-buttons .button{white-space:normal}.context-actions>.button{flex-shrink:0}}
+@media(max-width:500px){.context .context-actions{gap:8px}.context .tv-display-controls{flex-basis:100%;flex-wrap:nowrap}.context .context-actions>[data-action=open-clock]{width:100%;justify-content:center}.context .tv-display-buttons>.button{min-height:44px}.payout-current-pool{flex-wrap:wrap}.seat-table-title{font-size:19px}}
+
+/* These variables affect clock surfaces only, including the local preview. */
+.tv-shell[data-timer-style],.clock-styled{background:var(--clock-background);color:var(--clock-text)}
+.tv-shell[data-timer-style] .tv-time-panel,.tv-shell[data-timer-style] .tv-blinds-panel,.tv-shell[data-timer-style] .tv-side,.tv-shell[data-timer-style] .tv-compact-clock{background:var(--clock-background)}
+.tv-shell[data-timer-style] #tv-level,.tv-shell[data-timer-style] .tv-seating-heading,.clock-styled .preview-level{color:var(--clock-level)}
+.tv-shell[data-timer-style] #tv-blinds,.clock-styled .preview-current{color:var(--clock-current-blinds)}
+.tv-shell[data-timer-style] #tv-next,.clock-styled .preview-next{color:var(--clock-next-blinds)}
+.tv-shell[data-timer-style] #tv-time,.clock-styled [data-countdown]{color:var(--clock-timer)}
+[data-timer-style=separate] .timer-minutes,[data-timer-style=separate] .timer-colon{color:var(--clock-minutes)}
+[data-timer-style=separate] .timer-seconds{color:var(--clock-seconds)}
+[data-timer-style=gradient] #tv-time,[data-timer-style=gradient] [data-countdown]{background-image:linear-gradient(100deg,var(--clock-gradient-start),var(--clock-gradient-end));background-clip:text;-webkit-background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent}
+[data-timer-style=stripes] #tv-time,[data-timer-style=stripes] [data-countdown]{background-image:repeating-linear-gradient(110deg,var(--clock-stripe1) 0 14px,var(--clock-stripe2) 14px 28px,var(--clock-stripe3) 28px 42px);background-clip:text;-webkit-background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent}
+.tv-shell[data-timer-style] #tv-status,.tv-shell[data-timer-style] #tv-game,.tv-shell[data-timer-style] #tv-next-label,.tv-shell[data-timer-style] #tv-ante,.tv-shell[data-timer-style] #tv-break,.clock-styled .preview-other{color:var(--clock-text)}
+.tv-side .tv-pool{text-align:center}.tv-side .tv-pool>strong{display:block;width:100%;text-align:center}.tv-side .tv-payout-list p{display:grid;grid-template-columns:.6fr 1fr;align-items:center}.tv-side .tv-payout-list p>strong{text-align:center;width:100%}
+.clock-appearance-preview{border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px;margin:18px 0;min-height:220px}
+.clock-appearance-preview .preview-countdown{font-size:60px;line-height:1.15;white-space:nowrap}.preview-current{font-size:25px}.preview-level{font-weight:700}.preview-other{font-size:12px}
+.clock-color-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}.clock-color-grid label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0}.clock-color-grid input[type=color]{width:58px;height:40px;min-width:58px;padding:3px}.clock-color-grid [hidden]{display:none}
+#clock-appearance-form>.button-row{margin-top:16px;flex-wrap:wrap}
+.tv-launch-fallback{position:fixed;bottom:18px;right:18px;z-index:60;display:flex;flex-direction:column;gap:5px;align-items:flex-end;padding:10px;border:1px solid var(--gold);border-radius:10px;background:#060f18ed}
+.tv-launch-fallback small{font-size:10px;color:var(--muted)}.tv-launch-fallback[hidden]{display:none}
+.management-panel .seat-table{container-type:inline-size}
+.management-panel .seat-table>h3{padding:12px 9px;gap:4px;white-space:nowrap}
+.management-panel .seat-table-title{font-size:clamp(14px,6cqw,22px)}
+.management-panel .seat-table>h3>small{font-size:clamp(7px,3cqw,12px);white-space:nowrap}
+.tv-seat-table>h2,.tv-seat-table>h2>small{color:#000}

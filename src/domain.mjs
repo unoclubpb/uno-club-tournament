@@ -1,4 +1,5 @@
 import {icmEquities,roundLowerFirst} from './icm.mjs';
+import {clockAppearance} from './clock-appearance.mjs';
 export const id = () => crypto.randomUUID();
 export const clone = value => structuredClone(value);
 const check = (ok, message) => { if (!ok) throw new Error(message); };
@@ -93,6 +94,8 @@ export function clockAt(t,now) {
   c.remainingMs=Math.max(0,c.deadline-now); return c;
 }
 export const guaranteeEligible=t=>t.entries.length>=10;
+export function defaultPayouts(count){return ({1:[100],2:[65,35],3:[50,30,20],4:[45,30,15,10]})[count]||Array.from({length:count},(_,i)=>i===0?100:0);}
+export function tableBalanceNeeded(t){if(t.status==='completed')return false;const counts=[...new Set(t.entries.filter(e=>!e.eliminatedAt&&e.table).map(e=>e.table))].map(table=>t.entries.filter(e=>!e.eliminatedAt&&e.table===table).length);return counts.length>1&&Math.max(...counts)-Math.min(...counts)>=2;}
 export function financials(t){
   const payments=t.entries.flatMap(e=>e.payments||[]).filter(p=>p.kind!=='rebuy');
   const rebuyCount=tournamentRebuyCount(t),rebuyTotal=rebuyCount*t.settings.rebuyAmount;
@@ -155,7 +158,7 @@ export function validateTemplate(template){
 }
 // Locks belong to this tournament entry and protect the exact table and seat.
 function requireUnlocked(entry){check(!entry.seatLocked,`Unlock the player at Table ${entry.table}, Seat ${entry.seat} first.`);}
-export function canCombineTables(t){return tablesRequired(t)>0&&t.entries.some(e=>!e.eliminatedAt&&e.table>tablesRequired(t));}
+export function canCombineTables(t){const remaining=t.entries.filter(e=>!e.eliminatedAt),count=tablesRequired(t);return count>0&&remaining.some(e=>e.table)&&(remaining.some(e=>!e.table||e.table>count)||Array.from({length:count},(_,i)=>remaining.filter(e=>e.table===i+1).length!==Math.floor(remaining.length/count)+(i<remaining.length%count?1:0)).some(Boolean));}
 export function planTableSeating(t,{mode='remaining',order=[]}={}){
   check(t&&t.status!=='completed','Completed tournament is locked.');
   check(['remaining','combine','redraw','legacy-redraw'].includes(mode),'Choose a valid seating action.');
@@ -165,9 +168,16 @@ export function planTableSeating(t,{mode='remaining',order=[]}={}){
   if(mode==='redraw')check(count===1,'Redraw is only available when forming the final table.');
   const redraw=mode==='redraw'||mode==='legacy-redraw';
   const moving=active.filter(e=>redraw?!e.seatLocked:!e.table||(mode==='combine'&&e.table>count));
+  const targets=Array.from({length:count},(_,i)=>Math.floor(active.length/count)+(i<active.length%count?1:0));
   // Refuse to close a locked player's table before planning any changes.
   for(const entry of active.filter(e=>e.seatLocked)){
     check(entry.table>=1&&entry.table<=count&&entry.seat>=1&&entry.seat<=capacity,`Unlock the player at Table ${entry.table}, Seat ${entry.seat} before combining tables.`);
+  }
+  if(mode==='combine')for(let table=1;table<=count;table++){
+    const occupants=active.filter(e=>e.table===table),excess=occupants.length-targets[table-1];
+    const candidates=occupants.filter(e=>!e.seatLocked).sort((a,b)=>b.seat-a.seat);
+    check(excess<=candidates.length,`Unlock a player at Table ${table} before balancing tables.`);
+    if(excess>0)moving.push(...candidates.slice(0,excess));
   }
   const movingIds=new Set(moving.map(e=>e.id)),occupied=new Set(),loads=Array(count).fill(0);
   for(const entry of active.filter(e=>!movingIds.has(e.id))){occupied.add(`${entry.table}/${entry.seat}`);loads[entry.table-1]++;}
@@ -177,7 +187,7 @@ export function planTableSeating(t,{mode='remaining',order=[]}={}){
   for(const entry of moving){
     requireUnlocked(entry);
     let table=0;
-    for(let i=0;i<count;i++)if(loads[i]<capacity&&(!table||loads[i]<loads[table-1]))table=i+1;
+    for(let i=0;i<count;i++)if(loads[i]<(mode==='combine'?targets[i]:capacity)&&(!table||loads[i]<loads[table-1]))table=i+1;
     check(table,'No open seat is available.');
     let seat=1;while(occupied.has(`${table}/${seat}`))seat++;
     check(seat<=capacity,'No open seat is available.');
@@ -220,13 +230,15 @@ export function execute(state,action,now=Date.now()){
     if(p){p.name=name;p.phone=phone;p.notes=String(a.notes||'').slice(0,1000);}else s.players.push({id:a.id||id(),playerNumber:s.players.reduce((n,p)=>Math.max(n,p.playerNumber),0)+1,name,phone,notes:String(a.notes||'').slice(0,1000),archived:false});return s;
   }
   if(a.type==='player-archive'){const p=s.players.find(p=>p.id===a.id);check(p,'Player not found.');p.archived=!p.archived;return s;}
-  if(a.type==='template-save'){const template=clone(a.template);validateTemplate(template);check(template.settings.payoutMode!=='guaranteed','Select the guarantee in Tournament Management after 10 players register.');const ix=s.templates.findIndex(v=>v.id===template.id);if(ix<0)s.templates.push(template);else s.templates[ix]=template;return s;}
+  if(a.type==='clock-appearance-defaults'){s.clockAppearanceDefaults=clockAppearance(a.appearance);return s;}
+  if(a.type==='template-save'){const template=clone(a.template);if(template.settings.payoutMode==='guaranteed')template.settings.payouts=[65,35];validateTemplate(template);const ix=s.templates.findIndex(v=>v.id===template.id);if(ix<0)s.templates.push(template);else s.templates[ix]=template;return s;}
   if(a.type==='template-delete'){check(s.templates.length>1,'Keep at least one saved structure.');s.templates=s.templates.filter(v=>v.id!==a.id);return s;}
   if(a.type==='tournament-create'){
     const template=s.templates.find(v=>v.id===a.templateId);check(template,'Choose a saved structure.');validateTemplate(template);check(String(a.name||'').trim(),'Give the tournament a name.');
-    s.tournaments.push({id:a.id||id(),name:String(a.name).trim().slice(0,120),date:a.date||new Date(now).toISOString().slice(0,10),templateName:template.name,levels:clone(template.levels),settings:clone(template.settings),entries:[],rebuyCount:0,eliminationUndo:[],status:'open',clock:{index:0,status:'ready',remainingMs:template.levels[0].minutes*60000,deadline:null},createdAt:now});return s;
+    s.tournaments.push({id:a.id||id(),name:String(a.name).trim().slice(0,120),date:a.date||new Date(now).toISOString().slice(0,10),templateName:template.name,levels:clone(template.levels),settings:clone(template.settings),clockAppearance:clockAppearance(s.clockAppearanceDefaults),entries:[],rebuyCount:0,eliminationUndo:[],status:'open',clock:{index:0,status:'ready',remainingMs:template.levels[0].minutes*60000,deadline:null},createdAt:now});return s;
   }
   check(t,'Choose a tournament first.');
+  if(a.type==='clock-appearance'){t.clockAppearance=clockAppearance(a.appearance);return s;}
   // Display changes must not materialize, pause or otherwise alter the clock.
   if(a.type==='tv-display'){
     check(['full-clock','clock-seating'].includes(a.mode),'Choose a TV display mode.');
@@ -235,12 +247,18 @@ export function execute(state,action,now=Date.now()){
   }
   if(a.type==='tournament-settings'||a.type==='payout-settings'){
     check(t.status!=='completed','Completed tournament is locked.');
+    if(a.type==='tournament-settings'&&tournamentStarted(t))check(a.settings.payoutMode===t.settings.payoutMode&&JSON.stringify(a.settings.payouts)===JSON.stringify(t.settings.payouts),'Use Save Payouts in Tournament Management to change an active payout agreement.');
     const template={id:'event',name:t.name,levels:clone(a.levels||t.levels),settings:clone(a.settings)};validateTemplate(template);
     check(t.clock.status==='ready'||!a.levels,'Level structure can be changed before the clock starts.');
     if(a.levels){t.levels=template.levels;t.clock.remainingMs=t.levels[0].minutes*60000;}
     check(!t.entries.some(e=>!e.eliminatedAt&&e.seat>template.settings.seatsPerTable),'Move players before reducing seats per table.');
-    check(template.settings.payoutMode!=='guaranteed'||guaranteeEligible(t),'Register at least 10 players before selecting the first-place guarantee.');
-    if(a.type==='payout-settings')check(payoutBalance({...t,settings:template.settings})===0,'Payouts must exactly match the prize pool.');
+    if(template.settings.payoutMode==='guaranteed')template.settings.payouts=[65,35];
+    if(a.type==='payout-settings'){
+      check(payoutBalance({...t,settings:template.settings})===0,'Payouts must exactly match the prize pool.');
+      check(!a.custom||template.settings.payoutMode==='fixed','Custom payouts must use fixed dollar amounts.');
+      if(a.custom&&!t.payoutCustom&&t.settings.payoutMode!=='fixed')t.payoutAutomatic={payoutMode:t.settings.payoutMode,payouts:clone(t.settings.payouts),guaranteeContribution:financials(t).guaranteeContribution};
+      t.payoutCustom=!!a.custom;
+    }
     t.settings=template.settings;return s;
   }
   check(t.status!=='completed','Completed tournament is locked.');
@@ -298,11 +316,17 @@ export function execute(state,action,now=Date.now()){
   }
   if(a.type==='eliminate'){
     check(!e.eliminatedAt,'Player already eliminated.');const active=t.entries.filter(e=>!e.eliminatedAt).length;check(active>1,'Use Finish Tournament to confirm the winner.');
-    t.eliminationUndo.push({entryId:e.id,table:e.table,seat:e.seat,seatLocked:!!e.seatLocked});e.eliminatedAt=now;e.place=active;e.table=null;e.seat=null;e.seatLocked=false;return s;
+    e.eliminationSeat={table:e.table,seat:e.seat,seatLocked:!!e.seatLocked};e.eliminationOrder=Math.max(0,...t.entries.map(v=>v.eliminationOrder||0))+1;
+    t.eliminationUndo.push({entryId:e.id,...e.eliminationSeat});e.eliminatedAt=now;e.place=active;e.table=null;e.seat=null;e.seatLocked=false;return s;
   }
   if(a.type==='undo-elimination'){
-    const undo=t.eliminationUndo.pop();check(undo,'No elimination to undo.');const p=t.entries.find(e=>e.id===undo.entryId);check(p,'Entry not found.');p.eliminatedAt=null;p.place=null;
-    if(undo.table&&undo.seat>=1&&undo.seat<=t.settings.seatsPerTable&&!t.entries.some(e=>!e.eliminatedAt&&e.table===undo.table&&e.seat===undo.seat)){p.table=undo.table;p.seat=undo.seat;p.seatLocked=!!undo.seatLocked;}return s;
+    const entryId=a.entryId||t.eliminationUndo.at(-1)?.entryId,p=t.entries.find(e=>e.id===entryId);check(p?.eliminatedAt,'Choose an eliminated player to restore.');
+    const undo=p.eliminationSeat||t.eliminationUndo.find(e=>e.entryId===entryId);
+    check(undo||a.allowUnseated,'The original seat was not recorded for this older elimination. Confirm restoration as unseated.');
+    if(undo?.table){check(undo.seat>=1&&undo.seat<=t.settings.seatsPerTable,'The original seat no longer exists. Restore its table capacity before undoing this elimination.');check(!t.entries.some(e=>!e.eliminatedAt&&e.table===undo.table&&e.seat===undo.seat),`Table ${undo.table}, Seat ${undo.seat} is occupied. Move that player before undoing this elimination.`);}
+    p.eliminatedAt=null;p.place=null;p.table=undo?.table||null;p.seat=undo?.seat||null;p.seatLocked=!!undo?.seatLocked;delete p.eliminationSeat;delete p.eliminationOrder;
+    t.eliminationUndo=t.eliminationUndo.filter(e=>e.entryId!==entryId);
+    t.entries.filter(e=>e.eliminatedAt).sort((a,b)=>a.eliminatedAt-b.eliminatedAt||(a.eliminationOrder||0)-(b.eliminationOrder||0)||b.place-a.place).forEach((e,i)=>e.place=t.entries.length-i);return s;
   }
   if(a.type==='seat'){
     check(!e.eliminatedAt,'Only remaining players can be seated.');
