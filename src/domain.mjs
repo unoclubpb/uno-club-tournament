@@ -1,7 +1,7 @@
 import {icmEquities,roundLowerFirst} from './icm.mjs';
 import {pointPreview,recordTournamentPoints,startPointsSeason,editPlayerPoints} from './points.mjs';
 import {clockAppearance} from './clock-appearance.mjs';
-import {calculatePayoutRules,validatePayoutRules} from './payout-rules.mjs';
+import {calculatePayoutRules,validatePayoutRules,validatePayoutOrder} from './payout-rules.mjs';
 export const id = () => crypto.randomUUID();
 export const clone = value => structuredClone(value);
 const check = (ok, message) => { if (!ok) throw new Error(message); };
@@ -140,7 +140,7 @@ export function icmProposal(t,chipCounts){
   check(payoutBalance(t)===0,'Update payouts to exactly match the prize pool before calculating an ICM chop.');
   check(Array.isArray(chipCounts)&&chipCounts.length===remaining.length&&new Set(chipCounts.map(v=>v.entryId)).size===remaining.length,'Enter chip counts for every remaining player exactly once.');
   const participants=chipCounts.map(v=>{const e=remaining.find(e=>e.id===v.entryId);check(e,'Only remaining players can take part in an ICM chop.');check(Number.isSafeInteger(v.chips)&&v.chips>0,'Enter a positive whole chip count for every remaining player.');return {entryId:e.id,playerId:e.playerId,chips:v.chips};}).sort((a,b)=>b.chips-a.chips||remaining.findIndex(e=>e.id===a.entryId)-remaining.findIndex(e=>e.id===b.entryId));
-  const schedule=prizes(t);check(schedule.length<=t.entries.length,'Use no more payout places than registered players before calculating ICM.');const chopPool=schedule.slice(0,remaining.length).reduce((a,b)=>a+b,0),reservedPayouts=schedule.slice(remaining.length);
+  const schedule=validatePayoutOrder(prizes(t));check(schedule.length<=t.entries.length,'Use no more payout places than registered players before calculating ICM.');const chopPool=schedule.slice(0,remaining.length).reduce((a,b)=>a+b,0),reservedPayouts=schedule.slice(remaining.length);
   const exact=icmEquities(participants.map(v=>v.chips),schedule.slice(0,remaining.length)),rounded=roundLowerFirst(exact,chopPool);
   return {participants:participants.map((v,i)=>({...v,chipRank:i+1,payout:rounded[i]})),chopPool,reservedPayouts,originalPayouts:schedule};
 }
@@ -150,7 +150,7 @@ export function manualChopProposal(t,participants){
   check(payoutBalance(t)===0,'Update payouts to exactly match the prize pool before accepting a chop.');
   check(Array.isArray(participants)&&participants.length===remaining.length&&new Set(participants.map(p=>p.entryId)).size===remaining.length,'Enter one agreed payout for every remaining player.');
   const rows=participants.map(p=>{const entry=remaining.find(e=>e.id===p.entryId);check(entry,'Only remaining players can participate in a chop.');check(Number.isSafeInteger(p.payout)&&p.payout>=0&&p.payout%100===0,'Agreed payouts must be whole dollars.');return {entryId:entry.id,playerId:entry.playerId,payout:p.payout};});
-  const schedule=prizes(t),chopPool=schedule.slice(0,remaining.length).reduce((a,b)=>a+b,0);check(rows.reduce((a,p)=>a+p.payout,0)===chopPool,'Agreed payouts must exactly match the amount available for the chop.');
+  const schedule=validatePayoutOrder(prizes(t)),chopPool=schedule.slice(0,remaining.length).reduce((a,b)=>a+b,0);check(rows.reduce((a,p)=>a+p.payout,0)===chopPool,'Agreed payouts must exactly match the amount available for the chop.');
   return {participants:rows,chopPool,reservedPayouts:schedule.slice(remaining.length),originalPayouts:schedule};
 }
 export function validateTemplate(template){
@@ -177,6 +177,7 @@ export function validateTemplate(template){
   }
   check(s.payoutMode!=='mixed'||Array.isArray(s.payoutRules),'Enter the mixed payout rules.');
   check(s.payouts.length>0&&s.payouts.length<=20&&s.payouts.every(v=>Number.isFinite(v)&&v>=0),'Enter valid payouts.');
+  if(s.payoutMode==='percent'||s.payoutMode==='fixed')validatePayoutOrder(s.payouts,s.payoutMode==='percent'?'percent':'dollars');
   check(s.payoutMode!=='percent'||Math.abs(s.payouts.reduce((a,b)=>a+b,0)-100)<0.000001,'Payout percentages must total 100%.');
 }
 // Locks belong to this tournament entry and protect the exact table and seat.
@@ -302,6 +303,7 @@ export function execute(state,action,now=Date.now()){
     check(!t.entries.some(e=>!e.eliminatedAt&&e.seat>template.settings.seatsPerTable),'Move players before reducing seats per table.');
     if(template.settings.payoutMode==='guaranteed')template.settings.payouts=[65,35];
     if(a.type==='payout-settings'){
+      validatePayoutOrder(prizes({...t,settings:template.settings}));
       check(payoutBalance({...t,settings:template.settings})===0,'Payouts must exactly match the prize pool.');
       check(!a.custom||['fixed','mixed','percent'].includes(template.settings.payoutMode),'Choose custom payout rules or fixed dollar amounts.');
       check(template.settings.payoutMode!=='mixed'||a.custom,'Mixed payouts must be saved as Custom Payouts.');
@@ -406,7 +408,7 @@ export function execute(state,action,now=Date.now()){
     check(!hasPendingEliminations(t),'Wait for pending eliminations to finish before confirming the winner.');
     const remaining=t.entries.filter(e=>!e.eliminatedAt);check(remaining.length===1,'Leave exactly one remaining player before finishing.');
     const points=pointPreview(t,'winner');
-    const payout=prizes(t);check(payout.reduce((a,b)=>a+b,0)===financials(t).pool,'Payouts must exactly match the prize pool.');
+    const payout=validatePayoutOrder(prizes(t));check(payout.reduce((a,b)=>a+b,0)===financials(t).pool,'Payouts must exactly match the prize pool.');
     remaining[0].place=1;t.finalPayouts=clone(payout);t.endedBy='winner';
     t.settlement=financials(t);t.status='completed';t.completedAt=now;c.status='ended';c.deadline=null;c.remainingMs=0;t.eliminationUndo=[];recordTournamentPoints(s,t,points,now);return s;
   }

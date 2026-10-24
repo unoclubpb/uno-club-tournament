@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.30
+# Uno Club Tournament Director — v0.3.31
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -404,3 +404,11 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - Start New Season archives the current season, preserves all awards/corrections/history, and starts a named season at zero. Finish any active registered tournament first so a tournament cannot cross the season boundary accidentally. Previously archived seasons remain selectable; no delete/reset operation is added.
 - Store the season and points ledger in the existing owner-protected Supabase workspace document; reuse authenticated atomic saves, version conflicts, Realtime and polling. No schema/auth/permission changes or production data rewrite is required. Legacy import preserves a points ledger if present and refuses conflicting histories rather than overwriting them. `backend/verify-points-data.sql` verifies real save/RLS paths with synthetic users and fixtures, all rolled back.
 - Validation: 212 automated tests passed, plus browser checks at phone, iPad and desktop widths. Coverage includes exact bonus rules, two/four/eleven-way chops, half-up rounding, duplicate completion rejection, correction audit and stale-save safety, archived/month/year/lifetime filters, manual chop and winner previews, synchronized Summary/TV, and fixed page layouts. Existing cloud data remained unchanged (16 players, 5 structures, 1 tournament) during rollback-only storage tests. Windows wireless HDMI positioning/fullscreen remains pending hardware verification from the earlier feature.
+
+
+## v0.3.31 Payout order validation
+
+- Ranked place payouts must be nonincreasing: second cannot exceed first, third cannot exceed second, and so on. Equal awards remain valid. Validate structure percentages/fixed amounts, and validate actual whole-dollar awards for live percentage, fixed and mixed arrangements after their existing rounding calculation.
+- Management and Remote show a red message naming the offending places and amounts, retain the editable draft and calculated dollars, and disable Save until the order is corrected. Keep exact-prize-pool validation. Reject invalid saves in the shared domain as well as the UI; block an invalid ranked source schedule from being used for winner confirmation or a chop.
+- Keep prize calculation separate from validation so older schedules and revenue changes can be displayed and corrected without blank screens. No automatic sorting, payout replacement or history rewrite is performed. Completed settlements and named-player manual/ICM chop agreements are preserved; those negotiated player amounts are not individual finishing places. Existing whole-dollar rounding, guarantees, points and cloud synchronization remain unchanged.
+- Validation: 220 automated tests and broad browser checks passed. Coverage includes fixed/percentage/mixed inversions, equal awards, actual-dollar and post-rounding checks, structure/save/finish/chop protection, red phone feedback, correction without data loss, and preserving negotiated named-player chop payouts and completed history.

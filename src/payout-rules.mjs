@@ -27,3 +27,15 @@ export function calculatePayoutRules(pool,rules){
   const remaining=Math.max(0,pool-fixed),amounts=roundLowerFirst(percentages.map(rule=>remaining*rule.value/100),remaining);
   let index=0;return rules.map(rule=>rule.mode==='fixed'?rule.value:amounts[index++]);
 }
+
+// Ranked prizes must never increase further down the finishing order. This is
+// separate from calculation so old agreements remain visible and correctable.
+export function payoutOrderError(amounts,format='dollars'){
+  const ordinal=n=>n+(n%100>=11&&n%100<=13?'th':({1:'st',2:'nd',3:'rd'})[n%10]||'th');
+  const label=value=>format==='percent'?`${value}%`:new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:0}).format(value/100);
+  for(let i=1;i<amounts.length;i++)if(amounts[i]>amounts[i-1])return `${ordinal(i+1)} place (${label(amounts[i])}) cannot pay more than ${ordinal(i)} place (${label(amounts[i-1])}).`;
+  return '';
+}
+export function validatePayoutOrder(amounts,format='dollars'){
+  const message=payoutOrderError(amounts,format);if(message){const error=new Error(message);error.code='PAYOUT_ORDER';throw error;}return amounts;
+}

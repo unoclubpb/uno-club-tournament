@@ -649,3 +649,4 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
  .points-editing .player-profile-panels{grid-template-rows:minmax(0,1fr)}
  .points-editing .player-details-panel{display:none}
 }
+.payout-order-error{color:#ff7474!important;font-weight:700}
