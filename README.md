@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.19
+# Uno Club Tournament Director — v0.3.20
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -308,3 +308,10 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - Preserve agreed custom payouts and their original automatic guarantee terms when switching back through Recalculate automatic payouts. Active guarantee changes require Save Payouts and confirmation.
 - Align radio buttons with their choices and keep the editable guarantee controls usable on phones.
 - Validation: 161 automated tests; browser checks cover configurable controls, radio alignment and overflow at 320, 390, 768 and 1280 pixels, plus existing TV, seating, custom payout and fullscreen synchronization checks. Actual Windows wireless HDMI placement/fullscreen remains pending hardware verification.
+
+
+## v0.3.20 clear obsolete device copies
+
+- The old browser-data import notice now includes Clear old device copy, with an in-app confirmation.
+- Clearing removes only the legacy tournament document key from the current browser. It does not call the cloud save RPC, remove sign-in credentials or alter online players, structures, tournaments or history.
+- The current online account must be loaded and connected before clearing. Cancellation, storage errors and lost connections preserve the old copy.

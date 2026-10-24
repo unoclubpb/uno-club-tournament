@@ -42,7 +42,10 @@ const timeNow=()=>serverSample?serverSample.epoch+(performance.now()-serverSampl
 function readBrowserData(){try{const raw=localStorage.getItem(legacyKey);if(!raw)return null;const value=JSON.parse(raw);if(value?.schemaVersion!==1||!['players','templates','tournaments'].every(k=>Array.isArray(value[k])))throw new Error();return upgradeState(value);}catch{legacyError='Saved data on this device could not be read. The original copy has been kept.';return null;}}
 function authForm(){return `<form id="auth-form"><label>Email<input type="email" name="email" autocomplete="email" required></label><label>Password<input type="password" name="password" autocomplete="current-password" minlength="8" required></label><div class="button-row"><button class="button primary" name="authAction" value="login">Sign in</button><button class="button secondary" name="authAction" value="signup">Create account</button></div><p id="auth-feedback" class="muted" role="status">${esc(authError||'New here? Create an account, confirm your email if prompted, then sign in.')}</p></form>`;}
 function signInScreen(){return `<div class="auth-shell"><a class="brand" href="${APP_ROOT}"><span>UNO CLUB<small>TOURNAMENT DIRECTOR</small></span></a><section class="panel auth-panel"><p class="eyebrow">COMPUTER & PHONE ACCESS</p><h1>${authReady?'Sign in to Uno Club':'Opening Uno Club…'}</h1><p class="muted">Use the same account on your computer and phone for your players, tournament structures and clock.</p>${authReady?authForm():'<p role="status">Checking your sign-in…</p>'}${legacyPending?'<p class="import-note">Your saved players and tournaments on this device will be brought into your account after sign-in. The browser copy will be kept.</p>':''}${legacyError?`<p class="import-note">${esc(legacyError)}</p>`:''}</section><p class="muted auth-footnote">Your tournament information saves to Supabase.</p></div>`;}
-function importNotice(){return legacyPending?`<div class="mode-note warning">Saved players and tournaments on this device are ready to bring into your account. <button data-action="import-browser" ${busy||!online?'disabled':''}>Bring over saved data</button>${legacyError?`<p>${esc(legacyError)}</p>`:''}</div>`:legacyError?`<div class="mode-note warning">${esc(legacyError)}</div>`:'';}
+function importNotice(){
+  if(!legacyPending&&!legacyError)return '';
+  return `<div class="mode-note warning">${legacyPending?'An older copy of players and tournaments is still saved on this device. Your current app uses your online account data. <button data-action="import-browser" '+(busy||!online?'disabled':'')+'>Bring over saved data</button>':''}${legacyError?`<p>${esc(legacyError)}</p>`:''}<button data-action="clear-device-copy" ${busy||!online||version<1?'disabled':''}>Clear old device copy</button></div>`;
+}
 
 function toast(message,error=false){const el=$('#toast');el.textContent=message;el.className=error?'show error':'show';clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.className='',5000);}
 function chooseTournament(value){selected=value;localStorage.setItem('uno-tournament-selected',value);editor=null;render();}
@@ -259,7 +262,7 @@ function selectCurrentTournament(){
 }
 function workspaceScreen(){
   const banner=header()+importNotice(),menu=view==='home'?'':nav();
-  const content=`<main class="content">${({home,setup,players,signup,manage}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.3.19 · ${online?'Saved online':'Connection interrupted'}</span></footer>`;
+  const content=`<main class="content">${({home,setup,players,signup,manage}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.3.20 · ${online?'Saved online':'Connection interrupted'}</span></footer>`;
   if(view==='manage')return `<div class="management-chrome">${banner}<div class="workspace">${menu}</div></div><div class="workspace">${content}</div>`;
   return `${banner}<div class="workspace">${menu}${content}</div>`;
 }
@@ -344,6 +347,10 @@ function eliminationDialog(entryId){
   if(place<=1)throw new Error('Use Finish Tournament to confirm the winner.');
   modal('Confirm Elimination',`<form id="elimination-form"><input type="hidden" name="version" value="${version}"><input type="hidden" name="tournamentId" value="${t.id}"><input type="hidden" name="entryId" value="${entry.id}"><input type="hidden" name="place" value="${place}"><p id="elimination-question">Eliminate <strong>${esc(pName(entry))}</strong> in <strong>${ordinal(place)} place</strong>?</p><p id="elimination-feedback" role="status"></p><div class="button-row"><button type="button" class="button secondary" data-action="close-modal" autofocus>Cancel</button><button type="submit" class="button danger">Confirm Elimination</button></div></form>`);
   dlg.setAttribute('aria-labelledby','elimination-title');dlg.querySelector('h2').id='elimination-title';dlg.setAttribute('aria-describedby','elimination-question');
+}
+function clearDeviceCopyDialog(){
+  if(!session||!online||version<1||busy)throw new Error('Wait for your online account data to load before clearing the old device copy.');
+  modal('Clear Old Device Copy',`<form id="clear-device-copy-form"><input type="hidden" name="userId" value="${esc(session.user.id)}"><p>Remove the old saved copy from this device?</p><p>Your current players, tournaments, structures and history in Supabase will stay intact. You will remain signed in.</p><p id="clear-device-copy-feedback" role="status"></p><div class="button-row"><button type="button" class="button secondary" data-action="close-modal" autofocus>Cancel</button><button type="submit" class="button danger">Clear Old Device Copy</button></div></form>`);
 }
 function showAccount(){if(!session){render();return;}modal('Your Uno Club account',`<div class="account-status"><strong>${esc(session.user.email)}</strong><p>Players, tournament structures and results save to your account. Sign in with this same account on your phone and computer.</p><button class="button secondary" data-action="signout">Sign out</button></div>`);}
 function newTournament(templateId){modal('Create a tournament',`<form id="new-tournament-form"><label>Tournament name<input name="name" placeholder="Wednesday tournament" required maxlength="120"></label><label>Tournament date<input type="date" name="date" value="${today()}" required></label><label>Saved structure<select name="templateId">${state.templates.map(s=>`<option value="${s.id}" ${s.id===templateId?'selected':''}>${esc(s.name)}</option>`).join('')}</select></label><p class="muted">This creates an independent copy. You can change its settings without changing the saved structure.</p><button class="button primary full">Create tournament</button></form>`);}
@@ -516,7 +523,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
     case 'rebuy-count':rebuyCountDialog();break;
     case 'cancel-seat-pick':clearSeatPick();break;case 'account':showAccount();break;case 'close-modal':seatMoveChoice=null;tableCombineChoice=null;dlg.close();break;case 'new-tournament':newTournament();break;case 'add-player':newPlayer();break;
     case 'players-back':playerDetail=null;render();break;case 'open-clock':openClock();break;case 'refresh':await refresh();if(online&&version===0)await saveInitialWorkspace();break;
-    case 'import-browser':await importBrowserData();break;
+    case 'import-browser':await importBrowserData();break;case 'clear-device-copy':clearDeviceCopyDialog();break;
     case 'signout':{const {error}=await db.auth.signOut();if(error)throw error;acceptSession(null);break;}
     case 'new-structure':{const value=sampleTemplate();value.name='New tournament structure';editor={value,isNew:true,event:false,version};view='setup';render();break;}
     case 'event-settings':{const t=current();editor={event:true,version,value:{id:t.id,name:t.name,settings:clone(t.settings),levels:clone(t.levels)}};view='setup';render();break;}
@@ -567,6 +574,13 @@ document.addEventListener('submit',async event=>{event.preventDefault();const fo
       if(data.session){if(dlg.open)dlg.close();await acceptSession(data.session);toast('Signed in. Use this same account on your phone and computer.');}
       else feedback.textContent='Check your email to confirm the account, then return here and sign in.';
     }catch(e){feedback.textContent=e.message;}finally{buttons.forEach(b=>b.disabled=false);}return;
+  }
+  if(form.id==='clear-device-copy-form'){
+    if(!dlg.open||busy)return;
+    const feedback=form.querySelector('#clear-device-copy-feedback');
+    if(!session||fd.get('userId')!==session.user.id||!online||version<1){feedback.textContent='Reconnect and load your online account before clearing the old device copy.';return;}
+    try{localStorage.removeItem(legacyKey);}catch{feedback.textContent='Could not clear the old device copy. Check that this browser allows site storage, then try again.';return;}
+    legacy=null;legacyPending=false;legacyError='';dlg.close();render();toast('Old device copy cleared. Your online account data is unchanged.');return;
   }
   if(form.id==='elimination-form'){
     if(busy||!dlg.open)return;

@@ -719,3 +719,21 @@ test('Management previews configured eligibility, saves on confirmation and rest
   ui.input(ui.q('#paid-places'),'4');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['1,500','0','0','0']);await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].payoutCustom,true);ui.input(ui.q('[name=guaranteeAmount]'),'2000');ui.input(ui.q('[name=guaranteePlayers]'),'20');await ui.submit(ui.q('#payout-form'));assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[150000,0,0,0]);ui.click('[data-action=recalculate-payouts]');assert.equal(ui.q('[name=guaranteeAmount]').value,'1,500');assert.equal(ui.q('[name=guaranteePlayers]').value,'8');await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.deepEqual(ui.stored().tournaments[0].clock,seed.tournaments[0].clock);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
+
+
+test('clearing a conflicting old device copy removes only that browser key and never writes to the online workspace',async()=>{
+ const cloud=manualSeatingFixture(3);cloud.players[0].name='Goober';const legacy=execute(initialState(),{type:'player-save',id:'old-goober',name:'Goober'});const ui=await boot('https://example.test/',cloud,'home','t1',{legacy});
+ try{
+  ui.w.confirm=()=>{throw new Error('Use the in-app confirmation');};ui.w.localStorage.setItem('unrelated-setting','keep');ui.w.localStorage.setItem('sb-example-auth-token','keep-session');ui.click('[data-action=import-browser]');await flush();assert.match(ui.q('.mode-note.warning').textContent,/Goober already belongs/);assert.equal(ui.w.__fixture.saves,0);
+  ui.click('[data-action=clear-device-copy]');assert.match(ui.q('#dialog').textContent,/Supabase will stay intact/);ui.click('[data-action=close-modal]');assert.equal(ui.w.localStorage.getItem(key),JSON.stringify(legacy));assert.deepEqual(ui.stored(),cloud);
+  ui.click('[data-action=clear-device-copy]');await ui.submit(ui.q('#clear-device-copy-form'));assert.equal(ui.w.localStorage.getItem(key),null);assert.equal(ui.q('[data-action=import-browser]'),null);assert.equal(ui.q('[data-action=clear-device-copy]'),null);assert.equal(ui.q('#dialog').open,false);assert.equal(ui.w.localStorage.getItem('unrelated-setting'),'keep');assert.equal(ui.w.localStorage.getItem('sb-example-auth-token'),'keep-session');assert.deepEqual(ui.stored(),cloud);assert.equal(ui.w.__fixture.saves,0);assert.ok(ui.w.__fixture.session);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('clearing the device copy retains it if storage removal fails or the cloud connection is unavailable',async()=>{
+ const cloud=manualSeatingFixture(3),legacy=initialState(),ui=await boot('https://example.test/',cloud,'home','t1',{legacy});
+ try{
+  ui.click('[data-action=clear-device-copy]');const remove=ui.w.Storage.prototype.removeItem;ui.w.Storage.prototype.removeItem=function(){throw new Error('Storage blocked');};await ui.submit(ui.q('#clear-device-copy-form'));assert.match(ui.q('#clear-device-copy-feedback').textContent,/Could not clear/);assert.equal(ui.w.localStorage.getItem(key),JSON.stringify(legacy));assert.equal(ui.q('#dialog').open,true);ui.w.Storage.prototype.removeItem=remove;
+  ui.w.__fixture.readError={message:'Connection interrupted'};await ui.w.__fixture.notify();await flush();await ui.submit(ui.q('#clear-device-copy-form'));assert.match(ui.q('#clear-device-copy-feedback').textContent,/Reconnect/);assert.equal(ui.w.localStorage.getItem(key),JSON.stringify(legacy));assert.deepEqual(ui.stored(),cloud);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
