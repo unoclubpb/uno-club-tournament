@@ -481,3 +481,57 @@ test('management sidebar replaces the right pane and supports keyboard section n
   ui.q('[data-tab=players]').dispatchEvent(new ui.w.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true}));assert.ok(ui.q('#seating-settings-form'));assert.equal(ui.w.document.activeElement.dataset.tab,'tables');ui.q('[data-tab=tables]').dispatchEvent(new ui.w.KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));assert.ok(ui.q('.summary-grid'));ui.q('[data-tab=summary]').dispatchEvent(new ui.w.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true}));assert.equal(ui.q('.management-sidebar [aria-selected=true]').dataset.tab,'players');assert.equal(ui.q('#payout-form'),null);assert.equal(ui.q('#seating-settings-form'),null);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
+
+test('Tournament Summary shows the seven-line $420 ledger with separate colored dealer collection and payout',async()=>{
+ const seed=manualSeatingFixture();seed.tournaments[0].rebuyCount=4;const ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=summary]');const rows=[...ui.w.document.querySelectorAll('.financial-summary>div')];assert.deepEqual(rows.map(r=>r.querySelector('span').textContent),['Tournament Entries','Dealer Tokes — Buy-Ins Only','Rebuys','Tournament Fee (20%)','Dealer Tokes Paid Out','House Contribution','Total Prize Pool']);assert.deepEqual(rows.map(r=>r.querySelector('strong').textContent),['+$400','+$100','+$100','−$80','−$100','$0','$420']);assert.ok(rows.slice(0,3).every(r=>r.classList.contains('financial-credit')));assert.ok(rows.slice(3,5).every(r=>r.classList.contains('financial-debit')));assert.doesNotMatch(ui.q('.financial-summary').textContent,/\$[\d,]+\.\d/);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('the tenth registration enables the guarantee and saving it shows fully funded automatic house contribution',async()=>{
+ let seed=manualSeatingFixture(9);seed=execute(seed,{type:'player-save',id:'p10',name:'Player 10'});const ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=payouts]');assert.equal(ui.w.document.querySelectorAll('#payout-form [name=payoutMode]').length,3);assert.equal(ui.q('[value=guaranteed]').disabled,true);await ui.storage(execute(seed,{type:'register',id:'e10',tournamentId:'t1',playerId:'p10'}));assert.equal(ui.q('[value=guaranteed]').disabled,false);
+  ui.click('[value=guaranteed]');assert.equal(ui.q('#payout-values-field').hidden,true);assert.match(ui.q('#guarantee-funding').textContent,/Additional house contribution required: \$680/);assert.equal(ui.q('[data-action=icm-chop]').disabled,true);await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.deepEqual([...ui.w.document.querySelectorAll('.prize-preview strong')].map(e=>e.textContent),['$1,000','$0']);ui.click('[data-tab=summary]');const row=[...ui.w.document.querySelectorAll('.financial-summary>div')].find(r=>r.querySelector('span').textContent==='House Contribution');assert.equal(row.querySelector('strong').textContent,'+$680');assert.match(row.textContent,/Includes \$680/);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('guaranteed payouts recalculate on house contribution changes, keep the selected mode, and reject fractional fixed payouts',async()=>{
+ const seed=manualSeatingFixture();seed.tournaments[0].settings={...seed.tournaments[0].settings,payoutMode:'guaranteed',housePercent:0,houseContribution:110000};const ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=payouts]');assert.deepEqual([...ui.w.document.querySelectorAll('.prize-preview strong')].map(e=>e.textContent),['$1,000','$500']);ui.input(ui.q('[name=houseContribution]'),'1200');assert.deepEqual([...ui.w.document.querySelectorAll('.prize-preview strong')].map(e=>e.textContent),['$1,040','$560']);await ui.submit(ui.q('#payout-form'));assert.equal(ui.q('[value=guaranteed]').checked,true);assert.equal(ui.stored().tournaments[0].settings.houseContribution,120000);
+  ui.click('[value=fixed]');ui.input(ui.q('[name=payoutValues]'),'1000.50, 599.50');await ui.submit(ui.q('#payout-form'));assert.match(ui.q('#toast').textContent,/whole-dollar/);assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');ui.input(ui.q('[name=payoutValues]'),'1000, 500');await ui.submit(ui.q('#payout-form'));assert.match(ui.q('#toast').textContent,/exactly match/);assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('ICM dialog supports manual agreements, cancels without saves, then saves chips and completes without points',async()=>{
+ let seed=manualSeatingFixture(4);seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e4'});const old=structuredClone(seed.tournaments[0].entries[3]),ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=payouts]');ui.click('[data-action=icm-chop]');ui.click('[data-action=close-modal]');assert.equal(ui.w.__fixture.saves,0);ui.click('[data-action=icm-chop]');const rows=[...ui.w.document.querySelectorAll('[data-icm-entry]')];for(let i=0;i<rows.length;i++)ui.input(rows[i].querySelector('[data-icm-chips]'),String([50000,30000,20000][i]));ui.click('[data-action=icm-calculate]');assert.equal(ui.q('#icm-accept').disabled,false);
+  const first=rows[0].querySelector('[data-icm-payout]'),last=rows[2].querySelector('[data-icm-payout]'),firstValue=Number(first.value),lastValue=Number(last.value);ui.input(first,String(firstValue-1));assert.equal(ui.q('#icm-accept').disabled,true);ui.input(last,String(lastValue+1));assert.equal(ui.q('#icm-accept').disabled,false);await ui.submit(ui.q('#icm-form'));const t=ui.stored().tournaments[0];assert.equal(t.status,'completed');assert.equal(t.endedBy,'icm-chop');assert.equal(t.clock.status,'ended');assert.equal(t.entries[0].finalChipCount,50000);assert.equal(t.entries[0].agreedPayout,(firstValue-1)*100);assert.deepEqual(t.entries[3],old);assert.ok(t.entries.every(e=>!('points' in e)));assert.match(ui.q('.icm-results').textContent,/50,000 final chips/);assert.equal(ui.q('#dialog').open,false);assert.equal(ui.w.__fixture.saves,1);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('ICM recalculation is required after chip edits and stale agreements cannot overwrite another device',async()=>{
+ const seed=manualSeatingFixture(3),ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=payouts]');ui.click('[data-action=icm-chop]');for(const row of ui.w.document.querySelectorAll('[data-icm-entry]'))ui.input(row.querySelector('[data-icm-chips]'),'1000');ui.click('[data-action=icm-calculate]');const chips=ui.q('[data-icm-chips]');ui.input(chips,'2000');assert.equal(ui.q('#icm-accept').disabled,true);ui.click('[data-action=icm-calculate]');assert.equal(ui.q('#icm-accept').disabled,false);await ui.storage(execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e3'}));await ui.submit(ui.q('#icm-form'));assert.match(ui.q('#toast').textContent,/Tournament changed/);assert.equal(ui.stored().tournaments[0].status,'open');assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('failed ICM acceptance leaves the event open and a retry saves the same agreement once',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(2),'manage','t1');
+ try{
+  ui.click('[data-tab=payouts]');ui.click('[data-action=icm-chop]');for(const row of ui.w.document.querySelectorAll('[data-icm-entry]'))ui.input(row.querySelector('[data-icm-chips]'),'5000');ui.click('[data-action=icm-calculate]');ui.w.__fixture.saveError={message:'Save interrupted'};await ui.submit(ui.q('#icm-form'));assert.equal(ui.stored().tournaments[0].status,'open');assert.equal(ui.stored().tournaments[0].icmChop,undefined);assert.equal(ui.q('#dialog').open,true);assert.match(ui.q('#toast').textContent,/Save interrupted/);ui.w.__fixture.saveError=null;await ui.submit(ui.q('#icm-form'));assert.equal(ui.stored().tournaments[0].endedBy,'icm-chop');assert.equal(ui.w.__fixture.saves,1);assert.equal(ui.q('#dialog').open,false);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('live guarantee eligibility does not let a focused stale payout form overwrite the tenth registration',async()=>{
+ let seed=manualSeatingFixture(9);seed=execute(seed,{type:'player-save',id:'p10',name:'Player 10'});const ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=payouts]');ui.q('[name=houseContribution]').focus();await ui.storage(execute(seed,{type:'register',id:'e10',tournamentId:'t1',playerId:'p10'}));await new Promise(resolve=>setTimeout(resolve,275));assert.equal(ui.q('[value=guaranteed]').disabled,false);ui.click('[value=guaranteed]');await ui.submit(ui.q('#payout-form'));assert.match(ui.q('#toast').textContent,/Tournament changed/);assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.stored().tournaments[0].entries.length,10);ui.click('[data-tab=payouts]');ui.click('[value=guaranteed]');await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.equal(ui.stored().tournaments[0].entries.length,10);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+test('an accepted guaranteed ICM chop freezes full house funding and shows agreed awards rather than a first-place promise',async()=>{
+ let seed=manualSeatingFixture();seed.tournaments[0].settings.payoutMode='guaranteed';for(let i=10;i>=3;i--)seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e'+i});const ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=payouts]');ui.click('[data-action=icm-chop]');for(const row of ui.w.document.querySelectorAll('[data-icm-entry]'))ui.input(row.querySelector('[data-icm-chips]'),'5000');ui.click('[data-action=icm-calculate]');await ui.submit(ui.q('#icm-form'));const t=ui.stored().tournaments[0];assert.equal(t.settlement.houseContribution,68000);assert.equal(t.settlement.pool,100000);assert.deepEqual(t.finalPayouts,[50000,50000]);assert.match(ui.q('#guarantee-funding').textContent,/accepted ICM agreement replaces/);assert.doesNotMatch(ui.q('#guarantee-funding').textContent,/First place is at least/);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});

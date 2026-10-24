@@ -383,3 +383,21 @@ body.saving .seat-lock-button{pointer-events:none;opacity:.6}
  .page-banner .header-right{gap:4px}.page-banner .header-right>.button{min-height:28px;font-size:10px;padding:5px 7px}
  .page-banner .connection{min-height:24px;font-size:9px;padding:4px 7px}
 }
+
+/* Whole-dollar tournament ledger and payout controls. */
+.financial-summary{display:flex;flex-direction:column;gap:0}
+.financial-summary>div{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 18px;padding:16px 0;border-bottom:1px solid var(--line)}
+.financial-summary>div>span{margin:0;line-height:1.4}.financial-summary>div>strong{font-size:24px;font-variant-numeric:tabular-nums}
+.financial-summary>div>small{grid-column:1/-1;color:var(--muted)}
+.financial-summary .financial-credit>strong{color:#77d69d}.financial-summary .financial-debit>strong{color:#ff7777}
+.financial-summary .financial-total{border-top:2px solid var(--gold);border-bottom:0;margin-top:6px}.financial-total>strong{color:var(--gold)}
+.payout-formats{min-width:0;margin:18px 0 10px;padding:14px;border:1px solid var(--line);border-radius:9px}
+.payout-formats legend{padding:0 6px;font-weight:700}.payout-formats .check{margin:8px 0;font-size:14px;align-items:flex-start}
+.payout-formats .check input{flex-shrink:0;width:18px;height:18px;margin-top:1px}
+#payout-values-field[hidden]{display:none}
+.guarantee-note{margin:16px 0;padding:12px 15px;border:1px solid var(--gold);border-radius:8px;color:var(--gold);font-size:13px}
+#payout-feedback{margin:12px 0}.icm-player-list{max-height:45dvh;overflow:auto;overscroll-behavior:contain;margin:16px 0}
+.icm-player{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
+.icm-player>strong{grid-column:1/-1}.icm-player label{min-width:0;margin:0}.icm-player input{width:100%}
+#icm-form>p{margin:12px 0}.icm-results{margin-top:14px}
+@media(max-width:700px){.financial-summary>div{gap:8px;padding:12px 0}.financial-summary>div>span{font-size:12px}.financial-summary>div>strong{font-size:19px}.payout-formats{padding:10px}.payout-formats .check{font-size:12px}}
