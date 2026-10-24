@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.28
+# Uno Club Tournament Director — v0.3.29
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -382,3 +382,13 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - Remove the Move Players toggle from the Remote seating screen. Tap a player and then a destination seat immediately; touch gestures still scroll without dragging. Regular Tournament Management keeps its safety toggle and drag-and-drop.
 - Show the conditional Remote Balance Tables alert button in red. Existing seat locks, pending reservations, swap/slide confirmations, automatic balancing and cloud synchronization are retained.
 - Validation: all 185 automated tests and browser checks pass, including immediate Remote seat selection, touch scrolling, the red balancing alert, unchanged Management controls, and synchronized TV seating.
+
+
+## v0.3.29 Remote mixed payouts
+
+- Simplify Remote Payouts: prize pool at the top, number of places paid, full-length overall Percentage of Prize Pool / Fixed Dollar Amounts choices, then a vertical list of places. Each place has a compact Percentage / Fixed segmented choice, editable value and calculated whole-dollar award. There is no structure-recalculation button on the Remote. Optional House Contribution remains available in a collapsed section and ICM uses the existing shared calculator.
+- Increasing paid places preserves existing rules and adds fixed $0 awards. Fixed awards are reserved first; percentage places must total 100% and split the remaining pool. Only percentage awards receive rounding dollars, starting with the lower places. Example: $1,600, 65% / 35% plus fixed $100 for third and fourth yields $910 / $490 / $100 / $100.
+- The configured guarantee, player threshold and automatic 65% / 35% fallback remain unchanged until a custom arrangement is saved. Editing a guarantee carries its existing required funding into explicit House Contribution. An in-app confirmation names the new payouts and warns when replacing the guarantee with a lower first-place award. Nothing becomes official before Save Payouts and confirmation.
+- Whole-format changes require an in-app confirmation before replacing individual entries. Mixed arrangements are labeled Mixed Payouts / Custom Payouts and stored with the existing tournament; Management, TV and ICM read the same domain calculator. Custom fixed awards remain exact; selected percentage rules continue to divide the available remainder when the pool changes. An unfunded agreement stays visible with a shortfall and blocks Save/ICM instead of producing negative payouts or a blank screen.
+- Rename Management's Recalculate automatic payouts button to Use Structure Payouts. Existing Management layouts remain, with per-place controls when viewing a saved Remote arrangement. Returning to a prior percentage, guarantee or fixed structure requires Save to take effect. Preserve completed ICM participants, agreed payouts, chip counts and previous eliminations. No database migration or production data rewrite is required.
+- Validation: 197 automated tests and broad browser checks pass. Coverage includes mixed awards, lower-place rounding, fixed structure restoration, guarantee funding/override confirmation, under/over totals, stale drafts, completed ICM history, phone/iPad widths (320/390/768px), and live Management/TV synchronization. Windows wireless HDMI placement/fullscreen remains pending hardware verification from the earlier release.

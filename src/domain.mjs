@@ -1,5 +1,6 @@
 import {icmEquities,roundLowerFirst} from './icm.mjs';
 import {clockAppearance} from './clock-appearance.mjs';
+import {calculatePayoutRules,validatePayoutRules} from './payout-rules.mjs';
 export const id = () => crypto.randomUUID();
 export const clone = value => structuredClone(value);
 const check = (ok, message) => { if (!ok) throw new Error(message); };
@@ -119,6 +120,7 @@ export function financials(t){
 }
 export function prizes(t){
   if(t.status==='completed'&&t.finalPayouts)return clone(t.finalPayouts);
+  if(t.settings.payoutMode==='mixed')return calculatePayoutRules(financials(t).pool,t.settings.payoutRules);
   if(t.settings.payoutMode==='fixed')return clone(t.settings.payouts);
   if(t.status==='completed'&&t.settlement){const pool=t.settlement.pool,old=t.settings.payouts.map(p=>Math.floor(pool*p/100));if(old.length)old[0]+=pool-old.reduce((a,b)=>a+b,0);return old;}
   const f=financials(t),pool=f.pool;
@@ -157,7 +159,13 @@ export function validateTemplate(template){
   check(Number.isFinite(s.housePercent)&&s.housePercent>=0&&s.housePercent<=100,'House percentage must be between 0 and 100.');
   check(s.startingStack>0,'Starting chips must be greater than zero.');check(s.seatsPerTable>=2&&s.seatsPerTable<=10,'Use 2–10 seats per table.');
   check(['off','big_blind','per_player'].includes(s.anteMode),'Choose the ante setting.');
-  check(['percent','fixed','guaranteed'].includes(s.payoutMode),'Choose a payout mode.');
+  check(['percent','fixed','guaranteed','mixed'].includes(s.payoutMode),'Choose a payout mode.');
+  if(s.payoutRules!=null){
+    validatePayoutRules(s.payoutRules);
+    check(s.payoutRules.length===s.payouts.length,'Use one payout rule for each paid place.');
+    if(s.payoutMode==='percent'||s.payoutMode==='fixed')check(s.payoutRules.every((rule,i)=>rule.mode===s.payoutMode&&rule.value===s.payouts[i]),'Payout rules must match the selected format and amounts.');
+  }
+  check(s.payoutMode!=='mixed'||Array.isArray(s.payoutRules),'Enter the mixed payout rules.');
   check(s.payouts.length>0&&s.payouts.length<=20&&s.payouts.every(v=>Number.isFinite(v)&&v>=0),'Enter valid payouts.');
   check(s.payoutMode!=='percent'||Math.abs(s.payouts.reduce((a,b)=>a+b,0)-100)<0.000001,'Payout percentages must total 100%.');
 }
@@ -275,7 +283,7 @@ export function execute(state,action,now=Date.now()){
   }
   if(a.type==='tournament-settings'||a.type==='payout-settings'){
     check(t.status!=='completed','Completed tournament is locked.');
-    if(a.type==='tournament-settings'&&tournamentStarted(t))check(a.settings.payoutMode===t.settings.payoutMode&&JSON.stringify(a.settings.payouts)===JSON.stringify(t.settings.payouts)&&JSON.stringify(guaranteeSettings(a.settings))===JSON.stringify(guaranteeSettings(t.settings)),'Use Save Payouts in Tournament Management to change an active payout agreement.');
+    if(a.type==='tournament-settings'&&tournamentStarted(t))check(a.settings.payoutMode===t.settings.payoutMode&&JSON.stringify(a.settings.payouts)===JSON.stringify(t.settings.payouts)&&JSON.stringify(a.settings.payoutRules)===JSON.stringify(t.settings.payoutRules)&&JSON.stringify(guaranteeSettings(a.settings))===JSON.stringify(guaranteeSettings(t.settings)),'Use Save Payouts in Tournament Management to change an active payout agreement.');
     const template={id:'event',name:t.name,levels:clone(a.levels||t.levels),settings:clone(a.settings)};validateTemplate(template);
     check(t.clock.status==='ready'||!a.levels,'Level structure can be changed before the clock starts.');
     if(a.levels){t.levels=template.levels;t.clock.remainingMs=t.levels[0].minutes*60000;}
@@ -283,8 +291,9 @@ export function execute(state,action,now=Date.now()){
     if(template.settings.payoutMode==='guaranteed')template.settings.payouts=[65,35];
     if(a.type==='payout-settings'){
       check(payoutBalance({...t,settings:template.settings})===0,'Payouts must exactly match the prize pool.');
-      check(!a.custom||template.settings.payoutMode==='fixed','Custom payouts must use fixed dollar amounts.');
-      if(a.custom&&!t.payoutCustom&&t.settings.payoutMode!=='fixed')t.payoutAutomatic={payoutMode:t.settings.payoutMode,payouts:clone(t.settings.payouts),...guaranteeSettings(t.settings),guaranteeContribution:financials(t).guaranteeContribution};
+      check(!a.custom||['fixed','mixed','percent'].includes(template.settings.payoutMode),'Choose custom payout rules or fixed dollar amounts.');
+      check(template.settings.payoutMode!=='mixed'||a.custom,'Mixed payouts must be saved as Custom Payouts.');
+      if(a.custom&&!t.payoutCustom&&['percent','guaranteed','fixed'].includes(t.settings.payoutMode))t.payoutAutomatic={payoutMode:t.settings.payoutMode,payouts:clone(t.settings.payouts),...guaranteeSettings(t.settings),guaranteeContribution:financials(t).guaranteeContribution};
       t.payoutCustom=!!a.custom;
     }
     if(a.type==='tournament-settings'&&a.clockAppearance!=null)t.clockAppearance=clockAppearance(a.clockAppearance);

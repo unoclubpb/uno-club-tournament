@@ -600,3 +600,22 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 
 /* Remote seat selection leaves touch gestures available for scrolling. */
 .remote-seating .seat-tables.moves-enabled .seat-player-grip:not(:disabled){cursor:pointer;touch-action:auto}
+
+/* Compact per-place payout choices, with dollar results always visible. */
+.payout-rule-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,140px);gap:10px 12px;align-items:center}
+.payout-rule-row>.payout-place-label{grid-column:1 / -1;font-size:16px}
+.payout-rule-toggle{display:flex;min-width:0;border:1px solid #81704e;border-radius:8px;overflow:hidden}
+.payout-rule-toggle button{flex:1;min-width:0;min-height:44px;border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:8px 6px;cursor:pointer}
+.payout-rule-toggle button[aria-pressed=true]{background:var(--gold);color:#111;font-weight:800}
+.payout-rule-row>.input-wrap{margin:0;min-width:0}.payout-rule-row input{width:100%;min-width:0;font-size:18px;min-height:44px}
+.payout-rule-row>output{grid-column:1 / -1;text-align:right;color:var(--gold)}
+.payout-house-details{margin:18px 0}.payout-house-details summary{cursor:pointer;color:var(--muted);padding:10px 0}
+.payout-allocation{padding:12px 0;font-weight:600;overflow-wrap:anywhere}
+.remote-payouts .payout-editor-grid{display:flex;flex-direction:column;gap:12px}.remote-payouts .payout-format-column,.remote-payouts .payout-places-column{width:100%;min-width:0}
+.remote-payouts .payout-current-pool{padding-bottom:16px;border-bottom:1px solid #ffffff20;margin-bottom:18px}
+.remote-payouts .payout-current-pool>strong{font-size:28px}.remote-payouts .payout-rule-row{padding:16px 0;border-bottom:1px solid #ffffff20}
+.remote-payouts .payout-formats{margin-top:18px}.remote-payouts .custom-payout-status:empty,.remote-payouts #mixed-payout-note:empty,.remote-payouts #paid-places-note:empty{display:none}
+.remote-payouts .payout-rule-row output{font-size:26px}.remote-payouts [data-action=icm-chop]{margin-top:18px;min-height:48px}
+@media(max-width:380px){.payout-rule-row{grid-template-columns:minmax(0,1fr) minmax(85px,105px);gap:8px}.payout-rule-toggle button{font-size:11px;padding:8px 4px}}
+
+.remote-payouts .payout-places-column{order:initial}

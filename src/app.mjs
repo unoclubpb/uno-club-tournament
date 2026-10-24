@@ -1,5 +1,6 @@
 import {createClient} from '@supabase/supabase-js';
 import {id,clone,initialState,sampleTemplate,execute,clockAt,roundAt,financials,prizes,statsFor,guaranteeSettings,guaranteeEligible,payoutBalance,icmProposal,planSeatMove,planTableSeating,canCombineTables,normalizePhone,tablesRequired,tablesInUse,upgradeState,normalizePlayerName,rebuyOpen,rebuyPhase,cutoffHasBreak,canRecordRebuys,playerNumberLabel,tvDisplayMode,tournamentStarted,defaultPayouts,tableBalanceNeeded,hasPendingEliminations} from './domain.mjs';
+import {calculatePayoutRules} from './payout-rules.mjs';
 import {installSeatDragging} from './seat-dragging.mjs';
 import {installClockToolbar} from './clock-toolbar.mjs';
 import {tvSeating,fitTvSeating} from './tv-display.mjs';
@@ -97,9 +98,10 @@ function paidPlacesControl(s,t=null,live=false){
   const count=t?.icmChop?t.finalPayouts.length:s.payoutMode==='guaranteed'?2:s.payouts.length,locked=t?.status==='completed'||s.payoutMode==='guaranteed'&&!live;
   return `<label class="paid-places-label" for="paid-places">Number of Places Paid</label><div class="paid-places-control"><button type="button" class="button secondary" data-payout-step="-1" aria-label="Decrease paid places" ${locked||count===1?'disabled':''}>−</button><input id="paid-places" name="paidPlaces" type="number" min="1" max="20" step="1" value="${count}" required ${locked?'disabled':''}><button type="button" class="button secondary" data-payout-step="1" aria-label="Increase paid places" ${locked||count===20?'disabled':''}>+</button></div><p class="muted small-copy" id="paid-places-note">${s.payoutMode==='guaranteed'?'Automatic guarantee: two paid places.':''}</p>`;
 }
-function payoutFields(s,t=null){return `<div class="payout-editor-grid" data-setup-payouts><div class="payout-format-column">${paidPlacesControl(s,t)}${payoutFormats(s,t)}</div><section class="payout-places-column"><h3>Payouts</h3><div id="payout-place-list" data-mode="${s.payoutMode}">${payoutPlaceRows(t,s.payoutMode,s.payouts.map(n=>s.payoutMode==='fixed'?n/100:n),true,s)}</div></section></div><p id="setup-payout-feedback" class="muted" role="status"></p>`;}
+function payoutFields(s,t=null){if(s.payoutRules)return '<p class="muted">Custom payouts are managed in Tournament Management or Tournament Remote.</p>';return `<div class="payout-editor-grid" data-setup-payouts><div class="payout-format-column">${paidPlacesControl(s,t)}${payoutFormats(s,t)}</div><section class="payout-places-column"><h3>Payouts</h3><div id="payout-place-list" data-mode="${s.payoutMode}">${payoutPlaceRows(t,s.payoutMode,s.payouts.map(n=>s.payoutMode==='fixed'?n/100:n),true,s)}</div></section></div><p id="setup-payout-feedback" class="muted" role="status"></p>`;}
 function readPayout(form,s){
-  const fd=new FormData(form),mode=fd.get('payoutMode');if(!mode)return s;readGuarantee(form,s);s.payoutMode=mode;
+  if(form.dataset.ruleEditor)return readRuleSettings(form,{...current(),settings:s});
+  const fd=new FormData(form),mode=fd.get('payoutMode');if(!mode)return s;readGuarantee(form,s);s.payoutMode=mode;delete s.payoutRules;
   if(mode==='guaranteed'){s.payouts=[65,35];return s;}
   const fields=[...form.querySelectorAll('[data-payout-value]')],count=Number(form.elements.paidPlaces.value);
   if(!Number.isInteger(count)||count<1||count>20||fields.length!==count)throw new Error('Choose 1–20 paid places.');
@@ -128,10 +130,116 @@ function payoutPlaceRows(t,mode,values,setup=false,settings=t?.settings||{}){
   const count=mode==='guaranteed'?2:values.length,readonly=t?.status==='completed'||mode==='guaranteed';
   return Array.from({length:count},(_,i)=>`<div class="payout-place-row" data-payout-place="${i}">${readonly?`<span>${placeName(i)}</span><output data-payout-amount="${i}">${setup?(i===0?`${money(guaranteeSettings(settings).guaranteeAmount)} minimum at ${num(guaranteeSettings(settings).guaranteePlayers)} players`:'Remainder'):money(amounts[i]||0)}</output>`:`<label for="payout-place-${i}"><span class="payout-place-label">${placeName(i)}</span><div class="input-wrap ${mode==='percent'?'payout-percentage-input':''}">${mode==='fixed'?'<span>$</span>':''}<input id="payout-place-${i}" name="payoutPlace${i+1}" data-payout-value="${i}" aria-label="${placeName(i)} ${mode==='fixed'?'dollars':'percentage'}" type="${mode==='fixed'?'text':'number'}" ${mode==='fixed'?'inputmode="numeric" data-money="true"':''} min="0" ${mode==='percent'?'max="100"':''} step="${mode==='fixed'?'1':'0.0001'}" value="${mode==='fixed'?num(dollarNumber(values[i]??0)):values[i]??0}" required>${mode==='percent'?'<span>%</span>':''}</div></label>${mode==='percent'&&!setup?`<output data-payout-amount="${i}">${money(amounts[i]||0)}</output>`:''}`}</div>`).join('');
 }
-function payoutPanel(t){
+function payoutPanel(t,forceStandard=false){
+  if(!forceStandard&&(view==='remote'||t.settings.payoutRules))return rulePayoutPanel(t);
   const f=financials(t),done=t.status==='completed',values=t.settings.payouts.map(n=>t.settings.payoutMode==='fixed'?n/100:n);
-  return `<form id="payout-form" data-custom-draft="${!!t.payoutCustom}"><input type="hidden" name="tournamentId" value="${t.id}"><input type="hidden" name="version" value="${version}"><div class="payout-editor-grid"><div class="payout-format-column">${paidPlacesControl(t.settings,t,tournamentStarted(t))}${payoutFormats(t.settings,t)}<p class="custom-payout-status" id="custom-payout-status">${t.payoutCustom?'Custom Payouts':''}</p>${!done?'<button type="button" class="button secondary small" data-action="recalculate-payouts">Recalculate automatic payouts</button>':''}</div><section class="payout-places-column" aria-label="Payouts by finishing place"><div class="payout-current-pool"><span>Current Prize Pool</span><strong id="payout-pool">${money(f.pool)}</strong></div><h2>Payouts</h2><div id="payout-place-list" data-mode="${t.settings.payoutMode}">${payoutPlaceRows(t,t.settings.payoutMode,values)}</div></section></div><label class="payout-house-contribution">House Contribution<div class="input-wrap"><span>$</span><input type="text" inputmode="numeric" data-money="true" name="houseContribution" value="${num(t.settings.houseContribution/100)}" required ${done?'disabled':''}></div></label><button class="button primary" ${done?'disabled':''}>Save Payouts</button></form><div id="guarantee-funding">${fundingNotice(t)}</div><p id="payout-feedback" class="muted" role="status">${payoutBalance(t)?'Payouts must be updated to exactly match the prize pool.':''}</p>${done?'':`<button type="button" class="button secondary" data-action="icm-chop" ${active(t).length<2||active(t).length>20||payoutBalance(t)!==0||hasPendingEliminations(t)?'disabled':''}>ICM Chop</button>`}`;
+  return `<form id="payout-form" data-custom-draft="${!!t.payoutCustom}"><input type="hidden" name="tournamentId" value="${t.id}"><input type="hidden" name="version" value="${version}"><div class="payout-editor-grid"><div class="payout-format-column">${paidPlacesControl(t.settings,t,tournamentStarted(t))}${payoutFormats(t.settings,t)}<p class="custom-payout-status" id="custom-payout-status">${t.payoutCustom?'Custom Payouts':''}</p>${!done?'<button type="button" class="button secondary small" data-action="recalculate-payouts">Use Structure Payouts</button>':''}</div><section class="payout-places-column" aria-label="Payouts by finishing place"><div class="payout-current-pool"><span>Current Prize Pool</span><strong id="payout-pool">${money(f.pool)}</strong></div><h2>Payouts</h2><div id="payout-place-list" data-mode="${t.settings.payoutMode}">${payoutPlaceRows(t,t.settings.payoutMode,values)}</div></section></div><label class="payout-house-contribution">House Contribution<div class="input-wrap"><span>$</span><input type="text" inputmode="numeric" data-money="true" name="houseContribution" value="${num(t.settings.houseContribution/100)}" required ${done?'disabled':''}></div></label><button class="button primary" ${done?'disabled':''}>Save Payouts</button></form><div id="guarantee-funding">${fundingNotice(t)}</div><p id="payout-feedback" class="muted" role="status">${payoutBalance(t)?'Payouts must be updated to exactly match the prize pool.':''}</p>${done?'':`<button type="button" class="button secondary" data-action="icm-chop" ${active(t).length<2||active(t).length>20||payoutBalance(t)!==0||hasPendingEliminations(t)?'disabled':''}>ICM Chop</button>`}`;
 }
+// Remote and saved mixed arrangements use the same rules and domain calculator.
+function rulesForTournament(t){
+  const s=t.settings;
+  if(s.payoutRules)return clone(s.payoutRules);
+  if(s.payoutMode==='fixed')return s.payouts.map(value=>({mode:'fixed',value}));
+  if(s.payoutMode==='guaranteed'){
+    const f=financials(t),amounts=prizes(t);
+    if(f.guaranteeActive&&amounts[0]===guaranteeSettings(s).guaranteeAmount)return [{mode:'fixed',value:amounts[0]},{mode:'percent',value:100}];
+    return [65,35].map(value=>({mode:'percent',value}));
+  }
+  return s.payouts.map(value=>({mode:'percent',value}));
+}
+function ruleRows(rules,done=false){
+  return rules.map((rule,i)=>`<div class="payout-place-row payout-rule-row" data-payout-place="${i}"><strong class="payout-place-label">${placeName(i)}</strong><div class="payout-rule-toggle" role="group" aria-label="${placeName(i)} payout type">${[['percent','Percentage'],['fixed','Fixed']].map(([mode,label])=>`<button type="button" data-rule-place="${i}" data-rule-mode="${mode}" aria-pressed="${rule.mode===mode}" ${done?'disabled':''}>${label}</button>`).join('')}</div><label class="input-wrap ${rule.mode==='percent'?'payout-percentage-input':''}">${rule.mode==='fixed'?'<span>$</span>':''}<input name="payoutPlace${i+1}" data-payout-value="${i}" aria-label="${placeName(i)} ${rule.mode==='percent'?'percentage':'dollars'}" type="${rule.mode==='percent'?'number':'text'}" ${rule.mode==='fixed'?'inputmode="numeric" data-money="true"':'min="0" max="100" step="0.0001"'} value="${rule.mode==='fixed'?num(rule.value/100):rule.value}" required ${done?'disabled':''}>${rule.mode==='percent'?'<span>%</span>':''}</label><output data-payout-amount="${i}"></output></div>`).join('');
+}
+function rulePayoutPanel(t){
+  const remote=view==='remote',done=t.status==='completed',rules=rulesForTournament(t),format=rules.every(r=>r.mode==='fixed')?'fixed':rules.every(r=>r.mode==='percent')?'percent':'mixed';
+  const pool=`<div class="payout-current-pool"><span>Current Prize Pool</span><strong id="payout-pool">${money(financials(t).pool)}</strong></div>`;
+  if(t.icmChop)return `${pool}${awardRows(t)}${fundingNotice(t)}`;
+  const controls=`${paidPlacesControl({...t.settings,payoutMode:format,payouts:rules},t,true)}<fieldset class="payout-formats" ${done?'disabled':''}><legend>Prize Format</legend>${[['percent','Percentage of Prize Pool'],['fixed','Fixed Dollar Amounts']].map(([value,label])=>`<label class="check"><input type="radio" name="payoutMode" value="${value}" ${format===value?'checked':''}><span>${label}</span></label>`).join('')}</fieldset><p id="custom-payout-status" class="custom-payout-status"></p>${!remote&&!done?'<button type="button" class="button secondary small" data-action="recalculate-payouts">Use Structure Payouts</button>':''}`;
+  return `<form id="payout-form" data-rule-editor="true" data-rules-edited="false" data-overall-format="${format}"><input type="hidden" name="tournamentId" value="${t.id}"><input type="hidden" name="version" value="${version}">${remote?pool:''}<div class="payout-editor-grid"><div class="payout-format-column">${controls}</div><section class="payout-places-column" aria-label="Payouts by finishing place">${remote?'':pool}<h2>Payouts</h2><div id="payout-place-list">${ruleRows(rules,done)}</div><p id="mixed-payout-note" class="muted small-copy"></p></section></div><details class="payout-house-details"><summary>House Contribution</summary><label class="payout-house-contribution">House Contribution<div class="input-wrap"><span>$</span><input type="text" inputmode="numeric" data-money="true" name="houseContribution" value="${num(t.settings.houseContribution/100)}" required ${done?'disabled':''}></div></label></details><p id="payout-feedback" class="payout-allocation" role="status"></p><button class="button primary ${remote?'full':''}" ${done?'disabled':''}>Save Payouts</button></form><div id="guarantee-funding">${fundingNotice(t)}</div>${done?'':`<button type="button" class="button secondary ${remote?'full':''}" data-action="icm-chop" ${active(t).length<2||active(t).length>20||payoutBalance(t)!==0||hasPendingEliminations(t)?'disabled':''}>ICM Chop</button>`}`;
+}
+function readRuleRows(form){
+  return [...form.querySelectorAll('[data-payout-place]')].map(row=>{
+    const mode=row.querySelector('[data-rule-mode][aria-pressed=true]').dataset.ruleMode,input=row.querySelector('[data-payout-value]');
+    if(mode==='fixed')return {mode,value:wholeDollars(input.value)*100};
+    if(!/^\d+(?:\.\d{1,4})?$/.test(input.value))throw new Error('Enter a valid percentage for each percentage place.');
+    return {mode,value:Number(input.value)};
+  });
+}
+function markRuleDraft(form){
+  if(form.dataset.rulesEdited!=='true'){
+    // Carry already-funded guarantee money into the agreed custom prize pool.
+    const t={...current(),settings:{...current().settings,houseContribution:wholeDollars(form.elements.houseContribution.value)*100}};
+    form.elements.houseContribution.value=num(financials(t).houseContribution/100);
+  }
+  form.dataset.rulesEdited='true';form.dataset.rulesDirty='true';
+}
+function readRuleSettings(form,t){
+  const count=Number(form.elements.paidPlaces.value);if(!Number.isInteger(count)||count<1||count>20||form.querySelectorAll('[data-payout-place]').length!==count)throw new Error('Choose 1–20 paid places.');
+  const settings={...clone(t.settings),houseContribution:wholeDollars(form.elements.houseContribution.value)*100};
+  if(form.dataset.rulesEdited!=='true')return settings;
+  const rules=readRuleRows(form),mode=rules.every(r=>r.mode==='fixed')?'fixed':rules.every(r=>r.mode==='percent')?'percent':'mixed';
+  delete settings.payoutRules;settings.payoutMode=mode;
+  const amounts=calculatePayoutRules(financials({...t,settings}).pool,rules);
+  settings.payoutRules=rules;settings.payouts=mode==='mixed'?amounts:rules.map(r=>r.value);return settings;
+}
+function writeRuleRows(form,rules){
+  const format=rules.every(r=>r.mode==='fixed')?'fixed':rules.every(r=>r.mode==='percent')?'percent':'mixed';form.dataset.overallFormat=format;for(const radio of form.querySelectorAll('[name=payoutMode]'))radio.checked=radio.value===format;
+  form.querySelector('#payout-place-list').innerHTML=ruleRows(rules,current().status==='completed');form.elements.paidPlaces.value=String(rules.length);
+  for(const button of form.querySelectorAll('[data-payout-step]'))button.disabled=Number(button.dataset.payoutStep)<0?rules.length===1:rules.length===20;
+  refreshRulePreview(form);
+}
+function refreshRulePreview(form){
+  const icm=$('[data-action=icm-chop]');if(icm)icm.disabled=true;
+  try{
+    const count=Number(form.elements.paidPlaces.value);if(!Number.isInteger(count)||count<1||count>20)throw new Error('Choose 1–20 paid places.');
+    let rules=readRuleRows(form);
+    if(count!==rules.length){markRuleDraft(form);rules=Array.from({length:count},(_,i)=>rules[i]||{mode:'fixed',value:0});writeRuleRows(form,rules);return;}
+    const t=current(),settings=readRuleSettings(form,t),draft={...t,settings},f=financials(draft),amounts=prizes(draft),total=amounts.reduce((sum,n)=>sum+n,0),difference=f.pool-total;
+    if(form.dataset.rulesEdited!=='true'){
+      const updated=rulesForTournament(draft);if(JSON.stringify(updated)!==JSON.stringify(rules)){form.querySelector('#payout-place-list').innerHTML=ruleRows(updated,t.status==='completed');rules=updated;}
+    }
+    amounts.forEach((amount,i)=>setText(`[data-payout-amount="${i}"]`,money(amount)));setText('#payout-pool',money(f.pool));$('#guarantee-funding').innerHTML=fundingNotice(draft);
+    const mixed=rules.some(r=>r.mode==='fixed')&&rules.some(r=>r.mode==='percent'),custom=t.payoutCustom||form.dataset.rulesEdited==='true',dirty=JSON.stringify(settings)!==JSON.stringify(t.settings)||form.dataset.rulesEdited==='true';
+    setText('#custom-payout-status',custom?(mixed?'Mixed Payouts · ':'')+'Custom Payouts'+(dirty?' — Save to apply':''):mixed?'Structure guarantee':'');
+    setText('#mixed-payout-note',mixed?'Fixed awards are set aside first. Percentages divide the remaining prize pool.':'');
+    setText('#payout-feedback',difference>0?`${money(difference)} left to distribute`:difference<0?`${money(-difference)} over the prize pool`:`All ${money(f.pool)} allocated${dirty?' — Save to apply':''}`);
+    if(icm)icm.disabled=dirty||difference!==0||active(t).length<2||active(t).length>20||hasPendingEliminations(t);
+  }catch(error){setText('#payout-feedback',error.message);for(const output of form.querySelectorAll('[data-payout-amount]'))output.textContent='—';}
+}
+function changeRuleType(form,index,mode){
+  const rules=readRuleRows(form);if(rules[index].mode===mode)return;
+  let amounts=[];try{amounts=prizes({...current(),settings:readRuleSettings(form,current())});}catch{}
+  markRuleDraft(form);rules[index]={mode,value:mode==='fixed'?(amounts[index]||0):0};writeRuleRows(form,rules);
+}
+let payoutFormatChoice=null,payoutSaveChoice=null;
+function requestRuleFormat(form){
+  const mode=form.querySelector('[name=payoutMode]:checked').value,old=form.dataset.overallFormat;
+  if(mode===old)return;for(const radio of form.querySelectorAll('[name=payoutMode]'))radio.checked=radio.value===old;
+  payoutFormatChoice={form,mode,version,tournamentId:selected};
+  modal('Change Prize Format?',`<p>Replace the individual payout entries with ${mode==='fixed'?'fixed dollar amounts based on the current payouts':'the default percentages for this number of paid places'}?</p><div class="button-row"><button type="button" class="button primary" data-action="confirm-payout-format">Replace Entries</button><button type="button" class="button secondary" data-action="close-modal">Cancel</button></div>`);
+}
+function confirmRuleFormat(){
+  const choice=payoutFormatChoice;if(!choice||!dlg.open)return;
+  if(choice.version!==version||choice.tournamentId!==selected||!choice.form.isConnected)throw new Error('Tournament changed. Reopen Payouts and review before changing the format.');
+  const {form,mode}=choice,count=Number(form.elements.paidPlaces.value),amounts=mode==='fixed'?prizes({...current(),settings:readRuleSettings(form,current())}):[];
+  markRuleDraft(form);const values=mode==='fixed'?amounts:defaultPayouts(count);form.dataset.overallFormat=mode;form.querySelector(`[name=payoutMode][value=${mode}]`).checked=true;
+  writeRuleRows(form,values.map(value=>({mode,value})));payoutFormatChoice=null;dlg.close();
+}
+async function saveRulePayouts(form){
+  const t=current(),settings=readRuleSettings(form,t),custom=t.payoutCustom||form.dataset.rulesEdited==='true';
+  if(payoutBalance({...t,settings})!==0)throw new Error('Payouts must exactly match the prize pool.');
+  if(form.dataset.rulesEdited==='true'&&!t.payoutCustom&&['percent','guaranteed'].includes(t.settings.payoutMode)){
+    payoutSaveChoice={version,tournamentId:selected,settings,custom};
+    modal('Save Custom Payouts?',`<p>Replace the tournament’s ${t.settings.payoutMode==='guaranteed'?'guarantee and automatic payout rules':'automatic payout rules'} with these Custom Payouts?</p><ul>${prizes({...t,settings}).map((amount,i)=>`<li>${placeName(i)}: <strong>${money(amount)}</strong></li>`).join('')}</ul><p>These agreed rules stay in place until you change them.${t.settings.payoutMode==='guaranteed'&&prizes({...t,settings})[0]<guaranteeSettings(t.settings).guaranteeAmount?' <strong>First place will be below the configured guarantee.</strong>':''}</p><div class="button-row"><button type="button" class="button primary" data-action="confirm-custom-payouts">Save Payouts</button><button type="button" class="button secondary" data-action="close-modal">Cancel</button></div>`);return;
+  }
+  if(await commit({type:'payout-settings',tournamentId:selected,settings,custom}))toast('Payouts updated.');
+}
+async function confirmRulePayouts(){
+  const choice=payoutSaveChoice;if(!choice||!dlg.open)return;
+  if(choice.version!==version||choice.tournamentId!==selected)throw new Error('Tournament changed. Reopen Payouts and review before saving.');
+  if(await commit({type:'payout-settings',...choice})){payoutSaveChoice=null;dlg.close();toast('Payouts updated.');}
+}
+
 function payoutContext(form){return form.id==='payout-form'?current():editor?.event?current():null;}
 function rememberPlaceValues(form){
   const list=form.querySelector('#payout-place-list'),mode=list.dataset.mode;let draft=payoutDrafts.get(form);if(!draft){draft={};payoutDrafts.set(form,draft);}
@@ -163,6 +271,7 @@ function changePlaceRows(form,mode,count){
   if(live)form.dataset.customDraft=String(mode==='fixed');writePlaceRows(form,mode,count,values);
 }
 function refreshPayoutPreview(form){
+  if(form.dataset.ruleEditor)return refreshRulePreview(form);
   const list=form.querySelector('#payout-place-list');if(!list)return;
   try{
     let mode=form.querySelector('[name=payoutMode]:checked').value;const count=Number(form.elements.paidPlaces.value);
@@ -180,10 +289,12 @@ function refreshPayoutPreview(form){
   }catch(error){const icm=$('[data-action=icm-chop]');if(icm)icm.disabled=true;setText(form.id==='payout-form'?'#payout-feedback':'#setup-payout-feedback',error.message);}
 }
 function recalculatePayouts(){
-  const form=$('#payout-form'),t=current(),source=t.payoutAutomatic||{payoutMode:t.settings.payoutMode==='fixed'?'percent':t.settings.payoutMode,payouts:t.settings.payoutMode==='fixed'?defaultPayouts(t.settings.payouts.length):t.settings.payouts,guaranteeContribution:0};
+  if(!confirm('Replace your payout entries with the tournament structure payouts? Save Payouts will apply the change.'))return;
+  let form=$('#payout-form'),t=current(),source=t.payoutAutomatic||{payoutMode:['percent','guaranteed'].includes(t.settings.payoutMode)?t.settings.payoutMode:'percent',payouts:['percent','guaranteed'].includes(t.settings.payoutMode)?t.settings.payouts:defaultPayouts(t.settings.payouts.length),guaranteeContribution:0};
+  if(form.dataset.ruleEditor){const holder=document.createElement('div');holder.innerHTML=payoutPanel({...t,settings:{...t.settings,...source,payoutRules:undefined}},true);form.replaceWith(holder.querySelector('form'));form=$('#payout-form');}
   form.elements.houseContribution.value=num(Math.max(0,t.settings.houseContribution-(t.payoutCustom?source.guaranteeContribution||0:0))/100);form.dataset.customDraft='false';form.dataset.recalculate='true';
   const guarantee=guaranteeSettings(source.guaranteeAmount==null?t.settings:source);form.elements.guaranteeAmount.value=num(guarantee.guaranteeAmount/100);form.elements.guaranteePlayers.value=String(guarantee.guaranteePlayers);
-  payoutDrafts.delete(form);writePlaceRows(form,source.payoutMode,source.payoutMode==='guaranteed'?2:source.payouts.length,source.payouts.map(String));refreshPayoutPreview(form);
+  payoutDrafts.delete(form);writePlaceRows(form,source.payoutMode,source.payoutMode==='guaranteed'?2:source.payouts.length,source.payouts.map(n=>String(source.payoutMode==='fixed'?n/100:n)));refreshPayoutPreview(form);
 }
 function summaryPanel(t){
   const f=financials(t),rows=[['Tournament Entries',f.tournamentEntries,'credit'],['Dealer Tokes (Buy-Ins Only)',f.dealerTokes,'credit'],['Rebuys',f.rebuyTotal,'credit'],...(f.addonTotal?[['Add-ons',f.addonTotal,'credit']]:[]),[`Tournament Fee${f.housePercent==null?'':` (${f.housePercent}%)`}`,-f.houseFee,'debit'],['Dealer Tokes Paid Out',-f.dealerTokesPaidOut,'debit'],['House Contribution',f.houseContribution,f.houseContribution>0?'credit':'neutral'],['Total Prize Pool',f.pool,'total']];
@@ -295,11 +406,11 @@ function selectCurrentTournament(){
 }
 function workspaceScreen(){
   const banner=header()+importNotice(),menu=view==='home'?'':nav();
-  const content=`<main class="content">${({home,setup,players,signup,manage}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.3.28 · ${online?'Saved online':'Connection interrupted'}</span></footer>`;
+  const content=`<main class="content">${({home,setup,players,signup,manage}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.3.29 · ${online?'Saved online':'Connection interrupted'}</span></footer>`;
   if(view==='manage')return `<div class="management-chrome">${banner}<div class="workspace">${menu}</div></div><div class="workspace">${content}</div>`;
   return `${banner}<div class="workspace">${menu}${content}</div>`;
 }
-function render(){if(!session||!(view==='manage'&&tab==='tables'||view==='remote'&&remotePanel==='tables')||movePlayersTournament!==selected)movePlayersEnabled=false;seatDragging?.cancel();clearSeatPick();if(!session){clearInterval(clockTimer);document.body.classList.remove('registration-page','tv','home-page','fixed-workspace','setup-page','players-page','player-profile-page','remote-page');app.innerHTML=signInScreen();clockToolbar?.sync();return;}selectCurrentTournament();if(movePlayersTournament!==selected||current()?.status==='completed')movePlayersEnabled=false;const registration=registrationSnapshot(),panels=panelSnapshot();clearInterval(clockTimer);document.body.classList.toggle('registration-page',view==='signup'&&!!current());document.body.classList.toggle('tv',view==='clock');document.body.classList.toggle('remote-page',view==='remote');document.body.classList.toggle('home-page',view==='home');document.body.classList.toggle('fixed-workspace',['setup','players'].includes(view));document.body.classList.toggle('setup-page',view==='setup');document.body.classList.toggle('players-page',view==='players');document.body.classList.toggle('player-profile-page',view==='players'&&!!playerDetail);if(view==='clock'){app.innerHTML=clockScreen();}else if(view==='remote'){app.innerHTML=remoteScreen();}else{app.innerHTML=workspaceScreen();}restoreRegistration(registration);restorePanels(panels);clockToolbar?.sync();renderedWorkspaceVersion=version;if(view==='setup'&&editor)applyClockAppearance($('.structure-clock-appearance .clock-appearance-preview'),editor.value.clockAppearance||state.clockAppearanceDefaults);if(view==='remote'){try{applyClockAppearance($('.remote-clock'),current()?.clockAppearance);}catch{applyClockAppearance($('.remote-clock'),ORIGINAL_CLOCK_APPEARANCE);}}tick();clockTimer=setInterval(tick,250);if(view==='clock'){try{applyClockAppearance($('.tv-shell'),current()?.clockAppearance);}catch{applyClockAppearance($('.tv-shell'),ORIGINAL_CLOCK_APPEARANCE);}fitTvSeating();if(automaticTvLaunch&&!tvLaunchAttempted){tvLaunchAttempted=true;void tryTvFullscreen(false);}}}
+function render(){if(!session||!(view==='manage'&&tab==='tables'||view==='remote'&&remotePanel==='tables')||movePlayersTournament!==selected)movePlayersEnabled=false;seatDragging?.cancel();clearSeatPick();if(!session){clearInterval(clockTimer);document.body.classList.remove('registration-page','tv','home-page','fixed-workspace','setup-page','players-page','player-profile-page','remote-page');app.innerHTML=signInScreen();clockToolbar?.sync();return;}selectCurrentTournament();if(movePlayersTournament!==selected||current()?.status==='completed')movePlayersEnabled=false;const registration=registrationSnapshot(),panels=panelSnapshot();clearInterval(clockTimer);document.body.classList.toggle('registration-page',view==='signup'&&!!current());document.body.classList.toggle('tv',view==='clock');document.body.classList.toggle('remote-page',view==='remote');document.body.classList.toggle('home-page',view==='home');document.body.classList.toggle('fixed-workspace',['setup','players'].includes(view));document.body.classList.toggle('setup-page',view==='setup');document.body.classList.toggle('players-page',view==='players');document.body.classList.toggle('player-profile-page',view==='players'&&!!playerDetail);if(view==='clock'){app.innerHTML=clockScreen();}else if(view==='remote'){app.innerHTML=remoteScreen();}else{app.innerHTML=workspaceScreen();}restoreRegistration(registration);restorePanels(panels);clockToolbar?.sync();renderedWorkspaceVersion=version;if($('#payout-form')?.dataset.ruleEditor)refreshRulePreview($('#payout-form'));if(view==='setup'&&editor)applyClockAppearance($('.structure-clock-appearance .clock-appearance-preview'),editor.value.clockAppearance||state.clockAppearanceDefaults);if(view==='remote'){try{applyClockAppearance($('.remote-clock'),current()?.clockAppearance);}catch{applyClockAppearance($('.remote-clock'),ORIGINAL_CLOCK_APPEARANCE);}}tick();clockTimer=setInterval(tick,250);if(view==='clock'){try{applyClockAppearance($('.tv-shell'),current()?.clockAppearance);}catch{applyClockAppearance($('.tv-shell'),ORIGINAL_CLOCK_APPEARANCE);}fitTvSeating();if(automaticTvLaunch&&!tvLaunchAttempted){tvLaunchAttempted=true;void tryTvFullscreen(false);}}}
 function setText(selector,text){const el=$(selector);if(el&&el.textContent!==String(text)){el.textContent=text;if(el.hasAttribute('data-tv-fit'))fitTvSeating(document,[el]);}}
 function formatTime(ms){const sec=Math.max(0,Math.ceil(ms/1000));return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}
 function nextBreak(t,c){if(t.levels[c.index].kind==='break')return 'Break in progress';let ms=c.remainingMs;for(let i=c.index+1;i<t.levels.length;i++){if(t.levels[i].kind==='break')return 'Next break in '+formatTime(ms);ms+=t.levels[i].minutes*60000;}return 'No further breaks scheduled';}
@@ -340,7 +451,7 @@ async function refresh(force=false){if(!session||(busy&&!force))return;const use
     const {data,error}=await db.from('td_workspaces').select('state,version,updated_at').eq('owner_id',session.user.id).maybeSingle();if(session?.user.id!==user)return;if(error)throw error;
     let changed=false;if(data&&Number(data.version)>version){state=upgradeState(data.state);version=Number(data.version);changed=true;}
     const wasOffline=!online;online=true;remoteError='';lastSync=Date.now();
-    if((changed||wasOffline)&&!dlg.open&&!editor&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))render();
+    if((changed||wasOffline)&&!dlg.open&&!editor&&!$('#payout-form')?.dataset.rulesDirty&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))render();
   }catch(e){if(session?.user.id!==user)return;const changed=online;online=false;remoteError=e.message||'Could not reach Supabase.';if(changed&&!dlg.open&&!editor)render();}}
 function markBrowserImported(){legacyPending=false;legacyError='';try{localStorage.setItem(migrationKey,session.user.id);}catch{}}
 async function saveInitialWorkspace(){
@@ -530,6 +641,9 @@ function openClock(){const target=view==='home'?(homeTournament()||current()):cu
 
 document.addEventListener('click',async event=>{const el=event.target.closest('button,a[data-go]');if(!el||el.disabled)return;try{
   if(!session&&el.dataset.action!=='account'&&el.dataset.action!=='close-modal')return;
+  if(el.dataset.rulePlace!==undefined){changeRuleType(el.closest('form'),Number(el.dataset.rulePlace),el.dataset.ruleMode);return;}
+  if(el.dataset.action==='confirm-payout-format'){confirmRuleFormat();return;}
+  if(el.dataset.action==='confirm-custom-payouts'){await confirmRulePayouts();return;}
   if(el.dataset.gradientPreset){changeGradient(el.closest('form'),el.dataset.gradientPreset);return;}
   if(el.dataset.gradientRemove!==undefined){changeGradient(el.closest('form'),'remove',Number(el.dataset.gradientRemove));return;}
   if(el.dataset.action==='gradient-add'){changeGradient(el.closest('form'),'add');return;}
@@ -629,8 +743,8 @@ function formatPhoneInput(input){
   }
   try{normalizePhone(input.value);input.setCustomValidity('');}catch(error){input.setCustomValidity(error.message);}
 }
-document.addEventListener('input',event=>{if(event.target.dataset.money)formatDollarInput(event.target);if(['clock-appearance-form','new-tournament-form'].includes(event.target.form?.id))refreshAppearancePreview(event.target.form);if(event.target.form?.querySelector('#payout-place-list')){if(event.target.form.id==='payout-form'&&tournamentStarted(current())&&event.target.hasAttribute('data-payout-value')){event.target.form.dataset.customDraft='true';event.target.form.dataset.recalculate='false';}refreshPayoutPreview(event.target.form);}if(event.target.closest('[data-icm-entry]'))updateIcmReview(event.target);if(event.target.dataset.phone)formatPhoneInput(event.target);if(event.target.dataset.chips)formatChipInput(event.target);if(event.target.form?.id==='player-form'&&event.target.name==='name'){const form=event.target.form,match=state.players.find(p=>p.id!==form.elements.id?.value&&normalizePlayerName(p.name)===normalizePlayerName(event.target.value));let feedback=form.querySelector('.name-feedback');if(!feedback){feedback=document.createElement('p');feedback.className='name-feedback';feedback.setAttribute('role','status');event.target.closest('label').append(feedback);}feedback.textContent=match?'That name already exists. Please choose a different name.':'';event.target.setCustomValidity(match?'That name already exists. Please choose a different name.':'');}if(['buyIn','dealerToke'].includes(event.target.name)&&$('#entry-split')){const form=event.target.form,buyIn=Math.round(dollarNumber(form.elements.buyIn.value)*100),toke=Math.round(dollarNumber(form.elements.dealerToke.value)*100);$('#entry-split').textContent=money(buyIn)+' total − '+money(toke)+' dealer toke = '+money(buyIn-toke)+' before the tournament fee.';}if(event.target.id==='player-search'){playerSearch=event.target.value;$('#player-results').scrollTop=0;$('#player-results').innerHTML=playerRows(state.players.filter(p=>(showArchived||!p.archived)&&(normalizePlayerName(p.name)+' '+playerNumberLabel(p)+' '+(p.phone||'')).includes(normalizePlayerName(playerSearch))).sort((a,b)=>a.name.localeCompare(b.name)));}if(event.target.id==='signup-search'){signupSearch=event.target.value;$('#signup-results').scrollTop=0;const t=current(),enrolled=new Set(t.entries.map(e=>e.playerId));$('#signup-results').innerHTML=registrationRows(state.players.filter(p=>!p.archived&&!enrolled.has(p.id)&&(normalizePlayerName(p.name)+' '+playerNumberLabel(p)).includes(normalizePlayerName(signupSearch))).sort((a,b)=>a.name.localeCompare(b.name)),t);}});
-document.addEventListener('change',event=>{if(['clock-appearance-form','new-tournament-form'].includes(event.target.form?.id)){if(event.target.name==='preset'&&CLOCK_PRESETS[event.target.value])fillAppearance(event.target.form,CLOCK_PRESETS[event.target.value]);else if(event.target.name==='templateId'){const template=state.templates.find(t=>t.id===event.target.value);fillAppearance(event.target.form,template?.clockAppearance||state.clockAppearanceDefaults);}else refreshAppearancePreview(event.target.form);}if(event.target.name==='payoutMode')refreshPayoutPreview(event.target.form);if(event.target.id==='show-archived'){showArchived=event.target.checked;render();}});
+document.addEventListener('input',event=>{if(event.target.dataset.money)formatDollarInput(event.target);if(['clock-appearance-form','new-tournament-form'].includes(event.target.form?.id))refreshAppearancePreview(event.target.form);if(event.target.form?.querySelector('#payout-place-list')){if(event.target.form.dataset.ruleEditor){if(event.target.name==='payoutMode')return;if(event.target.hasAttribute('data-payout-value'))markRuleDraft(event.target.form);if(event.target.name==='houseContribution')event.target.form.dataset.rulesDirty='true';}if(event.target.form.id==='payout-form'&&tournamentStarted(current())&&event.target.hasAttribute('data-payout-value')){event.target.form.dataset.customDraft='true';event.target.form.dataset.recalculate='false';}refreshPayoutPreview(event.target.form);}if(event.target.closest('[data-icm-entry]'))updateIcmReview(event.target);if(event.target.dataset.phone)formatPhoneInput(event.target);if(event.target.dataset.chips)formatChipInput(event.target);if(event.target.form?.id==='player-form'&&event.target.name==='name'){const form=event.target.form,match=state.players.find(p=>p.id!==form.elements.id?.value&&normalizePlayerName(p.name)===normalizePlayerName(event.target.value));let feedback=form.querySelector('.name-feedback');if(!feedback){feedback=document.createElement('p');feedback.className='name-feedback';feedback.setAttribute('role','status');event.target.closest('label').append(feedback);}feedback.textContent=match?'That name already exists. Please choose a different name.':'';event.target.setCustomValidity(match?'That name already exists. Please choose a different name.':'');}if(['buyIn','dealerToke'].includes(event.target.name)&&$('#entry-split')){const form=event.target.form,buyIn=Math.round(dollarNumber(form.elements.buyIn.value)*100),toke=Math.round(dollarNumber(form.elements.dealerToke.value)*100);$('#entry-split').textContent=money(buyIn)+' total − '+money(toke)+' dealer toke = '+money(buyIn-toke)+' before the tournament fee.';}if(event.target.id==='player-search'){playerSearch=event.target.value;$('#player-results').scrollTop=0;$('#player-results').innerHTML=playerRows(state.players.filter(p=>(showArchived||!p.archived)&&(normalizePlayerName(p.name)+' '+playerNumberLabel(p)+' '+(p.phone||'')).includes(normalizePlayerName(playerSearch))).sort((a,b)=>a.name.localeCompare(b.name)));}if(event.target.id==='signup-search'){signupSearch=event.target.value;$('#signup-results').scrollTop=0;const t=current(),enrolled=new Set(t.entries.map(e=>e.playerId));$('#signup-results').innerHTML=registrationRows(state.players.filter(p=>!p.archived&&!enrolled.has(p.id)&&(normalizePlayerName(p.name)+' '+playerNumberLabel(p)).includes(normalizePlayerName(signupSearch))).sort((a,b)=>a.name.localeCompare(b.name)),t);}});
+document.addEventListener('change',event=>{if(['clock-appearance-form','new-tournament-form'].includes(event.target.form?.id)){if(event.target.name==='preset'&&CLOCK_PRESETS[event.target.value])fillAppearance(event.target.form,CLOCK_PRESETS[event.target.value]);else if(event.target.name==='templateId'){const template=state.templates.find(t=>t.id===event.target.value);fillAppearance(event.target.form,template?.clockAppearance||state.clockAppearanceDefaults);}else refreshAppearancePreview(event.target.form);}if(event.target.name==='payoutMode'){if(event.target.form.dataset.ruleEditor)requestRuleFormat(event.target.form);else refreshPayoutPreview(event.target.form);}if(event.target.id==='show-archived'){showArchived=event.target.checked;render();}});
 document.addEventListener('submit',async event=>{event.preventDefault();const form=event.target,fd=new FormData(form);try{
   if(form.id==='auth-form'){
     const feedback=$('#auth-feedback');feedback.textContent='Connecting…';const method=event.submitter?.value==='signup'?'signUp':'signInWithPassword';
@@ -682,7 +796,8 @@ document.addEventListener('submit',async event=>{event.preventDefault();const fo
   }
   if(form.id==='payout-form'){
     const t=current();if(Number(fd.get('version'))!==version||fd.get('tournamentId')!==selected)throw new Error('Tournament changed. Reopen Payouts and review before saving.');
-    let settings=readPayoutSettings(form,t),custom=tournamentStarted(t)&&(settings.payoutMode==='fixed'||form.dataset.customDraft==='true'&&form.dataset.recalculate!=='true');
+    if(form.dataset.ruleEditor){await saveRulePayouts(form);return;}
+    let settings=readPayoutSettings(form,t),custom=tournamentStarted(t)&&form.dataset.recalculate!=='true'&&(settings.payoutMode==='fixed'||form.dataset.customDraft==='true');
     const changed=settings.payoutMode!==t.settings.payoutMode||JSON.stringify(settings.payouts)!==JSON.stringify(t.settings.payouts)||JSON.stringify(guaranteeSettings(settings))!==JSON.stringify(guaranteeSettings(t.settings));
     if(custom&&settings.payoutMode!=='fixed'){const draft={...t,settings};settings={...settings,payoutMode:'fixed',payouts:prizes(draft),houseContribution:financials(draft).houseContribution};}
     if(payoutBalance({...t,settings})!==0)throw new Error('Payouts must exactly match the prize pool.');
