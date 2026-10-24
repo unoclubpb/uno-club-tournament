@@ -552,7 +552,7 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .remote-tournament-name{color:var(--gold);font-weight:700;text-align:center;overflow-wrap:anywhere;margin:12px 0 20px}
 .remote-shell main>h2{font-size:22px;margin:18px 0}
 .remote-clock{text-align:center;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:10px}
-.remote-clock #remote-time{font-size:clamp(72px,17vw,124px);font-variant-numeric:tabular-nums;line-height:1.1;color:var(--gold)}
+.remote-clock #remote-time{font-size:clamp(72px,17vw,124px);font-variant-numeric:tabular-nums;line-height:1.1;color:var(--clock-timer)}
 .remote-clock #remote-blinds{font-size:clamp(25px,6vw,40px)}.remote-blind-label{font-size:11px;color:var(--muted);letter-spacing:1px}
 .remote-next{display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--line);padding-top:16px;width:100%;margin-bottom:12px}.remote-next span{font-size:11px;color:var(--muted)}.remote-next strong{font-size:22px}
 .remote-clock>.button,.remote-main-buttons>.button{width:100%;min-height:58px;font-size:19px}
@@ -568,3 +568,12 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 @media(max-width:380px){.remote-shell{padding:12px}.remote-header{gap:8px}.remote-header h1{font-size:17px}.remote-header .connection{font-size:9px}.remote-player{padding:12px 8px;gap:7px;grid-template-columns:34px minmax(0,1fr) auto}.remote-player strong{font-size:15px}.remote-player .button{min-width:82px}.remote-player .seat-badge{width:32px;height:32px;font-size:18px}}
 
 .remote-header{position:sticky;top:0;z-index:20;background:#060f18;padding-top:12px}
+
+.remote-shell .button.remote-action-red{background:#b33434;border-color:#b33434;color:#fff}
+.remote-shell .button.remote-action-red:hover:not(:disabled){background:#922929;border-color:#922929}
+.remote-shell .button.remote-action-green{background:#21794a;border-color:#21794a;color:#fff}
+.remote-shell .button.remote-action-green:hover:not(:disabled){background:#19623b;border-color:#19623b}
+.remote-clock #remote-level{color:var(--clock-level)}
+.remote-clock #remote-blinds{color:var(--clock-current-blinds)}
+.remote-clock #remote-next{color:var(--clock-next-blinds)}
+.remote-clock .remote-blind-label,.remote-clock #remote-next-label{color:var(--clock-text)}

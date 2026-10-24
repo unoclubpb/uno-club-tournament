@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.21
+# Uno Club Tournament Director — v0.3.22
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -328,3 +328,9 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - Payouts, guarantees, custom agreements, whole-dollar formatting and ICM use the same existing functions/forms. ICM acceptance waits for pending eliminations to resolve. Accepted chops stop the clock and preserve earlier eliminations and chip/payout records. No tournament points were added.
 - Validation: 170 automated tests; rolled-back database tests verify the 5,000 ms boundary, duplicate receipts/finalization, server worker writes, reserved-seat guards and owner isolation. Browser checks cover phone layouts, shared Pause/Resume, Undo, finalization with the Remote page closed, TV/Management updates, table balance warnings, payouts and navigation. The production workspace hash and record counts remained unchanged during deployment. Windows wireless HDMI positioning/fullscreen remains pending hardware testing.
 - Cron log retention deletes only this feature's job logs older than one day; it does not remove tournament or player records.
+
+
+## v0.3.22 Remote colors
+
+- Remote Pause Clock is red while running; Resume Clock is green while paused. The main Eliminate Player action is red and Payouts / ICM is green.
+- The Remote clock shares the tournament's TV clock appearance: background, timer style/colors, current/next blinds, level and other text. Solid, separate, gradient and stripe countdowns use the same appearance helper/CSS behavior, including live cloud updates without changing the clock deadline.
