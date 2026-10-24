@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.20
+# Uno Club Tournament Director — v0.3.21
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -13,7 +13,7 @@ This repository contains the tournament app source and prebuilt website files. S
 - The `.nojekyll` file tells Pages to serve these static files directly.
 - Navigation, assets and the clock window use relative paths so this works from a GitHub repository subdirectory.
 
-The home screen has Tournament Setup, Player Database, Tournament Registration, Tournament Management and Open Clock Display. Open Clock Display requests a separate browser window, which can be moved to an extended HDMI display. Phone and desktop use responsive management screens.
+The home screen has Tournament Setup, Player Database, Tournament Registration, Tournament Management, Tournament Remote and Open Clock Display. Open Clock Display requests a separate browser window, which can be moved to an extended HDMI display. Phone and desktop use responsive management screens.
 
 ## Account access and storage
 
@@ -315,3 +315,16 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - The old browser-data import notice now includes Clear old device copy, with an in-app confirmation.
 - Clearing removes only the legacy tournament document key from the current browser. It does not call the cloud save RPC, remove sign-in credentials or alter online players, structures, tournaments or history.
 - The current online account must be loaded and connected before clearing. Cancellation, storage errors and lost connections preserve the old copy.
+
+
+## v0.3.21 Tournament Remote
+
+- Home and the main navigation now open Tournament Remote for the active event. This additional phone interface provides a large live clock, one Pause Clock/Resume Clock control, vertical gold table lists, and the shared payout/ICM editor with direct Clock back navigation.
+- Remote eliminations use the authenticated `td_remote_elimination` RPC. A server timestamp starts a 5,000 ms Undo window; pending players keep their row, seat and active status with no provisional finishing place. Their metadata and idempotent request receipts live in the existing tournament document.
+- `backend/tournament-remote.sql` adds owner-scoped invoker RPCs, a private deadline finalizer and document guards. Existing auth/RLS and `td_save_workspace` remain in use. Apply this SQL after the base schema and player integrity SQL before publishing a build using Remote. It is already installed on the Tournament Director project.
+- A private pg_cron worker checks deadlines every second independently of open browsers. Undo eligibility ends at the exact server deadline; due results are then published through the existing Realtime channel and polling fallback. Processing resumes after a database interruption without a second elimination or a reset Undo deadline. No unsaved offline elimination is presented as successful.
+- Server guards reject changing a pending player's entry, occupying their reserved seat, completing a tournament with pending eliminations, or editing server-managed request metadata. Normal non-conflicting clock, player and payout work stays available. Row locks serialize Remote actions, deadline finalization and document saves; request IDs prevent duplicate starts or finalizations after a retry/lost acknowledgement.
+- Finalization records the actual deadline, finishing place, elimination order and original seat, then frees the seat and updates the existing balancing warning without moving anyone. Management retains its confirmed individual Undo Elimination after the Remote window, including occupied-seat protection.
+- Payouts, guarantees, custom agreements, whole-dollar formatting and ICM use the same existing functions/forms. ICM acceptance waits for pending eliminations to resolve. Accepted chops stop the clock and preserve earlier eliminations and chip/payout records. No tournament points were added.
+- Validation: 170 automated tests; rolled-back database tests verify the 5,000 ms boundary, duplicate receipts/finalization, server worker writes, reserved-seat guards and owner isolation. Browser checks cover phone layouts, shared Pause/Resume, Undo, finalization with the Remote page closed, TV/Management updates, table balance warnings, payouts and navigation. The production workspace hash and record counts remained unchanged during deployment. Windows wireless HDMI positioning/fullscreen remains pending hardware testing.
+- Cron log retention deletes only this feature's job logs older than one day; it does not remove tournament or player records.

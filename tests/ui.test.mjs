@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 import {build} from 'esbuild';
 import {readFile} from 'node:fs/promises';
-import {initialState,execute} from '../src/domain.mjs';
+import {initialState,execute,applyRemoteElimination,finalizePendingEliminations} from '../src/domain.mjs';
 const flush=()=>new Promise(resolve=>setTimeout(resolve,15));
 const key='uno-tournament-practice-v1';
 async function boot(base,seed,view='home',selected='',options={}){
  const html=await readFile(new URL('../src/index.html',import.meta.url),'utf8');
  const dom=new JSDOM(html,{url:base+'?view='+view+(selected?'&tournament='+selected:''),runScripts:'outside-only'}),w=dom.window;
- w.structuredClone=structuredClone;w.confirm=()=>true;let opened='';w.open=url=>{opened=url;return {focus(){}};};
+ w.__remoteModel=(s,a,now)=>applyRemoteElimination(s,a,now);w.__finalizeModel=(s,now)=>finalizePendingEliminations(s,now);w.structuredClone=structuredClone;w.confirm=()=>true;let opened='';w.open=url=>{opened=url;return {focus(){}};};
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
  if(options.legacy)w.localStorage.setItem(key,JSON.stringify(options.legacy));
  w.__fixture={state:seed?structuredClone(seed):null,version:seed?1:0,session:options.signedOut?null:{user:{id:'organizer-1',email:'organizer@example.test'}},saveError:null,readError:null,saves:0};
@@ -19,7 +19,7 @@ async function boot(base,seed,view='home',selected='',options={}){
   const signIn=async()=>({data:{session:f.session={user:{id:'organizer-1',email:'organizer@example.test'}}}});
   const query={select(){return query;},eq(){return query;},async maybeSingle(){const source=f.cloud||f;return {data:source.state?{state:structuredClone(source.state),version:source.version}:null,error:f.readError};}};
   return {auth:{getSession:async()=>({data:{session:f.session}}),onAuthStateChange:cb=>(f.auth=cb,{data:{subscription:{unsubscribe(){}}}}),signInWithPassword:signIn,signUp:async()=>f.confirmEmail?{data:{session:null}}:signIn(),signOut:async()=>{f.session=null;f.auth('SIGNED_OUT',null);return {error:null};}},from:()=>query,
-   rpc:async(name,args)=>{if(name==='td_server_time')return {data:new Date().toISOString()};if(f.saveError)return {error:f.saveError};const target=f.cloud||f;if(args.p_expected_version!==target.version)return {error:{message:'TD_CONFLICT: tournament changed on another device'}};target.state=structuredClone(args.p_state);target.version++;f.saves++;if(f.cloud)for(const cb of target.listeners)queueMicrotask(cb);return {data:{state:structuredClone(target.state),version:target.version}};},
+   rpc:async(name,args)=>{if(name==='td_server_time')return {data:new Date().toISOString()};if(f.saveError)return {error:f.saveError};const target=f.cloud||f;if(name==='td_remote_elimination'){try{target.state=window.__remoteModel(target.state,{tournamentId:args.p_tournament_id,entryId:args.p_entry_id,requestId:args.p_request_id,command:args.p_command},Date.now());target.version++;f.saves++;if(f.cloud)for(const cb of target.listeners)queueMicrotask(cb);if(f.remoteReplyError)return {error:f.remoteReplyError};return {data:{state:structuredClone(target.state),version:target.version}};}catch(error){return {error:{message:error.message}};}}if(args.p_expected_version!==target.version)return {error:{message:'TD_CONFLICT: tournament changed on another device'}};target.state=structuredClone(args.p_state);target.version++;f.saves++;if(f.cloud)for(const cb of target.listeners)queueMicrotask(cb);return {data:{state:structuredClone(target.state),version:target.version}};},
    channel:()=>({on(event,filter,cb){f.notify=cb;if(f.cloud)f.cloud.listeners.add(cb);return this;},subscribe(){return this;}}),removeChannel:async()=>{}
   };
  };`;
@@ -34,7 +34,7 @@ async function boot(base,seed,view='home',selected='',options={}){
 for(const base of ['https://example.test/','https://example.test/uno-club-tournament/'])test('home, player records, registration and navigation at '+base,async()=>{
  const ui=await boot(base),{q,click,input,submit}=ui;
  try{
-  assert.equal(ui.w.document.querySelectorAll('.home-menu .menu-card').length,5);
+  assert.equal(ui.w.document.querySelectorAll('.home-menu .menu-card').length,6);
   assert.equal(q('.home-tournament'),null);assert.doesNotMatch(ui.w.document.body.textContent,/Welcome back|What would you like/);
   click('[data-go="players"]');assert.equal(q('.context'),null);assert.equal(q('[data-register]'),null);
   click('[data-action="add-player"]');let form=q('#player-form');input(form.elements.name,'  Alex   Smith  ');input(form.elements.phone,'555-123-0100');await submit(form);
@@ -736,4 +736,32 @@ test('clearing the device copy retains it if storage removal fails or the cloud 
   ui.click('[data-action=clear-device-copy]');const remove=ui.w.Storage.prototype.removeItem;ui.w.Storage.prototype.removeItem=function(){throw new Error('Storage blocked');};await ui.submit(ui.q('#clear-device-copy-form'));assert.match(ui.q('#clear-device-copy-feedback').textContent,/Could not clear/);assert.equal(ui.w.localStorage.getItem(key),JSON.stringify(legacy));assert.equal(ui.q('#dialog').open,true);ui.w.Storage.prototype.removeItem=remove;
   ui.w.__fixture.readError={message:'Connection interrupted'};await ui.w.__fixture.notify();await flush();await ui.submit(ui.q('#clear-device-copy-form'));assert.match(ui.q('#clear-device-copy-feedback').textContent,/Reconnect/);assert.equal(ui.w.localStorage.getItem(key),JSON.stringify(legacy));assert.deepEqual(ui.stored(),cloud);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
+});
+
+
+test('Tournament Remote links from Home and navigation, controls the actual clock and reuses payouts/ICM',async()=>{
+ let seed=manualSeatingFixture(3);seed=execute(seed,{type:'clock',tournamentId:'t1',command:'start'});const ui=await boot('https://example.test/',seed,'home','t1');
+ try{
+  ui.click('[data-go=remote]');assert.equal(ui.q('.remote-header h1').textContent,'Tournament Remote');assert.equal(ui.q('.management-sidebar'),null);assert.equal(ui.q('#remote-clock').textContent,'Pause Clock');assert.match(ui.q('#remote-blinds').textContent,/25 \/ 50/);assert.match(ui.q('#remote-next').textContent,/50 \/ 100/);ui.click('#remote-clock');await flush();assert.equal(ui.stored().tournaments[0].clock.status,'paused');assert.equal(ui.q('#remote-clock').textContent,'Resume Clock');
+  await ui.storage(execute(ui.stored(),{type:'clock',tournamentId:'t1',command:'resume'}));assert.equal(ui.q('#remote-clock').textContent,'Pause Clock');ui.click('[data-remote-panel=payouts]');assert.ok(ui.q('#payout-form'));assert.ok(ui.q('[data-action=icm-chop]'));ui.input(ui.q('[data-payout-value="0"]'),'60');ui.input(ui.q('[data-payout-value="1"]'),'40');await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].payoutCustom,true);ui.click('[data-remote-panel=clock]');ui.click('[data-remote-panel=eliminate]');assert.equal(ui.w.document.querySelectorAll('.remote-table').length,1);assert.deepEqual([...ui.w.document.querySelectorAll('[data-remote-entry]')].map(e=>e.dataset.remoteEntry),['e1','e2','e3']);ui.click('[data-remote-panel=clock]');ui.click('[data-go=home]');ui.click('[data-go=manage]');assert.ok(ui.q('.nav [data-go=remote]'));assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('Remote pending Undo preserves the seat, and deadline finalization removes only the row and supports management corrections',async()=>{
+ const seed=manualSeatingFixture(3),ui=await boot('https://example.test/',seed,'remote','t1');
+ try{
+  ui.click('[data-remote-panel=eliminate]');ui.click('[data-remote-eliminate=e2]');await flush();let pending=ui.stored();assert.equal(pending.tournaments[0].entries[1].seat,2);assert.ok(ui.q('[data-remote-entry=e2] [data-remote-undo]'));assert.equal(ui.q('[data-remote-entry=e2] strong').textContent,'Player 2');assert.equal(ui.q('#remote-balance-warning').textContent,'');ui.click('[data-remote-undo=e2]');await flush();assert.deepEqual(ui.stored().tournaments[0].entries,seed.tournaments[0].entries);assert.ok(ui.q('[data-remote-eliminate=e2]'));
+  ui.click('[data-remote-eliminate=e2]');await flush();pending=ui.stored();const deadline=pending.tournaments[0].entries[1].pendingElimination.expiresAt;await ui.storage(finalizePendingEliminations(pending,deadline));assert.equal(ui.q('[data-remote-entry=e2]'),null);assert.equal(ui.stored().tournaments[0].entries[1].place,3);ui.click('[data-remote-panel=clock]');ui.click('[data-go=home]');ui.click('[data-go=manage]');assert.ok(ui.q('[data-undo-elimination=e2]'));ui.click('[data-undo-elimination=e2]');await flush();assert.equal(ui.stored().tournaments[0].entries[1].seat,2);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
+
+test('Remote reconciles a lost server acknowledgement without duplicating the pending elimination',async()=>{
+ const seed=manualSeatingFixture(3),ui=await boot('https://example.test/',seed,'remote','t1');
+ try{ui.click('[data-remote-panel=eliminate]');ui.w.__fixture.remoteReplyError={message:'Connection lost after saving'};ui.click('[data-remote-eliminate=e2]');await flush();assert.equal(ui.stored().tournaments[0].remoteEliminationRequests.length,1);assert.ok(ui.q('[data-remote-undo=e2]'));assert.equal(ui.stored().tournaments[0].entries[1].seat,2);ui.w.__fixture.remoteReplyError=null;ui.click('[data-remote-undo=e2]');await flush();assert.equal(ui.stored().tournaments[0].remoteEliminationRequests.length,1);assert.equal(ui.stored().tournaments[0].remoteEliminationRequests[0].status,'canceled');assert.equal(ui.stored().tournaments[0].entries[1].place,null);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+});
+
+
+test('Remote accepts the shared ICM calculator, ends the clock and retains earlier eliminations',async()=>{
+ let seed=manualSeatingFixture(4);seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e4'});seed=execute(seed,{type:'clock',tournamentId:'t1',command:'start'});const ui=await boot('https://example.test/',seed,'remote','t1');
+ try{ui.click('[data-remote-panel=payouts]');ui.click('[data-action=icm-chop]');for(const [i,n] of [300,200,100].entries())ui.input(ui.q(`[data-icm-entry="e${i+1}"] [data-icm-chips]`),String(n));ui.click('[data-action=icm-calculate]');assert.equal(ui.q('#icm-accept').disabled,false);await ui.submit(ui.q('#icm-form'));const t=ui.stored().tournaments[0];assert.equal(t.status,'completed');assert.equal(t.endedBy,'icm-chop');assert.equal(t.clock.status,'ended');assert.equal(t.entries[3].place,4);assert.ok(t.entries[3].eliminatedAt);assert.equal(t.icmChop.participants.length,3);assert.match(ui.q('.remote-shell').textContent,/Tournament complete/);assert.equal(t.finalPayouts.reduce((a,b)=>a+b),t.settlement.pool);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });

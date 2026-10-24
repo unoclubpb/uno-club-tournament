@@ -541,3 +541,30 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .guarantee-settings .guarantee-amount{display:flex;align-items:center;gap:4px;width:112px;max-width:100%}
 .guarantee-settings input[name=guaranteeAmount]{width:94px;min-width:0}
 .guarantee-settings input[name=guaranteePlayers]{width:72px;flex:none}
+
+/* Tournament Remote is an additional phone-oriented view of the shared tournament. */
+.home-page .home-menu .menu-card:nth-child(n){grid-column:span 2}
+.remote-page{overflow-y:auto}
+.remote-shell{max-width:760px;margin:0 auto;padding:16px;min-height:100dvh}
+.remote-header{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--gold);padding:0 0 14px;margin-bottom:14px}
+.remote-header>div{flex:1;min-width:0}.remote-header h1{font-size:20px;margin:2px 0}.remote-header .eyebrow{font-size:10px}
+.remote-header>.button{padding:10px;flex:none}.remote-header .connection{font-size:10px;padding:8px;flex:none}
+.remote-tournament-name{color:var(--gold);font-weight:700;text-align:center;overflow-wrap:anywhere;margin:12px 0 20px}
+.remote-shell main>h2{font-size:22px;margin:18px 0}
+.remote-clock{text-align:center;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.remote-clock #remote-time{font-size:clamp(72px,17vw,124px);font-variant-numeric:tabular-nums;line-height:1.1;color:var(--gold)}
+.remote-clock #remote-blinds{font-size:clamp(25px,6vw,40px)}.remote-blind-label{font-size:11px;color:var(--muted);letter-spacing:1px}
+.remote-next{display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--line);padding-top:16px;width:100%;margin-bottom:12px}.remote-next span{font-size:11px;color:var(--muted)}.remote-next strong{font-size:22px}
+.remote-clock>.button,.remote-main-buttons>.button{width:100%;min-height:58px;font-size:19px}
+.remote-main-buttons{display:grid;grid-template-columns:1fr;gap:16px;margin:20px 0}
+.remote-table{border:1px solid var(--gold);border-radius:10px;overflow:hidden;margin:20px 0;background:var(--paper)}
+.remote-table>h3{background:var(--gold);color:#111;font-size:24px;font-weight:800;margin:0;padding:13px 16px}
+.remote-player{display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:10px;padding:13px 12px;border-bottom:1px solid var(--line)}
+.remote-player:last-child{border-bottom:0}.remote-player .seat-badge{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#243444;color:var(--gold);font-size:20px;font-weight:700}
+.remote-player strong{font-size:17px;overflow-wrap:anywhere}.remote-player small{display:block;font-size:11px;color:var(--gold);margin-top:4px}.remote-player .button{min-height:48px;padding:10px;font-size:14px;min-width:88px}
+.remote-payouts{padding:18px}.remote-payouts .payout-editor-grid{grid-template-columns:minmax(0,1fr)}.remote-payouts .payout-format-column{display:flex;flex-direction:column}.remote-payouts .payout-places-column{order:-1}
+.remote-payouts .button{min-height:48px}.remote-payouts .paid-places-control{margin-bottom:18px}.remote-shell .table-balance-alert{margin:18px 0}
+@media(max-width:700px){.home-page .home-menu{grid-template-rows:repeat(6,minmax(0,1fr))}.home-page .home-menu .menu-card:nth-child(n){grid-column:auto}}
+@media(max-width:380px){.remote-shell{padding:12px}.remote-header{gap:8px}.remote-header h1{font-size:17px}.remote-header .connection{font-size:9px}.remote-player{padding:12px 8px;gap:7px;grid-template-columns:34px minmax(0,1fr) auto}.remote-player strong{font-size:15px}.remote-player .button{min-width:82px}.remote-player .seat-badge{width:32px;height:32px;font-size:18px}}
+
+.remote-header{position:sticky;top:0;z-index:20;background:#060f18;padding-top:12px}

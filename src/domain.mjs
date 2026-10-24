@@ -131,6 +131,7 @@ export function prizes(t){
 export function payoutBalance(t){return financials(t).pool-prizes(t).reduce((a,b)=>a+b,0);}
 export function icmProposal(t,chipCounts){
   check(t.status!=='completed','Completed tournament is locked.');
+  check(!hasPendingEliminations(t),'Wait for pending eliminations to finish before calculating an ICM chop.');
   const remaining=t.entries.filter(e=>!e.eliminatedAt);
   check(remaining.length>=2&&remaining.length<=20,'Calculate an ICM chop with 2–20 remaining players.');
   check(payoutBalance(t)===0,'Update payouts to exactly match the prize pool before calculating an ICM chop.');
@@ -160,7 +161,7 @@ export function validateTemplate(template){
   check(s.payoutMode!=='percent'||Math.abs(s.payouts.reduce((a,b)=>a+b,0)-100)<0.000001,'Payout percentages must total 100%.');
 }
 // Locks belong to this tournament entry and protect the exact table and seat.
-function requireUnlocked(entry){check(!entry.seatLocked,`Unlock the player at Table ${entry.table}, Seat ${entry.seat} first.`);}
+function requireUnlocked(entry){check(!entry.pendingElimination,'Pending elimination: that player and seat are reserved until Undo expires.');check(!entry.seatLocked,`Unlock the player at Table ${entry.table}, Seat ${entry.seat} first.`);}
 export function canCombineTables(t){const remaining=t.entries.filter(e=>!e.eliminatedAt),count=tablesRequired(t);return count>0&&remaining.some(e=>e.table)&&(remaining.some(e=>!e.table||e.table>count)||Array.from({length:count},(_,i)=>remaining.filter(e=>e.table===i+1).length!==Math.floor(remaining.length/count)+(i<remaining.length%count?1:0)).some(Boolean));}
 export function planTableSeating(t,{mode='remaining',order=[]}={}){
   check(t&&t.status!=='completed','Completed tournament is locked.');
@@ -222,6 +223,29 @@ export function planSeatMove(t,{entryId,table,seat,mode='move'}){
   check(emptySeat<=t.settings.seatsPerTable,`Cannot slide players down: no empty seat from Seat ${seat} through Seat ${t.settings.seatsPerTable} at Table ${table}.`);
   const updates=[moved];for(let number=seat;number<emptySeat;number++){requireUnlocked(occupied.get(number));updates.push({entryId:occupied.get(number).id,table,seat:number+1});}
   return updates;
+}
+export const hasPendingEliminations=t=>t.entries.some(e=>e.pendingElimination);
+function recordElimination(t,e,now){
+  const count=t.entries.filter(v=>!v.eliminatedAt).length;check(count>1,'Use Finish Tournament to confirm the winner.');
+  e.eliminationSeat={table:e.table,seat:e.seat,seatLocked:!!e.seatLocked};e.eliminationOrder=Math.max(0,...t.entries.map(v=>v.eliminationOrder||0))+1;
+  t.eliminationUndo.push({entryId:e.id,...e.eliminationSeat});e.eliminatedAt=now;e.place=count;e.table=null;e.seat=null;e.seatLocked=false;delete e.pendingElimination;
+}
+// Pure server-contract model, also used by isolated browser/database parity tests.
+// Production pending mutations go through td_remote_elimination, never a document save.
+export function finalizePendingEliminations(state,now){
+  const s=clone(state);
+  for(const t of s.tournaments){if(t.status==='completed')continue;
+    const due=t.entries.filter(e=>e.pendingElimination&&e.pendingElimination.expiresAt<=now).sort((a,b)=>a.pendingElimination.expiresAt-b.pendingElimination.expiresAt||a.pendingElimination.id.localeCompare(b.pendingElimination.id));
+    for(const e of due){const pending=e.pendingElimination;recordElimination(t,e,pending.expiresAt);const request=t.remoteEliminationRequests.find(v=>v.id===pending.id);request.status='finalized';request.closedAt=pending.expiresAt;}
+  }return s;
+}
+export function applyRemoteElimination(state,{tournamentId,entryId,requestId,command},now){
+  const s=finalizePendingEliminations(state,now),t=s.tournaments.find(t=>t.id===tournamentId),e=t?.entries.find(e=>e.id===entryId);
+  check(t&&t.status!=='completed','Choose an active tournament.');check(e,'Player entry not found.');check(['start','undo'].includes(command)&&requestId,'Invalid remote command.');
+  t.remoteEliminationRequests||=[];const prior=t.remoteEliminationRequests.find(v=>v.id===requestId);check(!prior||prior.entryId===entryId,'Remote request belongs to another player.');
+  if(command==='start'&&!prior){check(!e.eliminatedAt,'Player already eliminated.');if(!e.pendingElimination){check(t.entries.filter(v=>!v.eliminatedAt&&!v.pendingElimination).length>1,'Leave one player active to confirm the winner.');const pending={id:requestId,requestedAt:now,expiresAt:now+5000};e.pendingElimination=pending;t.remoteEliminationRequests.push({...pending,entryId,status:'pending'});}}
+  if(command==='undo'&&e.pendingElimination?.id===requestId&&now<e.pendingElimination.expiresAt){delete e.pendingElimination;prior.status='canceled';prior.closedAt=now;}
+  return s;
 }
 export function execute(state,action,now=Date.now()){
   const s=upgradeState(state), a=action;let t=s.tournaments.find(t=>t.id===a.tournamentId);
@@ -306,6 +330,7 @@ export function execute(state,action,now=Date.now()){
   const e=t.entries.find(e=>e.id===a.entryId);
   if(['payment','eliminate','seat','seat-lock'].includes(a.type))check(e,'Player entry not found.');
   if(a.type==='seat-lock'){
+    check(!e.pendingElimination,'Pending elimination: that player and seat are reserved until Undo expires.');
     check(!e.eliminatedAt&&e.table&&e.seat,'Only a seated remaining player can be locked.');
     check(typeof a.locked==='boolean','Choose lock or unlock.');e.seatLocked=a.locked;return s;
   }
@@ -318,9 +343,9 @@ export function execute(state,action,now=Date.now()){
     e.payments.push({id:id(),kind:k,total:t.settings[k+'Amount'],dealerToke:0,chips:t.settings[k+'Chips'],paid:true,at:now});return s;
   }
   if(a.type==='eliminate'){
-    check(!e.eliminatedAt,'Player already eliminated.');const active=t.entries.filter(e=>!e.eliminatedAt).length;check(active>1,'Use Finish Tournament to confirm the winner.');
-    e.eliminationSeat={table:e.table,seat:e.seat,seatLocked:!!e.seatLocked};e.eliminationOrder=Math.max(0,...t.entries.map(v=>v.eliminationOrder||0))+1;
-    t.eliminationUndo.push({entryId:e.id,...e.eliminationSeat});e.eliminatedAt=now;e.place=active;e.table=null;e.seat=null;e.seatLocked=false;return s;
+    check(!e.eliminatedAt,'Player already eliminated.');check(!e.pendingElimination,'That player has a pending elimination.');
+    check(t.entries.filter(v=>!v.eliminatedAt).length>1,'Use Finish Tournament to confirm the winner.');check(t.entries.filter(v=>!v.eliminatedAt&&!v.pendingElimination).length>1,'Leave one player active to confirm the winner.');
+    recordElimination(t,e,now);return s;
   }
   if(a.type==='undo-elimination'){
     const entryId=a.entryId||t.eliminationUndo.at(-1)?.entryId,p=t.entries.find(e=>e.id===entryId);check(p?.eliminatedAt,'Choose an eliminated player to restore.');
@@ -348,6 +373,7 @@ export function execute(state,action,now=Date.now()){
     t.settlement=financials(t);t.status='completed';t.completedAt=now;c.status='ended';c.deadline=null;c.remainingMs=0;t.eliminationUndo=[];return s;
   }
   if(a.type==='finish'){
+    check(!hasPendingEliminations(t),'Wait for pending eliminations to finish before confirming the winner.');
     const remaining=t.entries.filter(e=>!e.eliminatedAt);check(remaining.length===1,'Leave exactly one remaining player before finishing.');
     const payout=prizes(t);check(payout.reduce((a,b)=>a+b,0)===financials(t).pool,'Payouts must exactly match the prize pool.');
     remaining[0].place=1;t.finalPayouts=clone(payout);t.endedBy='winner';
