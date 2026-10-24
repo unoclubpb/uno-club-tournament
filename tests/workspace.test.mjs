@@ -16,3 +16,7 @@ test('import refuses conflicting names, changed records and changed tournament v
  browser=clone(cloud);browser.players[0].phone='555-123-0100';assert.throws(()=>mergeBrowserWorkspace(cloud,browser),/versions.*differ/);assert.deepEqual(cloud,before);
  let event=execute(cloud,{type:'tournament-create',id:'event-1',name:'Event',templateId:cloud.templates[0].id});browser=clone(event);browser.tournaments[0].name='Changed';assert.throws(()=>mergeBrowserWorkspace(event,browser),/versions.*differ/);
 });
+
+test('browser import preserves points history and refuses conflicting season ledgers without overwriting either copy',()=>{
+ const cloud=initialState(),browser=clone(cloud);browser.points={version:1,currentSeasonId:'s1',seasons:[{id:'s1',name:'Season 1',startedAt:1,archivedAt:null}],awards:[]};const merged=mergeBrowserWorkspace(cloud,browser);assert.deepEqual(merged.points,browser.points);assert.equal(cloud.points,undefined);const changed=clone(merged);changed.points.seasons[0].name='Changed season';assert.throws(()=>mergeBrowserWorkspace(changed,browser),/points histories differ/);assert.equal(changed.points.seasons[0].name,'Changed season');
+});

@@ -1,4 +1,5 @@
 import {icmEquities,roundLowerFirst} from './icm.mjs';
+import {pointPreview,recordTournamentPoints,startPointsSeason,editPlayerPoints} from './points.mjs';
 import {clockAppearance} from './clock-appearance.mjs';
 import {calculatePayoutRules,validatePayoutRules} from './payout-rules.mjs';
 export const id = () => crypto.randomUUID();
@@ -143,6 +144,15 @@ export function icmProposal(t,chipCounts){
   const exact=icmEquities(participants.map(v=>v.chips),schedule.slice(0,remaining.length)),rounded=roundLowerFirst(exact,chopPool);
   return {participants:participants.map((v,i)=>({...v,chipRank:i+1,payout:rounded[i]})),chopPool,reservedPayouts,originalPayouts:schedule};
 }
+export function manualChopProposal(t,participants){
+  check(t.status!=='completed','Completed tournament is locked.');check(!hasPendingEliminations(t),'Wait for pending eliminations before accepting a chop.');
+  const remaining=t.entries.filter(e=>!e.eliminatedAt);check(remaining.length>=2,'A manual chop requires at least two remaining players.');
+  check(payoutBalance(t)===0,'Update payouts to exactly match the prize pool before accepting a chop.');
+  check(Array.isArray(participants)&&participants.length===remaining.length&&new Set(participants.map(p=>p.entryId)).size===remaining.length,'Enter one agreed payout for every remaining player.');
+  const rows=participants.map(p=>{const entry=remaining.find(e=>e.id===p.entryId);check(entry,'Only remaining players can participate in a chop.');check(Number.isSafeInteger(p.payout)&&p.payout>=0&&p.payout%100===0,'Agreed payouts must be whole dollars.');return {entryId:entry.id,playerId:entry.playerId,payout:p.payout};});
+  const schedule=prizes(t),chopPool=schedule.slice(0,remaining.length).reduce((a,b)=>a+b,0);check(rows.reduce((a,p)=>a+p.payout,0)===chopPool,'Agreed payouts must exactly match the amount available for the chop.');
+  return {participants:rows,chopPool,reservedPayouts:schedule.slice(remaining.length),originalPayouts:schedule};
+}
 export function validateTemplate(template){
   if(template.clockAppearance!=null)clockAppearance(template.clockAppearance);
   check(template.name.trim(),'Give the structure a name.');check(template.levels.length>0,'Add at least one level.');
@@ -258,6 +268,8 @@ export function applyRemoteElimination(state,{tournamentId,entryId,requestId,com
 }
 export function execute(state,action,now=Date.now()){
   const s=upgradeState(state), a=action;let t=s.tournaments.find(t=>t.id===a.tournamentId);
+  if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
+  if(a.type==='points-edit'){editPlayerPoints(s,a,now);return s;}
   if(a.type==='player-save'){
     const name=String(a.name||'').trim().replace(/\s+/gu,' ');check(name,'Enter a player name.');check(name.length<=100,'Player name is too long.');
     const p=s.players.find(p=>p.id===a.id);
@@ -374,21 +386,29 @@ export function execute(state,action,now=Date.now()){
     check(Number.isInteger(a.table)&&a.table>=1&&a.table<=tablesInUse(t)&&Number.isInteger(a.seat)&&a.seat>=1&&a.seat<=t.settings.seatsPerTable,'Invalid table or seat.');
     check(!t.entries.some(v=>v.id!==e.id&&!v.eliminatedAt&&v.table===a.table&&v.seat===a.seat),'That seat is occupied.');e.table=a.table;e.seat=a.seat;return s;
   }
+  if(a.type==='manual-chop-accept'){
+    const proposal=manualChopProposal(t,a.participants),points=pointPreview(t,'manual-chop');
+    t.manualChop={...proposal,acceptedAt:now};
+    for(const result of proposal.participants){const entry=t.entries.find(e=>e.id===result.entryId);entry.agreedPayout=result.payout;entry.manualChopParticipant=true;}
+    t.finalPayouts=[...proposal.participants.map(p=>p.payout),...proposal.reservedPayouts];t.endedBy='manual-chop';t.settlement=financials(t);t.status='completed';t.completedAt=now;c.status='ended';c.deadline=null;c.remainingMs=0;t.eliminationUndo=[];recordTournamentPoints(s,t,points,now);return s;
+  }
   if(a.type==='icm-accept'){
+    const points=pointPreview(t,'icm-chop');
     const proposal=icmProposal(t,a.participants),byId=new Map(a.participants.map(v=>[v.entryId,v]));
     const participants=proposal.participants.map(v=>{const payout=byId.get(v.entryId).payout;check(Number.isSafeInteger(payout)&&payout>=0&&payout%100===0,'Agreed payouts must be whole dollars, zero or greater.');return {...v,payout};});
     check(Number.isSafeInteger(participants.reduce((n,v)=>n+v.payout,0))&&participants.reduce((n,v)=>n+v.payout,0)===proposal.chopPool,'Agreed payouts must exactly match the amount available for the chop.');
     t.icmChop={acceptedAt:now,participants,chopPool:proposal.chopPool,reservedPayouts:proposal.reservedPayouts,originalPayouts:proposal.originalPayouts};
     for(const result of participants){const entry=t.entries.find(e=>e.id===result.entryId);entry.finalChipCount=result.chips;entry.agreedPayout=result.payout;entry.icmChopParticipant=true;}
     t.finalPayouts=[...participants.map(v=>v.payout),...proposal.reservedPayouts];t.endedBy='icm-chop';
-    t.settlement=financials(t);t.status='completed';t.completedAt=now;c.status='ended';c.deadline=null;c.remainingMs=0;t.eliminationUndo=[];return s;
+    t.settlement=financials(t);t.status='completed';t.completedAt=now;c.status='ended';c.deadline=null;c.remainingMs=0;t.eliminationUndo=[];recordTournamentPoints(s,t,points,now);return s;
   }
   if(a.type==='finish'){
     check(!hasPendingEliminations(t),'Wait for pending eliminations to finish before confirming the winner.');
     const remaining=t.entries.filter(e=>!e.eliminatedAt);check(remaining.length===1,'Leave exactly one remaining player before finishing.');
+    const points=pointPreview(t,'winner');
     const payout=prizes(t);check(payout.reduce((a,b)=>a+b,0)===financials(t).pool,'Payouts must exactly match the prize pool.');
     remaining[0].place=1;t.finalPayouts=clone(payout);t.endedBy='winner';
-    t.settlement=financials(t);t.status='completed';t.completedAt=now;c.status='ended';c.deadline=null;c.remainingMs=0;t.eliminationUndo=[];return s;
+    t.settlement=financials(t);t.status='completed';t.completedAt=now;c.status='ended';c.deadline=null;c.remainingMs=0;t.eliminationUndo=[];recordTournamentPoints(s,t,points,now);return s;
   }
   throw new Error('Unknown action.');
 }

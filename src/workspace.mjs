@@ -19,5 +19,9 @@ export function mergeBrowserWorkspace(current,browser){
     if(existing&&JSON.stringify(existing)!==JSON.stringify(item))throw new Error(`Saved versions of ${item.name} differ. Your browser copy is preserved; resolve the difference before importing.`);
     if(!existing)result[collection].push(clone(item));
   }
+  if(incoming.points){
+    if(result.points&&JSON.stringify(result.points)!==JSON.stringify(incoming.points))throw new Error('Saved points histories differ. Your browser copy is preserved; resolve the difference before importing.');
+    if(!result.points)result.points=clone(incoming.points);
+  }
   return result;
 }
