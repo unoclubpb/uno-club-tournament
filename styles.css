@@ -520,3 +520,13 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .management-panel .seat-table-title{font-size:clamp(14px,6cqw,22px)}
 .management-panel .seat-table>h3>small{font-size:clamp(7px,3cqw,12px);white-space:nowrap}
 .tv-seat-table>h2,.tv-seat-table>h2>small{color:#000}
+
+/* Share the clock box evenly between its readout and its controls. */
+.control-panel{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}
+.control-panel>.mini-clock{min-width:0;padding:0 28px 0 0;border-right:1px solid var(--line);border-bottom:0}
+.control-panel>.management-clock-actions{min-width:0}
+.control-panel .mini-clock>strong{font-size:clamp(36px,6vw,84px)}
+.control-panel .clock-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.control-panel .clock-controls>.button{min-width:0;width:100%;padding-left:10px;padding-right:10px}
+.control-panel .clock-controls>#clock-main{grid-column:1/-1}
+@media(max-width:700px){.control-panel{gap:12px;padding:16px}.control-panel>.mini-clock{padding:0 12px 0 0}.control-panel .mini-clock>strong{font-size:clamp(28px,7vw,48px);letter-spacing:-1px}.control-panel .mini-clock>span:not(.eyebrow){font-size:13px}.control-panel .mini-clock>small{font-size:9px;letter-spacing:0}.control-panel .clock-controls{gap:7px}.control-panel .clock-controls>.button,.control-panel #record-rebuys{font-size:11px;padding:8px 4px;min-height:44px}}

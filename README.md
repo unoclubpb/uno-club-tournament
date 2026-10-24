@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.16
+# Uno Club Tournament Director — v0.3.17
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -283,3 +283,12 @@ Headless Chromium checks cover 24 pre-start/running seating layouts at 720p, 108
 The optional repeatable browser check is tests/browser-check.mjs. It uses a local in-memory cloud fixture and never connects to production. Supply PLAYWRIGHT_MODULE and CHROME_EXECUTABLE when Playwright/browser binaries are outside the project installation; QA_OUTPUT_DIR controls optional screenshots. Normal npm test does not require a browser.
 
 backend/verify-consolidated-data.sql passed the installed storage trigger using only temporary rows in a rolled-back transaction, including guarantee structures, custom funding metadata, preferred clock colors, original elimination seats and completed history. This release requires no schema migration and does not rewrite production workspaces.
+
+
+## v0.3.17 clock box and table-action labels
+
+Tournament Management splits its clock panel into equal-width columns: countdown/blinds on the left, clock controls and Rebuy on the right. The main clock button and Rebuy still match in width within their half of the panel. The split remains side by side at phone widths, with smaller controls and type to avoid overflow.
+
+The TV seating chart retains empty seat numbers and leaves their player-name area blank. The shared table action says Combine Tables when the displayed table count can be reduced; otherwise it says Balance Tables. Its dialog, confirmation button and success message use the same distinction. Both actions reuse the existing balanced seating planner and preserve locked seats. Final-table seat retention/redraw options remain available when closing tables to form the final table. No seating or tournament records are changed by deployment.
+
+Validation: 155 automated tests pass, including balancing without closing tables, four-to-three combinations and blank TV seat names with seat numbers preserved. Browser checks verify equal readout/control column widths and matching Rebuy/main-clock widths at 320, 390, 768 and 1280 pixels, alongside existing TV layouts, payout/color controls, synchronization and fullscreen persistence. Automatic placement/fullscreen on the actual Windows wireless HDMI setup remains pending hardware verification.
