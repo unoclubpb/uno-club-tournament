@@ -1,4 +1,4 @@
-# Uno Club Tournament Director — v0.3.33
+# Uno Club Tournament Director — v0.3.34
 
 A separate first working tournament app. This is independent of the Uno Club Sign-Up, Shopping and informational apps.
 
@@ -427,3 +427,10 @@ Validation: 155 automated tests pass, including balancing without closing tables
 - Reuse the payout editor's allocation message in ICM: dollars left to distribute, dollars over the prize pool, or the fully allocated amount. Update immediately after negotiated payout edits, and keep acceptance disabled until the amounts balance exactly. Earlier eliminated paid places remain reserved; the feedback compares only the available chop pool.
 - Remove the ICM introduction and repetitive total/reservation/adjustment descriptions. Keep necessary whole-dollar, changed-chip and stale-tournament validation. No payout calculations, points, cloud data or history are changed.
 - Validation: 229 automated tests and browser checks passed. Management and Remote cover under/over allocation, exact totals, reserved earlier-place payouts, whole-dollar input errors and chip-change recalculation. Phone, iPad and desktop checks confirm the compact ICM layout and live balance feedback.
+
+
+## v0.3.34 Registration after tournament completion
+
+- Tournament Registration shows No active tournament and Create tournament when the selected event is completed and no unfinished event exists. Hide the old event banner and registration/player lists. This applies after winner confirmation, manual chops and ICM chops, including saved links and reloads.
+- If another unfinished event exists, registration opens it instead of the completed event. Completion synchronized from another device clears registration even while its search field has focus. Other views retain access to completed summaries, payouts, player histories and points. No records are deleted, registrations emptied or database state rewritten.
+- Validation: 234 automated tests and phone/tablet/desktop browser checks passed. Coverage includes all three completion paths, focused registration cloud updates, completed links/reloads, preservation of results/points/players, and creating a fresh tournament with no registrations.

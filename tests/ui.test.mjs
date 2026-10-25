@@ -951,3 +951,23 @@ for(const view of ['manage','remote'])for(const reserved of [false,true])test(`$
   ui.input(ui.q('[data-icm-chips]'),'2000');assert.equal(ui.q('#icm-feedback').textContent,'Calculate ICM again.');assert.equal(ui.q('#icm-accept').disabled,true);assert.deepEqual(ui.stored(),seed);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
+
+for(const ending of ['winner','manual-chop','icm-chop'])test(`registration clears after ${ending} completion without deleting results, points or players`,async()=>{
+ let seed=remotePayoutFixture('fixed',3);
+ if(ending==='winner'){for(const entryId of ['e3','e2'])seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId});seed=execute(seed,{type:'finish',tournamentId:'t1'});}
+ else{seed=execute(seed,{type:ending==='icm-chop'?'icm-accept':'manual-chop-accept',tournamentId:'t1',participants:[{entryId:'e1',chips:3000,payout:80000},{entryId:'e2',chips:2000,payout:50000},{entryId:'e3',chips:1000,payout:30000}]});}
+ const ui=await boot('https://example.test/',seed,'signup','t1');
+ try{
+  assert.equal(ui.q('.empty h2').textContent,'No active tournament');assert.equal(ui.q('.signup-layout'),null);assert.equal(ui.q('.context'),null);assert.equal(ui.q('#registered-results'),null);assert.equal(ui.q('[data-register]'),null);assert.deepEqual(ui.stored(),seed);assert.equal(ui.w.__fixture.saves,0);
+  ui.click('[data-go=home]');assert.equal(ui.q('.home-tournament'),null);ui.click('[data-go=manage]');ui.click('[data-tab=summary]');assert.ok(ui.q('.tournament-points'));assert.equal(ui.stored().tournaments[0].entries.length,3);ui.click('[data-go=signup]');assert.equal(ui.q('.empty h2').textContent,'No active tournament');
+  ui.click('[data-action=new-tournament]');ui.input(ui.q('#new-tournament-form [name=name]'),'Next Tournament');await ui.submit(ui.q('#new-tournament-form'));assert.equal(ui.q('.current-tournament-name').textContent,'Next Tournament');assert.equal(ui.q('.signup-layout [data-register]')!=null,true);assert.equal(ui.q('#registered-results .entry-row'),null);assert.equal(ui.stored().tournaments[1].entries.length,0);assert.deepEqual(ui.stored().tournaments[0],seed.tournaments[0]);assert.deepEqual(ui.stored().points,seed.points);assert.deepEqual(ui.stored().players,seed.players);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+test('registration with an old completed link chooses the unfinished event instead of its old registrations',async()=>{
+ let seed=completedPointsFixture();seed=execute(seed,{type:'tournament-create',id:'t2',name:'Next Tournament',templateId:seed.templates[0].id});const ui=await boot('https://example.test/',seed,'signup','t1');
+ try{assert.equal(ui.q('.signup-layout').dataset.tournament,'t2');assert.equal(ui.q('.current-tournament-name').textContent,'Next Tournament');assert.equal(ui.q('#registered-results .entry-row'),null);assert.equal(ui.q('[data-register]')!=null,true);assert.deepEqual(ui.stored(),seed);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+});
+test('remote completion clears registration even while the search has focus',async()=>{
+ let seed=manualSeatingFixture(2);seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e2'});const ui=await boot('https://example.test/',seed,'signup','t1');
+ try{ui.q('#signup-search').focus();const completed=execute(seed,{type:'finish',tournamentId:'t1'});await ui.storage(completed);assert.equal(ui.q('.empty h2').textContent,'No active tournament');assert.equal(ui.q('.signup-layout'),null);assert.equal(ui.q('.context'),null);assert.deepEqual(ui.stored(),completed);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+});
