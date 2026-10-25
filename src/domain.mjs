@@ -326,7 +326,7 @@ export function execute(state,action,now=Date.now()){
   check(t.status!=='completed','Completed tournament is locked.');
   t.clock=clockAt(t,now);const c=t.clock;
   if(a.type==='clock'){
-    if(a.command==='start'||a.command==='resume'){check(['ready','paused'].includes(c.status),'Clock is already running or finished.');if(!tournamentStarted(t))t.tvDisplayMode='clock-seating';c.status='running';c.deadline=now+c.remainingMs;t.startedAt??=now;}
+    if(a.command==='start'||a.command==='resume'){check(['ready','paused'].includes(c.status),'Clock is already running or finished.');if(!tournamentStarted(t))check(t.entries.filter(e=>!e.eliminatedAt&&Number.isInteger(e.table)&&e.table>0&&Number.isInteger(e.seat)&&e.seat>0).length>=2,'Seat at least two players before starting the tournament.');if(!tournamentStarted(t))t.tvDisplayMode='clock-seating';c.status='running';c.deadline=now+c.remainingMs;t.startedAt??=now;}
     else if(a.command==='pause'){check(c.status==='running','Clock is not running.');c.status='paused';c.deadline=null;}
     else if(a.command==='adjust'){check(Number.isFinite(a.seconds)&&Math.abs(a.seconds)<=86400,'Invalid time adjustment.');c.remainingMs=Math.max(0,c.remainingMs+a.seconds*1000);if(c.status==='running')c.deadline=now+c.remainingMs;}
     else if(a.command==='next'||a.command==='previous'){
