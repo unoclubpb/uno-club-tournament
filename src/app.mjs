@@ -85,11 +85,12 @@ function finishDialog(){
   const t=current();finishChoice={tournamentId:t.id,version};
   modal('Confirm Winner & Finish?',`<p>Confirm the winner and finish this tournament? The results and points will be saved together.</p>${pointsPreviewHtml(t,'winner')}<div class="button-row"><button class="button primary" data-action="confirm-tournament-finish">Confirm Winner & Finish</button><button class="button secondary" data-action="close-modal">Cancel</button></div>`);
 }
+function chopPointsBreakdown(size){const total=chopPoints(size);return `${pointsLabel(total-100)} pts (chop) + 1 pt (participation) = ${pointsLabel(total)} pts`;}
 function manualChopDialog(){
   if(!online||busy||renderedWorkspaceVersion!==version)throw new Error('Tournament changed or disconnected. Refresh before opening a manual chop.');
   const t=current(),remaining=active(t),schedule=prizes(t);manualChopReview=null;
   manualChopProposal(t,remaining.map((e,i)=>({entryId:e.id,payout:schedule[i]||0})));
-  modal('Manual Chop',`<form id="manual-chop-form"><input type="hidden" name="version" value="${version}"><input type="hidden" name="tournamentId" value="${t.id}"><p>Enter each remaining player’s agreed payout. Previously eliminated players keep their payouts and points.</p><div class="manual-chop-players">${remaining.map((e,i)=>`<label>${esc(pName(e))}<div class="input-wrap"><span>$</span><input type="text" inputmode="numeric" data-money="true" data-manual-payout="${e.id}" value="${num((schedule[i]||0)/100)}" required></div></label>`).join('')}</div><p id="manual-chop-feedback" role="status"></p>${pointsPreviewHtml(t,'manual-chop')}<button class="button primary full">Review Manual Chop</button></form>`);updateManualChop();
+  modal('Manual Chop',`<form id="manual-chop-form"><input type="hidden" name="version" value="${version}"><input type="hidden" name="tournamentId" value="${t.id}"><p>Enter each remaining player’s agreed payout. Previously eliminated players keep their payouts and points.</p><div class="manual-chop-players">${remaining.map((e,i)=>`<label>${esc(pName(e))}<small class="muted">${chopPointsBreakdown(remaining.length)}</small><div class="input-wrap"><span>$</span><input type="text" inputmode="numeric" data-money="true" data-manual-payout="${e.id}" value="${num((schedule[i]||0)/100)}" required></div></label>`).join('')}</div><p id="manual-chop-feedback" role="status"></p><button class="button primary full">Review Manual Chop</button></form>`);updateManualChop();
 }
 function manualRows(){return [...$('#manual-chop-form').querySelectorAll('[data-manual-payout]')].map(input=>({entryId:input.dataset.manualPayout,payout:wholeDollars(input.value)*100}));}
 function updateManualChop(){try{const proposal=manualChopProposal(current(),manualRows());setText('#manual-chop-feedback',`All ${money(proposal.chopPool)} allocated.${proposal.reservedPayouts.length?' Earlier payouts remain reserved.':''}`);}catch(error){setText('#manual-chop-feedback',error.message);}}
@@ -189,13 +190,13 @@ function payoutFingerprint(t){return JSON.stringify({mode:t.settings.payoutMode,
 function updatePayoutSaveButton(form=$('#payout-form')){
   const button=form?.querySelector('[data-payout-save]'),t=current();if(!button||!t)return;
   const dirty=form.dataset.payoutChanged==='true',saved=!dirty&&payoutSaveReceipts.get(t.id)===payoutFingerprint(t);
-  button.classList.toggle('payout-save-dirty',dirty);button.classList.toggle('payout-save-saved',saved);button.textContent=saved?'Payouts Changed':'Save Payouts';
+  button.classList.toggle('payout-save-dirty',dirty);button.classList.toggle('payout-save-saved',saved);button.textContent=saved?'Payouts Saved':'Save Payouts';
 }
 function markPayoutChanged(form){
   if(form?.id!=='payout-form')return;form.dataset.payoutChanged='true';updatePayoutSaveButton(form);
 }
 
-function manualChopButton(t){return t.status==='completed'?'':`<button type="button" class="button secondary manual-chop-button ${view==='remote'?'full':''}" data-action="manual-chop" ${active(t).length<2||payoutBalance(t)!==0||payoutOrderError(prizes(t))||hasPendingEliminations(t)?'disabled':''}>Accept Manual Chop & End Tournament</button>`;}
+function manualChopButton(t){return t.status==='completed'?'':`<button type="button" class="button secondary manual-chop-button ${view==='remote'?'full':''}" data-action="manual-chop" ${active(t).length<2||payoutBalance(t)!==0||payoutOrderError(prizes(t))||hasPendingEliminations(t)?'disabled':''} >Manual Chop</button>`;}
 function payoutPanel(t,forceStandard=false){
   if(!forceStandard)return rulePayoutPanel(t);
   const f=financials(t),done=t.status==='completed',orderError=done?'':payoutOrderError(prizes(t)),values=t.settings.payouts.map(n=>t.settings.payoutMode==='fixed'?n/100:n);
@@ -651,8 +652,8 @@ function checkIcmContext(context){if(!session||!online)throw new Error('Reconnec
 function icmDialog(){
   if(!online||busy)throw new Error('Reconnect and wait for the current save before opening an ICM chop.');
   const t=current(),remaining=active(t);if(remaining.length<2||remaining.length>20)throw new Error('Calculate an ICM chop with 2–20 remaining players.');icmReview=null;
-  const expectedPoints=pointsLabel(chopPoints(remaining.length));
-  modal('ICM Chop',`<form id="icm-form"><input type="hidden" name="version" value="${version}"><input type="hidden" name="tournamentId" value="${selected}"><div class="icm-player-list">${remaining.map(e=>`<div class="icm-player" data-icm-entry="${e.id}"><strong>${esc(pName(e))}</strong><span class="icm-points" title="Expected tournament points, including participation" aria-label="${expectedPoints} expected points">${expectedPoints} pts</span><label>Chip count<input type="text" inputmode="numeric" data-chips="true" data-icm-chips aria-label="Chip count for ${esc(pName(e))}" value="" autocomplete="off" required></label><label>Proposed payout ($)<input type="text" inputmode="numeric" data-money="true" data-icm-payout aria-label="Proposed payout for ${esc(pName(e))}" disabled></label></div>`).join('')}</div><p id="icm-feedback" class="payout-allocation" role="status"></p><button type="button" class="button secondary" data-action="icm-calculate">Calculate ICM</button><button class="button primary full" id="icm-accept" disabled>Accept ICM Chop & End Tournament</button></form>`);
+  const expectedPoints=chopPointsBreakdown(remaining.length);
+  modal('ICM Chop',`<form id="icm-form"><input type="hidden" name="version" value="${version}"><input type="hidden" name="tournamentId" value="${selected}"><div class="icm-player-list">${remaining.map(e=>`<div class="icm-player" data-icm-entry="${e.id}"><strong>${esc(pName(e))}</strong><span class="icm-points" title="Expected tournament points, including participation" aria-label="${expectedPoints} expected points">${expectedPoints}</span><label>Chip count<input type="text" inputmode="numeric" data-chips="true" data-icm-chips aria-label="Chip count for ${esc(pName(e))}" value="" autocomplete="off" required></label><label>Proposed payout ($)<input type="text" inputmode="numeric" data-money="true" data-icm-payout aria-label="Proposed payout for ${esc(pName(e))}" disabled></label></div>`).join('')}</div><p id="icm-feedback" class="payout-allocation" role="status"></p><button type="button" class="button secondary" data-action="icm-calculate">Calculate ICM</button><button class="button primary full" id="icm-accept" disabled>Accept ICM Chop & End Tournament</button></form>`);
 }
 function calculateIcm(){
   const form=$('#icm-form'),context={version:Number(form.elements.version.value),tournamentId:form.elements.tournamentId.value};checkIcmContext(context);
@@ -877,7 +878,7 @@ document.addEventListener('submit',async event=>{event.preventDefault();const fo
   if(form.id==='manual-chop-form'){
     if(Number(fd.get('version'))!==version||fd.get('tournamentId')!==selected)throw new Error('Tournament changed. Reopen the manual chop.');
     const proposal=manualChopProposal(current(),manualRows());manualChopReview={version,tournamentId:selected,participants:proposal.participants};
-    modal('Accept Manual Chop & End Tournament?',`<p>Are you sure? Save these payouts, stop the clock and end the tournament. The agreement replaces the normal place payouts, including any first-place guarantee.</p><ul>${proposal.participants.map(p=>`<li>${esc(pName(p))}: <strong>${money(p.payout)}</strong></li>`).join('')}</ul>${pointsPreviewHtml(current(),'manual-chop')}<div class="button-row"><button class="button primary" data-action="confirm-manual-chop">Accept Manual Chop & End Tournament</button><button class="button secondary" data-action="close-modal">Cancel</button></div>`);return;
+    modal('Accept Manual Chop & End Tournament?',`<p>Are you sure? Save these payouts, stop the clock and end the tournament. The agreement replaces the normal place payouts, including any first-place guarantee.</p><ul>${proposal.participants.map(p=>`<li>${esc(pName(p))}: <strong>${money(p.payout)}</strong> · ${chopPointsBreakdown(proposal.participants.length)}</li>`).join('')}</ul><div class="button-row"><button class="button primary" data-action="confirm-manual-chop">Accept Manual Chop & End Tournament</button><button class="button secondary" data-action="close-modal">Cancel</button></div>`);return;
   }
   if(form.id==='auth-form'){
     const feedback=$('#auth-feedback');feedback.textContent='Connecting…';const method=event.submitter?.value==='signup'?'signUp':'signInWithPassword';
