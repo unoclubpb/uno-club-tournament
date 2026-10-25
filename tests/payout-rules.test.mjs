@@ -18,7 +18,7 @@ test('invalid percentages, unsupported modes and fractional dollars are rejected
  assert.deepEqual(calculatePayoutRules(19900,mixed),[0,0,10000,10000]);
  assert.deepEqual(calculatePayoutRules(20000,[{mode:'fixed',value:10000}]),[10000]); // balance validation reports the unallocated $100
 });
-function fixture(){let s=initialState();s=execute(s,{type:'tournament-create',id:'t',name:'Mixed awards',templateId:s.templates[0].id});for(let i=1;i<=10;i++){s=execute(s,{type:'player-save',id:'p'+i,name:'Player '+i});s=execute(s,{type:'register',id:'e'+i,tournamentId:'t',playerId:'p'+i});}s.tournaments[0].settings.houseContribution=128000;return s;}
+function fixture(){let s=initialState();s=execute(s,{type:'tournament-create',id:'t',name:'Mixed awards',templateId:s.templates[0].id});for(let i=1;i<=10;i++){s=execute(s,{type:'player-save',id:'p'+i,name:'Player '+i});s=execute(s,{type:'register',id:'e'+i,tournamentId:'t',playerId:'p'+i});}s.tournaments[0].entries.forEach((entry,i)=>{entry.table=1;entry.seat=i+1;});s.tournaments[0].settings.houseContribution=128000;return s;}
 test('mixed rules are one shared custom schedule for finance, payouts, ICM and completed history',()=>{
  let s=fixture(),t=s.tournaments[0];assert.equal(financials(t).pool,160000);
  s=execute(s,{type:'payout-settings',tournamentId:'t',custom:true,settings:{...t.settings,payoutMode:'mixed',payoutRules:mixed,payouts:[91000,49000,10000,10000]}});t=s.tournaments[0];assert.equal(t.payoutCustom,true);assert.deepEqual(prizes(t),[91000,49000,10000,10000]);assert.equal(payoutBalance(t),0);assert.equal(t.payoutAutomatic.payoutMode,'percent');

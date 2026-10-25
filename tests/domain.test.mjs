@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initialState,execute,id,clockAt,financials,prizes,statsFor,clone,tablesRequired,tablesInUse,upgradeState,rebuyOpen,purchaseOpen,rebuyPhase,cutoffHasBreak,validateTemplate,playerNumberLabel,canRecordRebuys,tvDisplayMode} from '../src/domain.mjs';
 const start=Date.parse('2026-10-15T23:35:00Z');
-function setup(n=3){let s=initialState();const event=id();s=execute(s,{type:'tournament-create',id:event,name:'Test tournament',templateId:s.templates[0].id},start);for(let i=0;i<n;i++){const player=id();s=execute(s,{type:'player-save',id:player,name:'Player '+i},start);s=execute(s,{type:'register',tournamentId:event,playerId:player,paid:true},start);}return {s,event};}
+function setup(n=3){let s=initialState();const event=id();s=execute(s,{type:'tournament-create',id:event,name:'Test tournament',templateId:s.templates[0].id},start);for(let i=0;i<n;i++){const player=id();s=execute(s,{type:'player-save',id:player,name:'Player '+i},start);s=execute(s,{type:'register',tournamentId:event,playerId:player,paid:true},start);const entry=s.tournaments[0].entries.at(-1);entry.table=1;entry.seat=i+1;}return {s,event};}
 function act(s,event,a,now=start){return execute(s,{...a,tournamentId:event},now);}
 test('TV modes start with seating, default on first start, and change without clock or accounting writes',()=>{
  let {s,event}=setup();assert.equal(tvDisplayMode(s.tournaments[0]),'clock-seating');assert.throws(()=>act(s,event,{type:'tv-display',mode:'full-clock'}),/when the tournament starts/);
