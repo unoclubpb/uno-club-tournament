@@ -12,7 +12,7 @@ export function sampleTemplate() {
     levels.push({kind:'play',minutes:15,sb,bb,ante:i>=6?bb:0,game:"No Limit Hold’em",chipUp:false});
     if([7,15,23].includes(i)) levels.push({kind:'break',minutes:({7:5,15:10,23:15})[i],sb:0,bb:0,ante:0,game:'',chipUp:[7,15].includes(i)});
   });
-  return {id:id(),name:'Uno Club — 15-minute levels',levels,settings:{financeVersion:2,startingStack:5000,buyIn:5000,dealerToke:1000,housePercent:20,rebuyEnabled:true,rebuyAmount:2500,rebuyChips:5000,rebuyLastRound:6,rebuyMax:0,addonEnabled:false,addonAmount:9000,addonChips:20000,addonLastRound:4,anteMode:'off',pauseBreaks:true,seatsPerTable:10,houseContribution:0,guaranteeAmount:100000,guaranteePlayers:10,payoutMode:'percent',payouts:[65,35]}};
+  return {id:id(),name:'Uno Club — 15-minute levels',levels,settings:{financeVersion:2,startingStack:5000,buyIn:5000,dealerToke:1000,housePercent:20,rebuyEnabled:true,rebuyAmount:2500,rebuyChips:5000,rebuyLastRound:8,rebuyMax:0,addonEnabled:false,addonAmount:9000,addonChips:20000,addonLastRound:4,anteMode:'off',pauseBreaks:true,seatsPerTable:10,houseContribution:0,guaranteeAmount:100000,guaranteePlayers:10,payoutMode:'percent',payouts:[65,35]}};
 }
 export const playerNumberLabel=p=>String(p.playerNumber).padStart(3,'0');
 function assignPlayerNumbers(players){
@@ -33,7 +33,14 @@ export function purchaseOpen(t,c,kind){
   return t.levels[c.index].kind==='play'||t.levels[c.index-1]?.kind==='play';
 }
 export const rebuyOpen=(t,c)=>purchaseOpen(t,c,'rebuy');
-export const canRecordRebuys=(t,c)=>t.status!=='completed'&&t.settings.rebuyEnabled&&c.status!=='ready'&&(rebuyPhase(t,c)==='final-break'||!rebuyOpen(t,c));
+export const canRecordRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&rebuyPhase(t,c)==='final-break';
+export const canEditRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&(canRecordRebuys(t,c)||!rebuyOpen(t,c));
+export const registrationOpen=(t,c)=>t.status!=='completed'&&!t.archivedAt&&c.status!=='ended'&&(c.status==='ready'||!t.settings.rebuyEnabled||rebuyOpen(t,c));
+function requireRegistration(t,action,now){
+  check(t&&t.status!=='completed'&&!t.archivedAt,'This tournament is finished.');
+  check(registrationOpen(t,clockAt(t,now))||action.overrideCutoff===true,'Registration is closed. Override is required.');
+}
+function recordCutoffOverride(t,a,now,kind){t.cutoffOverrides||=[];t.cutoffOverrides.push({kind,at:now,...(a.playerId?{playerId:a.playerId}:{}),...(a.count!=null?{count:a.count}:{})});}
 export const tournamentRebuyCount=t=>(Number.isSafeInteger(t.rebuyCount)&&t.rebuyCount>=0?t.rebuyCount:0)+t.entries.flatMap(e=>e.payments||[]).filter(p=>p.kind==='rebuy').length;
 export function cutoffHasBreak(t,kind='rebuy'){
   let round=0;const index=t.levels.findIndex(l=>l.kind==='play'&&++round===t.settings[kind+'LastRound']);
@@ -153,7 +160,7 @@ export function manualChopProposal(t,participants){
   const schedule=validatePayoutOrder(prizes(t)),chopPool=schedule.slice(0,remaining.length).reduce((a,b)=>a+b,0);check(rows.reduce((a,p)=>a+p.payout,0)===chopPool,'Agreed payouts must exactly match the amount available for the chop.');
   return {participants:rows,chopPool,reservedPayouts:schedule.slice(remaining.length),originalPayouts:schedule};
 }
-export function validateTemplate(template){
+export function validateTemplate(template,{requireRebuyBreak=true}={}){
   if(template.clockAppearance!=null)clockAppearance(template.clockAppearance);
   check(template.name.trim(),'Give the structure a name.');check(template.levels.length>0,'Add at least one level.');
   check(template.levels[0].kind==='play','Start the structure with a playing level.');
@@ -179,6 +186,7 @@ export function validateTemplate(template){
   check(s.payouts.length>0&&s.payouts.length<=20&&s.payouts.every(v=>Number.isFinite(v)&&v>=0),'Enter valid payouts.');
   if(s.payoutMode==='percent'||s.payoutMode==='fixed')validatePayoutOrder(s.payouts,s.payoutMode==='percent'?'percent':'dollars');
   check(s.payoutMode!=='percent'||Math.abs(s.payouts.reduce((a,b)=>a+b,0)-100)<0.000001,'Payout percentages must total 100%.');
+  if(requireRebuyBreak&&s.rebuyEnabled)check(cutoffHasBreak({settings:s,levels:template.levels}),`Add a break immediately after Round ${s.rebuyLastRound}, the last round before rebuys end.`);
 }
 // Locks belong to this tournament entry and protect the exact table and seat.
 function requireUnlocked(entry){check(!entry.pendingElimination,'Pending elimination: that player and seat are reserved until Undo expires.');check(!entry.seatLocked,`Unlock the player at Table ${entry.table}, Seat ${entry.seat} first.`);}
@@ -271,7 +279,9 @@ export function execute(state,action,now=Date.now()){
   const s=upgradeState(state), a=action;let t=s.tournaments.find(t=>t.id===a.tournamentId);
   if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
   if(a.type==='points-edit'){editPlayerPoints(s,a,now);return s;}
+  if(a.type==='tournament-archive'){check(t&&t.status==='completed','Complete the tournament before archiving it.');t.archivedAt??=now;return s;}
   if(a.type==='player-save'){
+    if(a.registrationTournamentId)requireRegistration(s.tournaments.find(t=>t.id===a.registrationTournamentId),a,now);
     const name=String(a.name||'').trim().replace(/\s+/gu,' ');check(name,'Enter a player name.');check(name.length<=100,'Player name is too long.');
     const p=s.players.find(p=>p.id===a.id);
     check(!s.players.some(v=>v.id!==a.id&&normalizePlayerName(v.name)===normalizePlayerName(name)),'That name already exists. Please choose a different name.');
@@ -297,7 +307,7 @@ export function execute(state,action,now=Date.now()){
   if(a.type==='tournament-settings'||a.type==='payout-settings'){
     check(t.status!=='completed','Completed tournament is locked.');
     if(a.type==='tournament-settings'&&tournamentStarted(t))check(a.settings.payoutMode===t.settings.payoutMode&&JSON.stringify(a.settings.payouts)===JSON.stringify(t.settings.payouts)&&JSON.stringify(a.settings.payoutRules)===JSON.stringify(t.settings.payoutRules)&&JSON.stringify(guaranteeSettings(a.settings))===JSON.stringify(guaranteeSettings(t.settings)),'Use Save Payouts in Tournament Management to change an active payout agreement.');
-    const template={id:'event',name:t.name,levels:clone(a.levels||t.levels),settings:clone(a.settings)};validateTemplate(template);
+    const template={id:'event',name:t.name,levels:clone(a.levels||t.levels),settings:clone(a.settings)};validateTemplate(template,{requireRebuyBreak:a.type!=='payout-settings'&&(!tournamentStarted(t)||!!a.levels||a.settings.rebuyLastRound!==t.settings.rebuyLastRound||a.settings.rebuyEnabled!==t.settings.rebuyEnabled)});
     check(t.clock.status==='ready'||!a.levels,'Level structure can be changed before the clock starts.');
     if(a.levels){t.levels=template.levels;t.clock.remainingMs=t.levels[0].minutes*60000;}
     check(!t.entries.some(e=>!e.eliminatedAt&&e.seat>template.settings.seatsPerTable),'Move players before reducing seats per table.');
@@ -320,17 +330,22 @@ export function execute(state,action,now=Date.now()){
     else if(a.command==='pause'){check(c.status==='running','Clock is not running.');c.status='paused';c.deadline=null;}
     else if(a.command==='adjust'){check(Number.isFinite(a.seconds)&&Math.abs(a.seconds)<=86400,'Invalid time adjustment.');c.remainingMs=Math.max(0,c.remainingMs+a.seconds*1000);if(c.status==='running')c.deadline=now+c.remainingMs;}
     else if(a.command==='next'||a.command==='previous'){
+      check(a.expectedIndex==null||a.expectedIndex===c.index,'The clock advanced. Review the current level and try again.');
       const delta=a.command==='next'?1:-1;check(c.index+delta>=0&&c.index+delta<t.levels.length,'No level in that direction.');c.index+=delta;c.remainingMs=t.levels[c.index].minutes*60000;c.deadline=c.status==='running'?now+c.remainingMs:null;if(c.status==='ended')c.status='paused';
     } else throw new Error('Unknown clock command.');return s;
   }
   if(a.type==='register'){
+    requireRegistration(t,a,now);
+    if(!registrationOpen(t,c))recordCutoffOverride(t,a,now,'registration');
     check(s.players.some(p=>p.id===a.playerId&&!p.archived),'Choose an active player.');check(!t.entries.some(e=>e.playerId===a.playerId),'Player is already registered.');
     t.entries.push({id:a.id||id(),playerId:a.playerId,registeredAt:now,eliminatedAt:null,place:null,table:null,seat:null,payments:[{id:id(),kind:'entry',total:t.settings.buyIn,dealerToke:t.settings.dealerToke,chips:t.settings.startingStack,paid:true,at:now}]});t.eliminationUndo=[];return s;
   }
   if(a.type==='rebuy-count'){
-    check(canRecordRebuys(t,c),'Enter the rebuy total during the break after the final rebuy round, or afterward.');
+    check(canEditRebuys(t,c),'Enter the rebuy total during the break after the final rebuy round, or afterward with an override.');
+    check(canRecordRebuys(t,c)||a.overrideCutoff===true,'Rebuys are closed. Override is required.');
     check(Number.isSafeInteger(a.count)&&a.count>=0,'Enter a whole number of rebuys, zero or greater.');
     check(Number.isSafeInteger(a.count*t.settings.rebuyAmount)&&Number.isSafeInteger(a.count*t.settings.rebuyChips),'Rebuy count is too large.');
+    if(!canRecordRebuys(t,c))recordCutoffOverride(t,a,now,'rebuy-count');
     t.rebuyCount=a.count;return s;
   }
   if(a.type==='seating-settings'){
