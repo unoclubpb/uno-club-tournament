@@ -666,3 +666,8 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .history-tournament{width:100%;background:transparent;color:var(--ink);border:0;border-bottom:1px solid var(--line);text-align:left;font:inherit;cursor:pointer}
 #confirmation-dialog{max-width:520px}#confirmation-dialog .button-row{justify-content:flex-end;flex-wrap:wrap}#confirmation-dialog .button{min-height:44px}
 .summary-heading>.button{margin-left:auto}
+
+/* Keep original and corrected tournament points on separate lines. */
+.tournament-points .points-adjustment{display:block;margin-top:5px;white-space:normal}
+.tournament-points [data-points-adjustment]{text-decoration:underline;text-underline-offset:2px;cursor:pointer;color:inherit;font-weight:inherit}
+.tournament-points .result-row>strong{min-width:0;overflow-wrap:anywhere}

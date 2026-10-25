@@ -503,7 +503,7 @@ function selectCurrentTournament(){
 function historicalSummaryScreen(){const t=state.tournaments.find(t=>t.id===historyTournamentId);const heading=t?`${esc(t.name)} · ${dateLabel(t.date)}`:'Tournament not found';const summary=t?summaryPanel(t).replace(/<button[^>]*data-action="archive-tournament"[^>]*>.*?<\/button>/,''):'<p>This tournament is no longer available.</p>';return `<header class="header page-banner"><button type="button" class="button secondary small" data-action="history-summary-back" aria-label="Back to player">←</button><div class="page-banner-title"><h1 id="page-title">${heading}</h1></div></header><div class="workspace"><main class="content"><section class="panel">${summary}</section></main></div>`;}
 function workspaceScreen(){
   const banner=header()+importNotice(),menu=view==='home'?'':nav();
-  const content=`<main class="content">${({home,setup,players,signup,manage,leaderboard}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.3.35 · ${online?'Saved online':'Connection interrupted'}</span></footer>`;
+  const content=`<main class="content">${({home,setup,players,signup,manage,leaderboard}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><span>v0.3.41 · ${online?'Saved online':'Connection interrupted'}</span></footer>`;
   if(view==='manage')return `<div class="management-chrome">${banner}<div class="workspace">${menu}</div></div><div class="workspace">${content}</div>`;
   return `${banner}<div class="workspace">${menu}${content}</div>`;
 }
