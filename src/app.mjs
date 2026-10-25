@@ -49,11 +49,19 @@ function readBrowserData(){try{const raw=localStorage.getItem(legacyKey);if(!raw
 function authForm(){return `<form id="auth-form"><label>Email<input type="email" name="email" autocomplete="email" required></label><label>Password<input type="password" name="password" autocomplete="current-password" minlength="8" required></label><div class="button-row"><button class="button primary" name="authAction" value="login">Sign in</button><button class="button secondary" name="authAction" value="signup">Create account</button></div><p id="auth-feedback" class="muted" role="status">${esc(authError||'New here? Create an account, confirm your email if prompted, then sign in.')}</p></form>`;}
 let leaderboardFilter={period:'current',seasonId:'',month:today().slice(0,7),year:today().slice(0,4)},profileHistoryMode='tournaments',pointsEditor=null,pointsSaveChoice=null,finishChoice=null,manualChopReview=null;
 function pointsResult(award){return award.chopSize?`${award.chopSize}-way ${award.result==='icm-chop'?'ICM':'manual'} chop`:`Finished #${award.place}`;}
-function summaryPointsBreakdown(a){const total=a.hundredths,original=a.originalHundredths??total;if(total!==original)return `${pointsLabel(total)} pts (adjusted)`;const kind=a.chopSize?'chop':a.place===1?'1st place':a.place===2?'2nd place':a.place===3?'3rd place':`${a.place}th place`;return `${pointsLabel(Math.max(0,total-100))} pts (${kind}) + 1 pt (play) = ${pointsLabel(total)} pts`;}
+function summaryPointsBreakdown(a){
+  const original=a.originalHundredths??a.hundredths,kind=a.chopSize?'chop':a.place===1?'1st place':a.place===2?'2nd place':a.place===3?'3rd place':a.place?String(a.place)+'th place':'placement';
+  const base=`${pointsLabel(Math.max(0,original-100))} pts (${kind}) + 1 pt (play) = ${pointsLabel(original)} pts`;
+  const delta=a.hundredths-original;
+  if(!delta)return esc(base);
+  const signed=`${delta>0?'+':'−'}${pointsLabel(Math.abs(delta))} pts`;
+  return `${esc(base)}<span class="points-adjustment">${esc(signed)} (<button type="button" class="text-button" data-points-adjustment="${esc(a.id)}">adjusted</button>) = ${pointsLabel(a.hundredths)} pts</span>`;
+}
 function tournamentPoints(t){
-  const rows=pointsState(state).awards.filter(a=>a.tournamentId===t.id).sort((a,b)=>b.hundredths-a.hundredths||(a.place??0)-(b.place??0)||pName(a).localeCompare(pName(b)));if(!rows.length)return t.status==='completed'?'<p class="muted">No points recorded for this earlier tournament.</p>':'';
+  const rows=pointsState(state).awards.filter(a=>a.tournamentId===t.id).sort((a,b)=>b.hundredths-a.hundredths||(a.place??0)-(b.place??0)||pName(a).localeCompare(pName(b)));
+  if(!rows.length)return t.status==='completed'?'<p class="muted">No points recorded for this earlier tournament.</p>':'';
   const season=pointsState(state).seasons.find(s=>s.id===t.pointsSeasonId);
-  return `<section class="tournament-points"><h3>Tournament Points</h3><p class="muted">${esc(season?.name||'Season')}</p>${rows.map(a=>`<div class="result-row" data-summary-points="${a.playerId}"><span>${esc(pName(a))}<small>${esc(pointsResult(a))}</small></span><strong>${esc(summaryPointsBreakdown(a))}</strong></div>`).join('')}</section>`;
+  return `<section class="tournament-points"><h3>Tournament Points</h3><p class="muted">${esc(season?.name||'Season')}</p>${rows.map(a=>`<div class="result-row" data-summary-points="${a.playerId}"><span>${esc(pName(a))}<small>${esc(pointsResult(a))}</small></span><strong>${summaryPointsBreakdown(a)}</strong></div>`).join('')}</section>`;
 }
 function pointsPreviewHtml(t,kind){
   const rows=pointPreview(t,kind),choppers=rows.filter(r=>r.chopSize);
@@ -780,6 +788,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   if(el.dataset.remoteEliminate){await remoteElimination(el.dataset.remoteEliminate);return;}
   if(el.dataset.remoteUndo){await remoteElimination(el.dataset.remoteUndo,true);return;}
   if(el.dataset.registrationPanel){registrationPanel=el.dataset.registrationPanel;$('.signup-layout').dataset.panel=registrationPanel;for(const button of document.querySelectorAll('[data-registration-panel]'))button.setAttribute('aria-pressed',String(button.dataset.registrationPanel===registrationPanel));return;}
+  if(el.dataset.pointsAdjustment){const a=pointsState(state).awards.find(a=>a.id===el.dataset.pointsAdjustment);if(a){const changes=a.corrections||[];modal('Points Adjustment',changes.length?changes.map(c=>`<p><strong>${pointsLabel(c.from)} → ${pointsLabel(c.to)} pts</strong><br>${esc(c.reason&&c.reason!=='Points correction'?c.reason:'No reason given')}</p>`).join(''):'<p>No reason given</p>');}return;}
   if(el.dataset.action==='history-summary-back'){view='players';playerDetail=historyReturnPlayer;profilePanel='history';profileHistoryMode='tournaments';historyTournamentId='';history.pushState({},'',`${APP_ROOT}?view=players&player=${encodeURIComponent(playerDetail)}`);render();return;}
   if(el.dataset.reviewTournament){historyTournamentId=el.dataset.reviewTournament;historyReturnPlayer=playerDetail;view='history-summary';history.pushState({},'',`${APP_ROOT}?view=history-summary&tournament=${encodeURIComponent(historyTournamentId)}&player=${encodeURIComponent(historyReturnPlayer)}`);render();return;}
   if(el.dataset.resume){chooseTournament(el.dataset.resume);go('signup');return;}
