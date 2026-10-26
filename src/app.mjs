@@ -11,7 +11,7 @@ import {mergeBrowserWorkspace} from './workspace.mjs';
 import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.3.42';
+const APP_VERSION='0.3.43';
 const APP_ROOT=new URL('.',location.href).pathname;
 const NAV_ROOT=location.pathname.endsWith('/remote.html')?location.pathname:APP_ROOT;
 const $=q=>document.querySelector(q), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
