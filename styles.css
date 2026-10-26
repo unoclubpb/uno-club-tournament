@@ -779,3 +779,17 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
  .management-panel .seating-control-grid .seating-inline-settings{margin-top:44px}
  .management-panel .seating-inline-fields label input,.management-panel .seating-inline-fields>.button{height:39px;min-height:39px}
 }
+
+/* v0.3.49: align actual input/button boxes to the second seating-action row,
+   accounting for the label height instead of shifting the whole form by a fixed amount. */
+.management-panel .seating-control-grid .seating-inline-settings{margin-top:0!important;align-self:stretch;display:flex;align-items:flex-start}
+.management-panel .seating-inline-fields{padding-top:0;align-items:flex-end}
+.management-panel .seating-inline-fields label{position:relative;padding-top:calc(39px + 8px);gap:0}
+.management-panel .seating-inline-fields label span{position:absolute;top:calc(39px + 8px - 17px);left:0;width:100%;line-height:15px;text-align:center}
+.management-panel .seating-inline-fields label input{height:39px;min-height:39px}
+.management-panel .seating-inline-fields>.button{height:39px;min-height:39px}
+@media(max-width:700px){
+ .management-panel .seating-control-grid .seating-inline-settings{margin-top:0!important}
+ .management-panel .seating-inline-fields label{padding-top:45px}
+ .management-panel .seating-inline-fields label span{top:28px}
+}
