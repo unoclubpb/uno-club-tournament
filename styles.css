@@ -945,3 +945,6 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 #structure-form [data-setup-panel="levels"] .level-options h3{margin:0 0 10px}
 @media(max-width:1200px){#structure-form [data-setup-panel="play"] .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){#structure-form [data-setup-panel="play"]{grid-template-columns:1fr;grid-auto-rows:auto}#structure-form [data-setup-panel="play"]>.form-section{min-height:0}}
+
+/* Align Tournament Fee inputs with the Add-Ons input row. */
+#structure-form [data-setup-panel="play"]>.form-section:nth-child(4)>h3{margin-bottom:34px}
