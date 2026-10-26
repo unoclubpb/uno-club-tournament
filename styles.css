@@ -704,3 +704,9 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .management-panel .management-balance-button{width:100%;box-sizing:border-box}
 @media(max-width:700px){.management-panel .section-label:has(.management-table-actions){grid-template-columns:minmax(0,1fr)}}
 @media(max-width:480px){.management-panel .management-table-actions>.button-row>.button{font-size:clamp(10px,2.7vw,13px);padding-left:3px;padding-right:3px}}
+
+/* Contextual undo for the most recent seating moves. */
+.seat-move-help .seat-undo-button{background:#b33434;border-color:#b33434;color:#fff;min-width:124px;flex:0 0 auto}
+.seat-move-help .seat-undo-button:hover:not(:disabled){background:#942929;border-color:#942929}
+.seat-move-help .move-players-toggle{min-width:124px;flex:0 0 auto}
+.remote-seating .seat-move-help .seat-undo-button{margin-left:auto}
