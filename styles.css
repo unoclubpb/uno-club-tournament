@@ -813,3 +813,15 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .unseated-player-pick .muted{font-size:12px}
 .unseated-player-pick[aria-pressed="true"]{outline:2px solid var(--accent,#4b92d4);border-radius:8px}
 .unseated-drop-zone.seat-drop-target .unseated-drop-button{border-color:var(--accent,#4b92d4)}
+
+/* v0.3.59: optional TV clock background graphic, behind existing clock layout. */
+.tv-shell.clock-background-enabled{position:relative;isolation:isolate}
+.tv-shell.clock-background-enabled::before{content:"";position:absolute;inset:0;background-image:var(--clock-image,none);background-position:center;background-size:cover;background-repeat:no-repeat;opacity:var(--clock-image-opacity,0);pointer-events:none;z-index:-1}
+.tv-shell.clock-background-enabled{z-index:0}
+.clock-appearance-preview{position:relative;isolation:isolate}
+.clock-appearance-preview::before{content:"";position:absolute;inset:0;background-image:var(--clock-image,none);background-size:cover;background-position:center;opacity:var(--clock-image-opacity,0);pointer-events:none;z-index:-1}
+.clock-background-options{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px}
+.clock-background-options label{display:block;margin:12px 0}
+.clock-background-options input[type=file],.clock-background-options input[type=range]{display:block;width:100%;margin-top:8px}
+.remote-shell .remote-action-seating{background:#7c3aed;border-color:#7c3aed;color:#fff}
+.remote-shell .remote-action-seating:hover:not(:disabled){background:#6d28d9;border-color:#6d28d9}
