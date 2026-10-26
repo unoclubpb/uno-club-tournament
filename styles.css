@@ -833,3 +833,9 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .clock-appearance-preview{font-family:var(--clock-font-family,Arial),sans-serif}
 .clock-appearance-preview .preview-countdown{color:var(--clock-timer-font-color,#fff)}
 .clock-appearance-preview .preview-current{color:var(--clock-blinds-font-color,#fff)}
+
+/* Independent countdown and blind size controls */
+.tv-shell.clock-background-enabled #tv-time{font-size:calc(clamp(4rem,10vw,12rem) * var(--clock-timer-font-scale,1))}
+.tv-shell.clock-background-enabled #tv-blinds{font-size:calc(clamp(2.5rem,5vw,7rem) * var(--clock-blinds-font-scale,1))}
+.clock-appearance-preview .preview-countdown{font-size:calc(2.5rem * var(--clock-timer-font-scale,1))}
+.clock-appearance-preview .preview-current{font-size:calc(1.4rem * var(--clock-blinds-font-scale,1))}
