@@ -861,3 +861,10 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 #structure-form .setup-tab-panel[hidden]{display:none!important}
 #structure-form .setup-tab-panel{min-width:0}
 @media(max-width:700px){#structure-form .setup-clock-header{grid-template-columns:1fr}#structure-form .setup-tabs .button{flex:1 1 42%;white-space:normal}}
+
+/* Match Tournament Management's left-hand section navigation. */
+#structure-form .setup-editor-layout{display:grid;grid-template-columns:160px minmax(0,1fr);gap:18px;align-items:start}
+#structure-form .setup-tabs{display:flex;flex-direction:column;flex-wrap:nowrap;gap:10px;margin:0;padding:0;border:0;position:sticky;top:12px}
+#structure-form .setup-tabs .button{width:100%;text-align:left;justify-content:flex-start;white-space:normal}
+#structure-form .setup-tab-content{min-width:0}
+@media(max-width:700px){#structure-form .setup-editor-layout{grid-template-columns:120px minmax(0,1fr);gap:10px}#structure-form .setup-tabs .button{flex:none;width:100%;font-size:.8rem;padding:10px 8px}}
