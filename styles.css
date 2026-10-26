@@ -732,3 +732,26 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .management-panel .seat-move-help .seat-undo-button+.move-players-toggle{margin-left:0}
 .management-panel .seat-move-help .move-players-toggle{margin-left:auto}
 .management-table-actions>.unseat-all-button{display:block;width:100%;text-align:center}
+
+/* v0.3.46: compact seating controls; Undo stays in the former Move Players position. */
+.management-panel .section-label:has(.seating-control-grid){display:block}
+.management-panel .seating-control-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1.25fr);align-items:start;gap:8px;width:100%}
+.management-panel .seating-control-grid .seating-inline-settings{display:block;margin:0;min-width:0}
+.management-panel .seating-inline-fields{display:flex;align-items:flex-start;gap:5px}
+.management-panel .seating-inline-fields label{display:flex;flex:1 1 0;min-width:0;max-width:none;flex-direction:column;gap:4px;margin:0}
+.management-panel .seating-inline-fields input{width:100%;min-width:0;box-sizing:border-box;text-align:center}
+.management-panel .seating-inline-fields label span{font-size:11px;line-height:1.2;text-align:left}
+.management-panel .seating-inline-fields>.button{flex:0 0 auto;min-width:0;padding-left:7px;padding-right:7px}
+.management-panel .seating-primary-actions,.management-panel .seating-secondary-actions{display:flex;flex-direction:column;gap:8px;min-width:0}
+.management-panel .seating-primary-actions>.button,.management-panel .seating-secondary-actions>.button{display:block;width:100%;min-width:0;box-sizing:border-box;white-space:normal;line-height:1.25;min-height:39px;padding:8px 5px;text-align:center}
+.management-panel .seating-control-grid .move-players-toggle{margin:0}
+.management-panel .seat-move-help .seat-undo-button{margin-left:auto}
+@media(max-width:700px){
+ .management-panel .section-label:has(.seating-control-grid){display:block}
+ .management-panel .seating-control-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.2fr);gap:6px}
+ .management-panel .seating-primary-actions,.management-panel .seating-secondary-actions{gap:6px}
+ .management-panel .seating-primary-actions>.button,.management-panel .seating-secondary-actions>.button{font-size:clamp(10px,2.6vw,13px);padding:7px 3px}
+ .management-panel .seating-inline-fields{gap:3px}
+ .management-panel .seating-inline-fields>.button{font-size:11px;padding:7px 4px}
+ .management-panel .seating-inline-fields label span{font-size:10px}
+}
