@@ -687,3 +687,11 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .management-balance-row{display:flex;justify-content:flex-end;margin:8px 0 10px}
 .management-balance-row:empty{display:none}
 .management-balance-row .remote-action-red{background:#b33434;border-color:#b33434;color:#fff}
+
+/* Management balance prompt and full-width action beneath seating buttons. */
+.table-balance-alert{text-align:center}
+.management-table-actions{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.management-table-actions>.button-row{display:flex;flex-wrap:nowrap;gap:8px}
+.management-table-actions>.button-row>.button{flex:1 1 0;min-width:0;white-space:normal}
+.management-balance-button{display:block;width:100%;background:#b33434;border-color:#b33434;color:#fff}
+.management-balance-button:hover:not(:disabled){background:#942929;border-color:#942929}
