@@ -722,3 +722,7 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .registration-removed-history summary{cursor:pointer;font-weight:600}
 .registration-removed-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08)}
 .registration-removed-row small{opacity:.75;text-align:right}
+
+/* Keep pre-start remote actions visible but unmistakably unavailable. */
+.remote-shell .remote-main-buttons>.button:disabled{background:#555c65!important;border-color:#555c65!important;color:#c9cdd1!important;opacity:.7;cursor:not-allowed;box-shadow:none}
+.remote-shell .remote-main-buttons .remote-seating-open{grid-column:1/-1}
