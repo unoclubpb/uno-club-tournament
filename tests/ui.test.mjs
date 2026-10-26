@@ -522,10 +522,10 @@ test('configured guarantee activates on tenth registration and funds the full pr
  try{
   ui.click('[data-tab=payouts]');assert.ok(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].entries.length,9);
   await ui.storage(execute(seed,{type:'register',id:'e10',tournamentId:'t1',playerId:'p10'}));
-  ui.click('[data-tab=payouts]');assert.match(ui.q('#guarantee-funding').textContent,/Additional house contribution required: \\$680/);
+  ui.click('[data-tab=payouts]');assert.match(ui.q('#guarantee-funding').textContent,/Additional house contribution required: \$680/);
   assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$1,000','$0']);
   ui.click('[data-tab=summary]');const row=[...ui.w.document.querySelectorAll('.financial-summary>div')].find(r=>r.querySelector('span').textContent==='House Contribution');
-  assert.equal(row.querySelector('strong').textContent,'+$680');assert.match(row.textContent,/Includes \\$680/);assert.deepEqual(ui.errors,[]);
+  assert.equal(row.querySelector('strong').textContent,'+$680');assert.match(row.textContent,/Includes \$680/);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
 test('guaranteed payouts recalculate on house contribution changes, keep the selected mode, and reject fractional fixed payouts',async()=>{
