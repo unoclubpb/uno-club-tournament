@@ -11,6 +11,7 @@ import {mergeBrowserWorkspace} from './workspace.mjs';
 import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
+const APP_VERSION='0.3.42';
 const APP_ROOT=new URL('.',location.href).pathname;
 const NAV_ROOT=location.pathname.endsWith('/remote.html')?location.pathname:APP_ROOT;
 const $=q=>document.querySelector(q), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -418,8 +419,9 @@ function remoteScreen(){
   const t=current(),valid=t&&t.status!=='completed'&&(t.entries.length||t.startedAt);
   if(remotePanel==='tables'){if(t&&tableBalanceNeeded(t))remoteTablesTournament=t.id;else if(remoteTablesTournament!==t?.id){remotePanel='clock';movePlayersEnabled=false;}}
   const back=remotePanel==='clock'?'<button class="button secondary small" data-go="home">← Home</button>':'<button class="button secondary small" data-remote-panel="clock">← Clock</button>';
+  const versionFooter=`<div class="remote-version" aria-label="App version">v${APP_VERSION}</div>`;
   const heading=`<header class="remote-header">${back}<div><span class="eyebrow">UNO CLUB</span><h1>Tournament Remote</h1></div><button class="connection" data-action="account"><i class="dot ${online?'green':'red'}"></i>${online?'Connected':'Offline'}</button></header>`;
-  if(!valid)return `<div class="remote-shell">${heading}<main>${empty(t?.status==='completed'?'Tournament complete':'No active tournament',t?.status==='completed'?(t.endedBy==='icm-chop'?'Ended by ICM chop.':t.endedBy==='manual-chop'?'Ended by manual chop.':'Open Tournament Management to review the results.'):'Register players to open Tournament Remote.')}</main></div>`;
+  if(!valid)return `<div class="remote-shell">${heading}<main>${empty(t?.status==='completed'?'Tournament complete':'No active tournament',t?.status==='completed'?(t.endedBy==='icm-chop'?'Ended by ICM chop.':t.endedBy==='manual-chop'?'Ended by manual chop.':'Open Tournament Management to review the results.'):'Register players to open Tournament Remote.')}</main>${versionFooter}</div>`;
   let body='';
   if(remotePanel==='eliminate'){
     const remaining=active(t),tables=[...new Set(remaining.filter(e=>e.table).map(e=>e.table))].sort((a,b)=>a-b);
@@ -428,7 +430,7 @@ function remoteScreen(){
   }else if(remotePanel==='tables')body=`<section class="remote-seating">${tableManagement(t,true)}</section>`;
   else if(remotePanel==='payouts')body=`<h2>Payouts / ICM</h2><section class="panel remote-payouts">${payoutPanel(t)}</section>`;
   else{const c=clockAt(t,timeNow());body=`<section class="remote-clock panel clock-styled" aria-label="Tournament clock"><span id="remote-level" class="eyebrow"></span><strong id="remote-time" data-countdown></strong><span class="remote-blind-label">CURRENT BLINDS</span><strong id="remote-blinds"></strong><div class="remote-next"><span id="remote-next-label">NEXT BLINDS</span><strong id="remote-next"></strong></div><button id="remote-clock" class="button primary" data-clock="pause">Pause Clock</button></section><div class="remote-main-buttons"><button class="button remote-action-red" data-remote-panel="eliminate">Eliminate Player</button><button class="button remote-action-green" data-remote-panel="payouts">Payouts / ICM</button></div>`;}
-  return `<div class="remote-shell">${heading}<main><p class="remote-tournament-name">${esc(t.name)}</p>${remotePanel!=='tables'?`<div id="remote-balance-warning" role="status">${balanceWarning(t)}</div>`:''}${!online?`<p class="mode-note warning" role="status">${esc(remoteError||'Reconnect to save changes.')}</p>`:''}${body}</main></div>`;
+  return `<div class="remote-shell">${heading}<main><p class="remote-tournament-name">${esc(t.name)}</p>${remotePanel!=='tables'?`<div id="remote-balance-warning" role="status">${balanceWarning(t)}</div>`:''}${!online?`<p class="mode-note warning" role="status">${esc(remoteError||'Reconnect to save changes.')}</p>`:''}${body}</main>${versionFooter}</div>`;
 }
 function balanceWarning(t){return tableBalanceNeeded(t)?'<button type="button" class="button remote-action-red remote-balance-button" data-remote-panel="tables">Balance Tables</button>':'';}
 async function remoteElimination(entryId,undo=false){
