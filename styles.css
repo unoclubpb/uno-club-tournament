@@ -825,3 +825,11 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .clock-background-options input[type=file],.clock-background-options input[type=range]{display:block;width:100%;margin-top:8px}
 .remote-shell .remote-action-seating{background:#7c3aed;border-color:#7c3aed;color:#fff}
 .remote-shell .remote-action-seating:hover:not(:disabled){background:#6d28d9;border-color:#6d28d9}
+
+/* Clock typography settings */
+.tv-shell.clock-background-enabled{font-family:var(--clock-font-family,Arial),sans-serif}
+.tv-shell.clock-background-enabled #tv-time{color:var(--clock-timer-font-color,#fff)}
+.tv-shell.clock-background-enabled #tv-blinds{color:var(--clock-blinds-font-color,#fff)}
+.clock-appearance-preview{font-family:var(--clock-font-family,Arial),sans-serif}
+.clock-appearance-preview .preview-countdown{color:var(--clock-timer-font-color,#fff)}
+.clock-appearance-preview .preview-current{color:var(--clock-blinds-font-color,#fff)}
