@@ -717,3 +717,8 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 #remove-player-form .remove-player-choice{display:flex;align-items:flex-start;gap:10px;line-height:1.5;cursor:pointer}
 #remove-player-form .remove-player-choice input{flex:0 0 auto;margin-top:5px}
 #remove-player-form .button-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.registration-removed-history{margin-top:16px;border-top:1px solid rgba(255,255,255,.12);padding-top:12px}
+.registration-removed-history summary{cursor:pointer;font-weight:600}
+.registration-removed-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.registration-removed-row small{opacity:.75;text-align:right}
