@@ -845,3 +845,8 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .tv-shell.clock-background-enabled #tv-blinds{text-shadow:var(--clock-blinds-text-shadow,0 2px 9px rgba(0,0,0,.7))}
 .clock-appearance-preview .preview-countdown{text-shadow:var(--clock-timer-text-shadow,0 3px 12px rgba(0,0,0,.75))}
 .clock-appearance-preview .preview-current{text-shadow:var(--clock-blinds-text-shadow,0 2px 9px rgba(0,0,0,.7))}
+
+/* Tournament structure: typed numeric entry only; hide browser spinner controls. */
+#structure-form input[type="number"]{-moz-appearance:textfield;appearance:textfield}
+#structure-form input[type="number"]::-webkit-inner-spin-button,
+#structure-form input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
