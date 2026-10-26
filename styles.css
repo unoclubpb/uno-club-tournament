@@ -767,3 +767,15 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
  .management-panel .seating-inline-fields label input{width:88px}
  .management-panel .seating-inline-fields label span{font-size:10px}
 }
+
+/* v0.3.48: align seating capacity controls exactly with Unseat All row. */
+.management-panel .seating-control-grid .seating-inline-settings{margin-top:47px}
+.management-panel .seating-inline-fields{align-items:flex-end;gap:6px}
+.management-panel .seating-inline-fields label{gap:5px}
+.management-panel .seating-inline-fields label span{width:100%;text-align:center}
+.management-panel .seating-inline-fields label input{height:39px;min-height:39px;padding-top:7px;padding-bottom:7px}
+.management-panel .seating-inline-fields>.button{height:39px;min-height:39px;box-sizing:border-box}
+@media(max-width:700px){
+ .management-panel .seating-control-grid .seating-inline-settings{margin-top:44px}
+ .management-panel .seating-inline-fields label input,.management-panel .seating-inline-fields>.button{height:39px;min-height:39px}
+}
