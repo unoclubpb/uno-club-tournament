@@ -279,6 +279,7 @@ export function execute(state,action,now=Date.now()){
   const s=upgradeState(state), a=action;let t=s.tournaments.find(t=>t.id===a.tournamentId);
   if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
   if(a.type==='points-edit'){editPlayerPoints(s,a,now);return s;}
+  if(a.type==='tournament-delete'){check(t&&t.status==='open'&&!tournamentStarted(t),'Only a tournament that has never started can be deleted.');check(!(s.points?.awards||[]).some(v=>v.tournamentId===t.id),'Cannot delete a tournament with recorded points.');s.tournaments=s.tournaments.filter(v=>v.id!==t.id);return s;}
   if(a.type==='tournament-archive'){check(t&&t.status==='completed','Complete the tournament before archiving it.');t.archivedAt??=now;return s;}
   if(a.type==='player-save'){
     if(a.registrationTournamentId)requireRegistration(s.tournaments.find(t=>t.id===a.registrationTournamentId),a,now);

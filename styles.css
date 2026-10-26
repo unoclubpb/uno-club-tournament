@@ -675,3 +675,10 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 /* Tournament Remote version label. */
 .remote-shell{position:relative;min-height:100dvh;padding-bottom:calc(30px + env(safe-area-inset-bottom, 0px))}
 .remote-version{position:absolute;left:16px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));font-size:11px;line-height:16px;color:#8794a6;opacity:.85;pointer-events:none}
+
+/* Remote actions and safe tournament deletion. */
+.remote-shell .remote-action-orange{background:#c77721;border-color:#c77721;color:#fff}
+.remote-shell .remote-action-purple{background:#5944a5;border-color:#5944a5;color:#fff}
+.remote-shell .remote-action-orange:hover:not(:disabled){background:#a65e17}
+.remote-shell .remote-action-purple:hover:not(:disabled){background:#48358c}
+.tournament-danger-zone{margin-top:24px;padding:20px}.tournament-danger-zone h3{margin-bottom:8px}.tournament-danger-zone p{margin-bottom:15px}
