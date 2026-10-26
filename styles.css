@@ -881,3 +881,6 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 body:not(.fixed-workspace) .management-layout{overflow:visible!important;align-items:stretch}
 body:not(.fixed-workspace) .management-layout>.management-sidebar{position:-webkit-sticky;position:sticky;top:12px;align-self:start;height:max-content;max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;z-index:5}
 body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
+
+/* Sticky management sidebar must clear the separately sticky Home/navigation banner. */
+body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--management-sticky-top,110px)!important;max-height:calc(100dvh - var(--management-sticky-top,110px) - 8px)}
