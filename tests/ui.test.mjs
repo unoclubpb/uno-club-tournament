@@ -550,13 +550,16 @@ test('failed ICM acceptance leaves the event open and a retry saves the same agr
   ui.click('[data-tab=payouts]');ui.click('[data-action=icm-chop]');for(const row of ui.w.document.querySelectorAll('[data-icm-entry]'))ui.input(row.querySelector('[data-icm-chips]'),'5000');ui.click('[data-action=icm-calculate]');ui.w.__fixture.saveError={message:'Save interrupted'};await ui.submit(ui.q('#icm-form'));assert.equal(ui.stored().tournaments[0].status,'open');assert.equal(ui.stored().tournaments[0].icmChop,undefined);assert.equal(ui.q('#dialog').open,true);assert.match(ui.q('#toast').textContent,/Save interrupted/);ui.w.__fixture.saveError=null;await ui.submit(ui.q('#icm-form'));assert.equal(ui.stored().tournaments[0].endedBy,'icm-chop');assert.equal(ui.w.__fixture.saves,1);assert.equal(ui.q('#dialog').open,false);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
-test('live guarantee eligibility does not let a focused stale payout form overwrite the tenth registration',async()=>{
+test('focused stale payout form cannot overwrite the tenth registration',async()=>{
  let seed=manualSeatingFixture(9);seed=execute(seed,{type:'player-save',id:'p10',name:'Player 10'});const ui=await boot('https://example.test/',seed,'manage','t1');
  try{
-  ui.click('[data-tab=payouts]');ui.q('[name=houseContribution]').focus();await ui.storage(execute(seed,{type:'register',id:'e10',tournamentId:'t1',playerId:'p10'}));await new Promise(resolve=>setTimeout(resolve,275));assert.equal(ui.q('[value=guaranteed]').disabled,false);ui.click('[value=guaranteed]');await ui.submit(ui.q('#payout-form'));assert.match(ui.q('#toast').textContent,/Tournament changed/);assert.equal(ui.w.__fixture.saves,0);assert.equal(ui.stored().tournaments[0].entries.length,10);ui.click('[data-tab=payouts]');ui.click('[value=guaranteed]');await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.equal(ui.stored().tournaments[0].entries.length,10);assert.deepEqual(ui.errors,[]);
+  ui.click('[data-tab=payouts]');ui.q('[name=houseContribution]').focus();
+  await ui.storage(execute(seed,{type:'register',id:'e10',tournamentId:'t1',playerId:'p10'}));await new Promise(resolve=>setTimeout(resolve,275));
+  assert.ok(ui.q('#payout-form'));await ui.submit(ui.q('#payout-form'));
+  assert.match(ui.q('#toast').textContent,/Tournament changed/);assert.equal(ui.w.__fixture.saves,0);
+  assert.equal(ui.stored().tournaments[0].entries.length,10);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
-
 test('an accepted guaranteed ICM chop freezes full house funding and shows agreed awards rather than a first-place promise',async()=>{
  let seed=manualSeatingFixture();seed.tournaments[0].settings.payoutMode='guaranteed';for(let i=10;i>=3;i--)seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e'+i});const ui=await boot('https://example.test/',seed,'manage','t1');
  try{
