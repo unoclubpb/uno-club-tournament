@@ -516,11 +516,16 @@ test('Tournament Summary shows the seven-line $420 ledger with separate colored 
   ui.click('[data-tab=summary]');const rows=[...ui.w.document.querySelectorAll('.financial-summary>div')];assert.deepEqual(rows.map(r=>r.querySelector('span').textContent),['Tournament Entries','Dealer Tokes (Buy-Ins Only)','Rebuys','Tournament Fee (20%)','Dealer Tokes Paid Out','House Contribution','Total Prize Pool']);assert.deepEqual(rows.map(r=>r.querySelector('strong').textContent),['+$400','+$100','+$100','−$80','−$100','$0','$420']);assert.ok(rows.slice(0,3).every(r=>r.classList.contains('financial-credit')));assert.ok(rows.slice(3,5).every(r=>r.classList.contains('financial-debit')));assert.doesNotMatch(ui.q('.financial-summary').textContent,/\$[\d,]+\.\d/);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
-test('the guarantee remains selectable before ten and shows fully funded house contribution at eligibility',async()=>{
- let seed=manualSeatingFixture(9);seed=execute(seed,{type:'player-save',id:'p10',name:'Player 10'});const ui=await boot('https://example.test/',seed,'manage','t1');
+test('configured guarantee activates on tenth registration and funds the full prize pool',async()=>{
+ let seed=manualSeatingFixture(9);seed.tournaments[0].settings.payoutMode='guaranteed';seed=execute(seed,{type:'player-save',id:'p10',name:'Player 10'});
+ const ui=await boot('https://example.test/',seed,'manage','t1');
  try{
-  ui.click('[data-tab=payouts]');assert.equal(ui.w.document.querySelectorAll('#payout-form [name=payoutMode]').length,2);assert.ok(ui.q('#guarantee-funding'));await ui.storage(execute(seed,{type:'register',id:'e10',tournamentId:'t1',playerId:'p10'}));assert.ok(ui.q('#guarantee-funding'));
-  ui.click('[data-action=recalculate-payouts]');assert.equal(ui.q('#payout-values-field'),null);assert.equal(ui.q('#paid-places').value,'2');assert.match(ui.q('#guarantee-funding').textContent,/Additional house contribution required: \$680/);assert.equal(ui.q('[data-action=icm-chop]').disabled,true);await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$1,000','$0']);ui.click('[data-tab=summary]');const row=[...ui.w.document.querySelectorAll('.financial-summary>div')].find(r=>r.querySelector('span').textContent==='House Contribution');assert.equal(row.querySelector('strong').textContent,'+$680');assert.match(row.textContent,/Includes \$680/);assert.deepEqual(ui.errors,[]);
+  ui.click('[data-tab=payouts]');assert.ok(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].entries.length,9);
+  await ui.storage(execute(seed,{type:'register',id:'e10',tournamentId:'t1',playerId:'p10'}));
+  ui.click('[data-tab=payouts]');assert.match(ui.q('#guarantee-funding').textContent,/Additional house contribution required: \\$680/);
+  assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$1,000','$0']);
+  ui.click('[data-tab=summary]');const row=[...ui.w.document.querySelectorAll('.financial-summary>div')].find(r=>r.querySelector('span').textContent==='House Contribution');
+  assert.equal(row.querySelector('strong').textContent,'+$680');assert.match(row.textContent,/Includes \\$680/);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
 test('guaranteed payouts recalculate on house contribution changes, keep the selected mode, and reject fractional fixed payouts',async()=>{
