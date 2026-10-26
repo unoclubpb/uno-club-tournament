@@ -805,3 +805,11 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .unseated-drop-zone .unseated-drop-hint{font-size:12px;margin:3px 0 12px}
 .unseated-drop-zone.seat-drop-target,.seat-dragging .unseated-drop-zone{border-color:var(--accent,#4b92d4);background:rgba(80,140,220,.11)}
 .unseated-drop-zone .unseated-player-row{cursor:default}
+
+/* v0.3.58: tappable unseated destination and player move controls. */
+.unseated-drop-button{width:100%;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:12px;border:1px dashed var(--border,#657486);border-radius:10px;background:transparent;color:inherit;cursor:pointer;text-align:center}
+.unseated-drop-button span{font-size:12px;opacity:.75;font-weight:400}
+.unseated-player-pick{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;border:0;background:transparent;color:inherit;font:inherit;padding:10px;cursor:pointer}
+.unseated-player-pick .muted{font-size:12px}
+.unseated-player-pick[aria-pressed="true"]{outline:2px solid var(--accent,#4b92d4);border-radius:8px}
+.unseated-drop-zone.seat-drop-target .unseated-drop-button{border-color:var(--accent,#4b92d4)}
