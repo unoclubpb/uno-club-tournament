@@ -20,4 +20,26 @@
     updateVersion();
   })();
 </script>
+<style>
+#clock-main.remote-action-red{background:#b33434;border-color:#b33434;color:white}
+#clock-main.remote-action-green{background:#21794a;border-color:#21794a;color:white}
+</style>
+<script>
+(() => {
+ const update=()=>{
+  const button=document.getElementById('clock-main');
+  if(!button)return;
+  const action=button.getAttribute('data-clock');
+  button.classList.toggle('remote-action-red',action==='pause');
+  button.classList.toggle('remote-action-green',action==='resume');
+  button.classList.toggle('primary',action==='start');
+  if(action==='pause')button.textContent='Pause Clock';
+  else if(action==='resume')button.textContent='Resume Clock';
+  else if(action==='start')button.textContent='Start Tournament';
+ };
+ const root=document.getElementById('app');
+ new MutationObserver(update).observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['data-clock']});
+ update();
+})();
+</script>
 </body></html>
