@@ -876,3 +876,8 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 
 /* Tournament Management: keep the left section menu visible as the right pane scrolls. */
 .management-layout .management-sidebar{position:sticky;top:12px;align-self:start;z-index:2}
+
+/* Management sticky navigation: preserve the scroll context on mobile Safari. */
+body:not(.fixed-workspace) .management-layout{overflow:visible!important;align-items:stretch}
+body:not(.fixed-workspace) .management-layout>.management-sidebar{position:-webkit-sticky;position:sticky;top:12px;align-self:start;height:max-content;max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;z-index:5}
+body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
