@@ -682,3 +682,8 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .remote-shell .remote-action-orange:hover:not(:disabled){background:#a65e17}
 .remote-shell .remote-action-purple:hover:not(:disabled){background:#48358c}
 .tournament-danger-zone{margin-top:24px;padding:20px}.tournament-danger-zone h3{margin-bottom:8px}.tournament-danger-zone p{margin-bottom:15px}
+
+/* Balance control sits below seating settings, above Move Players. */
+.management-balance-row{display:flex;justify-content:flex-end;margin:8px 0 10px}
+.management-balance-row:empty{display:none}
+.management-balance-row .remote-action-red{background:#b33434;border-color:#b33434;color:#fff}
