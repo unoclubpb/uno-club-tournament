@@ -839,3 +839,9 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .tv-shell.clock-background-enabled #tv-blinds{font-size:calc(clamp(2.5rem,5vw,7rem) * var(--clock-blinds-font-scale,1))}
 .clock-appearance-preview .preview-countdown{font-size:calc(2.5rem * var(--clock-timer-font-scale,1))}
 .clock-appearance-preview .preview-current{font-size:calc(1.4rem * var(--clock-blinds-font-scale,1))}
+
+/* Clock designer: independent text shadows */
+.tv-shell.clock-background-enabled #tv-time{text-shadow:var(--clock-timer-text-shadow,0 3px 12px rgba(0,0,0,.75))}
+.tv-shell.clock-background-enabled #tv-blinds{text-shadow:var(--clock-blinds-text-shadow,0 2px 9px rgba(0,0,0,.7))}
+.clock-appearance-preview .preview-countdown{text-shadow:var(--clock-timer-text-shadow,0 3px 12px rgba(0,0,0,.75))}
+.clock-appearance-preview .preview-current{text-shadow:var(--clock-blinds-text-shadow,0 2px 9px rgba(0,0,0,.7))}
