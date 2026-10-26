@@ -586,11 +586,18 @@ test('the pool sits above the right payout column and individual rows save a thr
   assert.equal(ui.q('#paid-places').value,'2');ui.click('[data-payout-step="1"]');assert.equal(ui.q('#paid-places').value,'3');assert.deepEqual([...ui.w.document.querySelectorAll('.payout-place-label')].map(e=>e.textContent),['First Place','Second Place','Third Place']);ui.click('[data-rule-place="2"][data-rule-mode="percent"]');for(const [i,v] of [50,30,20].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$160','$96','$64']);await ui.submit(ui.q('#payout-form'));assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[50,30,20]);assert.equal(ui.q('#paid-places').value,'3');assert.deepEqual(ui.stored().tournaments[0].entries,seed.tournaments[0].entries);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
-test('changing place count and format retains unsaved per-place values and fixed dollar schedules',async()=>{
+test('changing paid places preserves existing rows and uses explicit per-place payout types',async()=>{
  const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
  try{
-  ui.click('[data-tab=payouts]');ui.input(ui.q('#paid-places'),'3');for(const [i,v] of [50,30,20].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));ui.click('[data-payout-step="-1"]');assert.equal(ui.w.document.querySelectorAll('[data-payout-value]').length,2);ui.click('[data-payout-step="1"]');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['50','30','20']);
-  ui.click('[value=fixed]');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['160','96','64']);for(const [i,v] of [150,100,70].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));ui.click('[value=percent]');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['50','30','20']);ui.click('[value=fixed]');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['150','100','70']);await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.payoutMode,'fixed');assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[15000,10000,7000]);assert.equal(ui.q('#paid-places').value,'3');assert.deepEqual(ui.errors,[]);
+  ui.click('[data-tab=payouts]');ui.input(ui.q('#paid-places'),'3');assert.equal(ui.w.document.querySelectorAll('[data-payout-place]').length,3);
+  assert.equal(ui.q('[data-rule-place="2"][data-rule-mode="fixed"]').getAttribute('aria-pressed'),'true');
+  ui.click('[data-rule-place="2"][data-rule-mode="percent"]');
+  for(const [i,v] of [50,30,20].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));
+  assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$160','$96','$64']);
+  await ui.submit(ui.q('#payout-form'));
+  assert.equal(ui.stored().tournaments[0].settings.payoutMode,'percent');
+  assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[50,30,20]);
+  assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
 test('pre-start guarantee uses two places and percentage selection restores its default distribution',async()=>{
