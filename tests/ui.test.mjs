@@ -672,11 +672,16 @@ test('guarantee overrides require confirmation, retain funding, and only explici
  }finally{ui.close();}
 });
 
-test('manual percentage edits in a running event become fixed custom dollar agreements after confirmation',async()=>{
+test('manual percentage edits in a running event require explicit custom payout confirmation',async()=>{
  let seed=manualSeatingFixture();seed=execute(seed,{type:'clock',tournamentId:'t1',command:'start'});const ui=await boot('https://example.test/',seed,'manage','t1');
- try{ui.click('[data-tab=payouts]');ui.input(ui.q('[data-payout-value="0"]'),'75');ui.input(ui.q('[data-payout-value="1"]'),'25');let confirmed=false;ui.w.__confirmResponse=()=>{confirmed=true;return true;};await ui.submit(ui.q('#payout-form'));assert.equal(confirmed,true);assert.equal(ui.stored().tournaments[0].settings.payoutMode,'fixed');assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[24000,8000]);assert.equal(ui.stored().tournaments[0].payoutCustom,true);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+ try{
+  ui.click('[data-tab=payouts]');ui.input(ui.q('[data-payout-value="0"]'),'75');ui.input(ui.q('[data-payout-value="1"]'),'25');
+  await ui.submit(ui.q('#payout-form'));assert.equal(ui.q('#dialog').open,true);assert.deepEqual(ui.stored(),seed);
+  ui.click('[data-action=confirm-custom-payouts]');await flush();
+  assert.equal(ui.stored().tournaments[0].settings.payoutMode,'percent');assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[75,25]);
+  assert.equal(ui.stored().tournaments[0].payoutCustom,true);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
 });
-
 test('individual Undo Elimination identifies the player, supports non-last restoration and blocks occupied original seats',async()=>{
  let seed=manualSeatingFixture(5);seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e1'},Date.now());seed=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e2'},Date.now()+1);const ui=await boot('https://example.test/',seed,'manage','t1');
  try{
