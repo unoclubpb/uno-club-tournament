@@ -921,3 +921,14 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
  #structure-form [data-setup-panel="play"] .form-grid{grid-template-columns:1fr 1fr;gap:10px}
  #structure-form [data-setup-panel="play"]>.form-section{padding:12px}
 }
+
+/* Tournament Fee embedded in the Tournament Settings card. */
+#structure-form [data-setup-panel="play"] .tournament-fee-inline{
+ margin-top:14px;padding-top:14px;border-top:1px solid var(--line);
+}
+#structure-form [data-setup-panel="play"] .tournament-fee-inline h4{
+ font-size:15px;font-weight:650;margin:0 0 10px;
+}
+#structure-form [data-setup-panel="play"] .tournament-fee-inline>p{
+ margin:10px 0 0;
+}
