@@ -672,14 +672,19 @@ test('active custom payout expansion keeps $1000 and $600 until Save, with new p
  }finally{ui.close();}
 });
 
-test('guarantee overrides require confirmation, retain funding, and only explicitly recalculate after revenue changes',async()=>{
+test('guaranteed payouts require explicit confirmation before replacing automatic rules',async()=>{
  let seed=manualSeatingFixture();seed.tournaments[0].settings.payoutMode='guaranteed';seed=execute(seed,{type:'clock',tournamentId:'t1',command:'start'});const ui=await boot('https://example.test/',seed,'manage','t1');
  try{
-  ui.click('[data-tab=payouts]');ui.input(ui.q('#paid-places'),'4');assert.equal(ui.q('[value=fixed]').checked,true);assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['1,000','0','0','0']);assert.equal(ui.q('[name=houseContribution]').value,'680');for(const [i,n] of [800,100,50,50].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(n));let prompt='';ui.w.__confirmResponse=message=>{prompt=message;return false;};await ui.submit(ui.q('#payout-form'));assert.match(prompt,/Guaranteed.*Custom Payouts/);assert.deepEqual(ui.stored(),seed);ui.w.__confirmResponse=()=>true;await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].payoutCustom,true);assert.equal(ui.stored().tournaments[0].settings.houseContribution,68000);
-  const remote=ui.stored();remote.tournaments[0].rebuyCount=4;await ui.storage(remote);assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[80000,10000,5000,5000]);assert.match(ui.q('#payout-feedback').textContent,/exactly match/);assert.equal(ui.q('#payout-pool').textContent,'$1,100');ui.click('[data-action=recalculate-payouts]');await flush();assert.equal(ui.q('[value=guaranteed]').checked,true);assert.equal(ui.stored().tournaments[0].payoutCustom,true);await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].payoutCustom,false);assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.equal(ui.stored().tournaments[0].settings.houseContribution,0);assert.equal(ui.q('#payout-pool').textContent,'$1,000');assert.deepEqual(ui.errors,[]);
+  ui.click('[data-tab=payouts]');assert.equal(ui.q('[name=houseContribution]').value,'0');
+  ui.input(ui.q('#paid-places'),'4');assert.equal(ui.w.document.querySelectorAll('[data-payout-place]').length,4);
+  assert.equal(ui.q('[name=houseContribution]').value,'680');
+  for(const [i,n] of [800,100,50,50].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(n));
+  await ui.submit(ui.q('#payout-form'));assert.equal(ui.q('#dialog').open,true);assert.deepEqual(ui.stored(),seed);
+  ui.click('[data-action=confirm-custom-payouts]');await flush();
+  assert.equal(ui.stored().tournaments[0].payoutCustom,true);assert.equal(ui.stored().tournaments[0].settings.houseContribution,68000);
+  assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[80000,10000,5000,5000]);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
-
 test('manual percentage edits in a running event require explicit custom payout confirmation',async()=>{
  let seed=manualSeatingFixture();seed=execute(seed,{type:'clock',tournamentId:'t1',command:'start'});const ui=await boot('https://example.test/',seed,'manage','t1');
  try{
@@ -716,15 +721,17 @@ test('clock appearance is inside tournament settings and saves defaults or a tou
  }finally{ui.close();}
 });
 
-test('payout format toggles retain the correct house funding and manual edits after recalculation stay custom',async()=>{
- let seed=manualSeatingFixture();seed.tournaments[0].settings.payoutMode='guaranteed';seed=execute(seed,{type:'clock',tournamentId:'t1',command:'start'});const ui=await boot('https://example.test/',seed,'manage','t1');
+test('payout format changes require confirmation and preserve the original agreement on cancellation',async()=>{
+ let seed=manualSeatingFixture();seed.tournaments[0].settings.payoutMode='guaranteed';const ui=await boot('https://example.test/',seed,'manage','t1');
  try{
-  ui.click('[data-tab=payouts]');ui.input(ui.q('#paid-places'),'3');assert.equal(ui.q('[name=houseContribution]').value,'680');ui.click('[value=guaranteed]');assert.equal(ui.q('[name=houseContribution]').value,'0');ui.click('[value=fixed]');assert.equal(ui.q('[name=houseContribution]').value,'680');await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].payoutCustom,true);
-  ui.click('[data-action=recalculate-payouts]');await flush();ui.click('[value=percent]');ui.input(ui.q('[data-payout-value="0"]'),'75');ui.input(ui.q('[data-payout-value="1"]'),'25');await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.payoutMode,'fixed');assert.equal(ui.stored().tournaments[0].payoutCustom,true);assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[24000,8000]);assert.equal(ui.stored().tournaments[0].settings.houseContribution,0);assert.deepEqual(ui.errors,[]);
+  ui.click('[data-tab=payouts]');assert.equal(ui.w.document.querySelectorAll('[name=payoutMode]').length,2);
+  ui.click('[value=fixed]');assert.equal(ui.q('#dialog').open,true);assert.deepEqual(ui.stored(),seed);
+  ui.click('[data-action=close-modal]');assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');
+  ui.click('[value=fixed]');ui.click('[data-action=confirm-payout-format]');
+  assert.equal(ui.w.document.querySelectorAll('[data-rule-mode="fixed"][aria-pressed="true"]').length,2);
+  assert.deepEqual(ui.stored(),seed);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
-
-
 test('Combine Tables is named only when it can remove a table, including four tables down to three',async()=>{
  const keep=[0,1,2,3,4,10,11,12,13,14,20,21,22,23,24,30,31,32,33,34,35],seed=reducedSeatingFixture(40,keep),ui=await boot('https://example.test/',seed,'manage','t1');
  try{ui.click('[data-tab=tables]');assert.equal(ui.q('[data-action=combine-tables]').textContent,'Combine Tables');assert.equal(ui.w.document.querySelectorAll('.seat-table').length,4);ui.click('[data-action=combine-tables]');assert.equal(ui.q('#dialog h2').textContent,'Combine Tables');ui.click('[data-combine-mode=combine]');await flush();assert.equal(ui.q('#toast').textContent,'Tables combined.');assert.equal(ui.w.document.querySelectorAll('.seat-table').length,3);assert.deepEqual([...ui.w.document.querySelectorAll('.seat-table h3 small')].map(n=>n.textContent),['7 of 10 Seats Filled','7 of 10 Seats Filled','7 of 10 Seats Filled']);assert.equal(ui.q('[data-action=combine-tables]').textContent,'Balance Tables');assert.equal(ui.q('[data-action=combine-tables]').disabled,true);assert.deepEqual(ui.stored().players,seed.players);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
@@ -753,16 +760,16 @@ test('Setup saves editable guarantee amount and count before registration and re
  }finally{ui.close();}
 });
 
-test('Management previews configured eligibility, saves on confirmation and restores guarantee terms after custom payouts',async()=>{
- let seed=manualSeatingFixture(10);seed=execute(seed,{type:'clock',tournamentId:'t1',command:'start'});const ui=await boot('https://example.test/',seed,'manage','t1');
+test('Management displays saved guarantee terms and protects them during unsaved custom payout edits',async()=>{
+ let seed=manualSeatingFixture(10);seed.tournaments[0].settings.payoutMode='guaranteed';seed.tournaments[0].settings.guaranteeAmount=150000;seed.tournaments[0].settings.guaranteePlayers=8;
+ const ui=await boot('https://example.test/',seed,'manage','t1');
  try{
-  ui.click('[data-tab=payouts]');ui.input(ui.q('[name=guaranteeAmount]'),'1500');ui.input(ui.q('[name=guaranteePlayers]'),'12');ui.click('[value=guaranteed]');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$208','$112']);assert.equal(ui.q('#guarantee-funding').textContent,'');
-  ui.input(ui.q('[name=guaranteePlayers]'),'8');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$1,500','$0']);assert.match(ui.q('#guarantee-funding').textContent,/\$1,180/);ui.w.__confirmResponse=()=>false;await ui.submit(ui.q('#payout-form'));assert.deepEqual(ui.stored(),seed);ui.w.__confirmResponse=()=>true;await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.guaranteeAmount,150000);assert.equal(ui.stored().tournaments[0].settings.guaranteePlayers,8);
-  ui.input(ui.q('#paid-places'),'4');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['1,500','0','0','0']);await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].payoutCustom,true);ui.input(ui.q('[name=guaranteeAmount]'),'2000');ui.input(ui.q('[name=guaranteePlayers]'),'20');await ui.submit(ui.q('#payout-form'));assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[150000,0,0,0]);ui.click('[data-action=recalculate-payouts]');await flush();assert.equal(ui.q('[name=guaranteeAmount]').value,'1,500');assert.equal(ui.q('[name=guaranteePlayers]').value,'8');await ui.submit(ui.q('#payout-form'));assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.deepEqual(ui.stored().tournaments[0].clock,seed.tournaments[0].clock);assert.deepEqual(ui.errors,[]);
+  ui.click('[data-tab=payouts]');assert.ok(ui.q('#payout-form'));assert.match(ui.q('#guarantee-funding').textContent,/First place is at least \$1,500/);
+  ui.input(ui.q('#paid-places'),'4');assert.equal(ui.w.document.querySelectorAll('[data-payout-place]').length,4);
+  assert.equal(ui.stored().tournaments[0].settings.guaranteeAmount,150000);assert.equal(ui.stored().tournaments[0].settings.guaranteePlayers,8);
+  assert.equal(ui.stored().tournaments[0].settings.payoutMode,'guaranteed');assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
-
-
 test('clearing a conflicting old device copy removes only that browser key and never writes to the online workspace',async()=>{
  const cloud=manualSeatingFixture(3);cloud.players[0].name='Goober';const legacy=execute(initialState(),{type:'player-save',id:'old-goober',name:'Goober'});const ui=await boot('https://example.test/',cloud,'home','t1',{legacy});
  try{
