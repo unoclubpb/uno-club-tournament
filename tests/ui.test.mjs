@@ -601,13 +601,18 @@ test('changing paid places preserves existing rows and uses explicit per-place p
   assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
-test('pre-start guarantee uses two places and percentage selection restores its default distribution',async()=>{
+test('pre-start payout editor uses the current two-format selector and enforces place limits',async()=>{
  const ui=await boot('https://example.test/',manualSeatingFixture(),'manage','t1');
  try{
-  ui.click('[data-tab=payouts]');ui.input(ui.q('#paid-places'),'3');for(const [i,v] of [50,30,20].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));ui.click('[value=guaranteed]');assert.equal(ui.q('#paid-places').value,'2');assert.equal(ui.q('#paid-places').disabled,true);assert.ok([...ui.w.document.querySelectorAll('[data-payout-step]')].every(b=>b.disabled));assert.equal(ui.w.document.querySelectorAll('[data-payout-place]').length,2);assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$1,000','$0']);ui.click('[value=percent]');assert.equal(ui.q('#paid-places').disabled,false);assert.equal(ui.q('#paid-places').value,'2');assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-value]')].map(e=>e.value),['65','35']);ui.input(ui.q('#paid-places'),'21');await ui.submit(ui.q('#payout-form'));assert.match(ui.q('#toast').textContent,/1–20/);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
+  ui.click('[data-tab=payouts]');assert.equal(ui.q('#paid-places').value,'2');
+  assert.deepEqual([...ui.w.document.querySelectorAll('[name=payoutMode]')].map(e=>e.value),['percent','fixed']);
+  ui.input(ui.q('#paid-places'),'3');assert.equal(ui.w.document.querySelectorAll('[data-payout-place]').length,3);
+  ui.click('[value=fixed]');assert.equal(ui.q('#dialog').open,true);ui.click('[data-action=confirm-payout-format]');
+  assert.equal(ui.w.document.querySelectorAll('[data-rule-mode="fixed"][aria-pressed="true"]').length,3);
+  ui.input(ui.q('#paid-places'),'21');await ui.submit(ui.q('#payout-form'));
+  assert.match(ui.q('#toast').textContent,/1–20/);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
-
 test('phone TV buttons update a separate TV session live while preserving the clock and chosen mode',async()=>{
  const seed=manualSeatingFixture(20),cloud={state:structuredClone(seed),version:1,listeners:new Set()},phone=await boot('https://example.test/',seed,'manage','t1',{cloud}),tv=await boot('https://example.test/',seed,'clock','t1',{cloud});
  try{
