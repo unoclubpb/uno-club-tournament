@@ -798,3 +798,10 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .remote-seating .management-table-actions>.button-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:stretch}
 .remote-seating .management-table-actions>.button-row>.button{width:100%;min-width:0;height:60px;min-height:60px;max-height:60px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;font-size:clamp(10px,3.15vw,14px);line-height:1.15;white-space:normal;overflow-wrap:normal;padding:5px 6px}
 .remote-seating .management-table-actions>.unseat-all-button{height:60px;min-height:60px;max-height:60px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:clamp(11px,3.5vw,15px);line-height:1.15;padding:5px 8px}
+
+/* v0.3.56: expanding Unseated Players destination for tap and drag seating moves. */
+.unseated-drop-zone{border:2px dashed transparent;border-radius:12px;padding:10px;margin-top:8px;min-height:85px;transition:background .15s,border-color .15s;cursor:pointer}
+.unseated-drop-zone h3{margin-top:0}
+.unseated-drop-zone .unseated-drop-hint{font-size:12px;margin:3px 0 12px}
+.unseated-drop-zone.seat-drop-target,.seat-dragging .unseated-drop-zone{border-color:var(--accent,#4b92d4);background:rgba(80,140,220,.11)}
+.unseated-drop-zone .unseated-player-row{cursor:default}
