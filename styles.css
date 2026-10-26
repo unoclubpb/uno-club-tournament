@@ -755,3 +755,15 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
  .management-panel .seating-inline-fields>.button{font-size:11px;padding:7px 4px}
  .management-panel .seating-inline-fields label span{font-size:10px}
 }
+
+/* v0.3.47: drop the seats-per-table control one row; compact field with label above. */
+.management-panel .seating-control-grid .seating-inline-settings{margin-top:45px}
+.management-panel .seating-inline-fields label{flex:0 0 auto;width:auto;align-items:flex-start}
+.management-panel .seating-inline-fields label span{order:0;white-space:nowrap;font-size:11px;line-height:1.25}
+.management-panel .seating-inline-fields label input{order:1;width:98px;max-width:100%;min-width:0;box-sizing:border-box}
+.management-panel .seating-inline-fields>.button{align-self:flex-end}
+@media(max-width:700px){
+ .management-panel .seating-control-grid .seating-inline-settings{margin-top:42px}
+ .management-panel .seating-inline-fields label input{width:88px}
+ .management-panel .seating-inline-fields label span{font-size:10px}
+}
