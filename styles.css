@@ -850,3 +850,14 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 #structure-form input[type="number"]{-moz-appearance:textfield;appearance:textfield}
 #structure-form input[type="number"]::-webkit-inner-spin-button,
 #structure-form input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+
+/* Tournament setup: persistent clock header and tabbed editor. */
+#structure-form .setup-clock-header{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,1fr);gap:18px;align-items:stretch;margin:12px 0 22px}
+#structure-form .setup-clock-preview,#structure-form .setup-clock-controls{border:1px solid rgba(170,187,215,.28);border-radius:12px;padding:18px;min-width:0}
+#structure-form .setup-clock-preview{background:#101e38;color:#fff;display:flex;flex-direction:column;justify-content:center;gap:10px}
+#structure-form .setup-clock-preview .clock-appearance-preview{width:100%;max-width:100%;margin:0}
+#structure-form .setup-clock-controls{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:12px}
+#structure-form .setup-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px;padding-bottom:12px;border-bottom:1px solid rgba(170,187,215,.28)}
+#structure-form .setup-tab-panel[hidden]{display:none!important}
+#structure-form .setup-tab-panel{min-width:0}
+@media(max-width:700px){#structure-form .setup-clock-header{grid-template-columns:1fr}#structure-form .setup-tabs .button{flex:1 1 42%;white-space:normal}}
