@@ -583,7 +583,7 @@ test('the pool sits above the right payout column and individual rows save a thr
  const seed=manualSeatingFixture(),ui=await boot('https://example.test/',seed,'manage','t1');
  try{
   ui.click('[data-tab=payouts]');assert.ok(ui.q('.payout-places-column .payout-current-pool #payout-pool'));assert.equal(ui.q('.paid-places-label').textContent,'Number of Places Paid');assert.ok(ui.q('.payout-editor-grid>.payout-format-column .payout-formats'));assert.ok(ui.q('.payout-editor-grid>.payout-places-column #payout-place-list'));assert.equal(ui.q('#payout-values-field'),null);assert.equal(ui.q('.management-panel .prize-preview'),null);assert.doesNotMatch(ui.q('.management-panel').textContent,/Amounts in finishing order/);
-  assert.equal(ui.q('#paid-places').value,'2');ui.click('[data-payout-step="1"]');assert.equal(ui.q('#paid-places').value,'3');assert.deepEqual([...ui.w.document.querySelectorAll('.payout-place-label')].map(e=>e.textContent),['First Place','Second Place','Third Place']);ui.click('[data-rule-place="2"][data-rule-mode="percent"]');for(const [i,v] of [50,30,20].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$160','$96','$64']);await ui.submit(ui.q('#payout-form'));assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[50,30,20]);assert.equal(ui.q('#paid-places').value,'3');assert.deepEqual(ui.stored().tournaments[0].entries,seed.tournaments[0].entries);assert.deepEqual(ui.errors,[]);
+  assert.equal(ui.q('#paid-places').value,'2');ui.click('[data-payout-step="1"]');assert.equal(ui.q('#paid-places').value,'3');assert.deepEqual([...ui.w.document.querySelectorAll('.payout-place-label')].map(e=>e.textContent),['First Place','Second Place','Third Place']);ui.click('[data-rule-place="2"][data-rule-mode="percent"]');for(const [i,v] of [50,30,20].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$160','$96','$64']);await ui.submit(ui.q('#payout-form'));assert.equal(ui.q('#dialog').open,true);ui.click('[data-action=confirm-custom-payouts]');await flush();assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[50,30,20]);assert.equal(ui.q('#paid-places').value,'3');assert.deepEqual(ui.stored().tournaments[0].entries,seed.tournaments[0].entries);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
 test('changing paid places preserves existing rows and uses explicit per-place payout types',async()=>{
@@ -595,6 +595,7 @@ test('changing paid places preserves existing rows and uses explicit per-place p
   for(const [i,v] of [50,30,20].entries())ui.input(ui.q(`[data-payout-value="${i}"]`),String(v));
   assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$160','$96','$64']);
   await ui.submit(ui.q('#payout-form'));
+  assert.equal(ui.q('#dialog').open,true);ui.click('[data-action=confirm-custom-payouts]');await flush();
   assert.equal(ui.stored().tournaments[0].settings.payoutMode,'percent');
   assert.deepEqual(ui.stored().tournaments[0].settings.payouts,[50,30,20]);
   assert.deepEqual(ui.errors,[]);
