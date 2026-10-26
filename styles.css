@@ -884,3 +884,40 @@ body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
 
 /* Sticky management sidebar must clear the separately sticky Home/navigation banner. */
 body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--management-sticky-top,110px)!important;max-height:calc(100dvh - var(--management-sticky-top,110px) - 8px)}
+
+/* Compact, two-column Play Settings layout (v0.3.79). */
+#structure-form [data-setup-panel="play"]{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;
+ align-items:start;
+}
+#structure-form [data-setup-panel="play"]>.form-section{
+ border:1px solid var(--line);border-radius:10px;
+ margin:0;padding:16px;min-width:0;
+}
+#structure-form [data-setup-panel="play"]>.form-section h3{margin:0 0 12px}
+#structure-form [data-setup-panel="play"]>.form-section>p{margin:10px 0}
+#structure-form [data-setup-panel="play"] .form-grid{
+ grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;
+}
+#structure-form [data-setup-panel="play"] .form-grid label{min-width:0}
+#structure-form [data-setup-panel="play"] input:not([type="checkbox"]){
+ width:100%;max-width:112px;box-sizing:border-box;
+}
+#structure-form [data-setup-panel="play"] input[name="startingStack"]{
+ max-width:152px;
+}
+#structure-form [data-setup-panel="play"] input[name="rebuyChips"],
+#structure-form [data-setup-panel="play"] input[name="addonChips"]{
+ max-width:152px;
+}
+#structure-form [data-setup-panel="play"] .input-wrap{width:max-content;max-width:100%}
+#structure-form [data-setup-panel="play"] .input-wrap input{min-width:0}
+#structure-form [data-setup-panel="play"] select[name="anteMode"]{max-width:260px;width:100%}
+#structure-form [data-setup-panel="play"] .check{margin:8px 0}
+@media(max-width:900px){
+ #structure-form [data-setup-panel="play"]{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+ #structure-form [data-setup-panel="play"] .form-grid{grid-template-columns:1fr 1fr;gap:10px}
+ #structure-form [data-setup-panel="play"]>.form-section{padding:12px}
+}
