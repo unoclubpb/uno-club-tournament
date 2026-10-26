@@ -564,6 +564,21 @@ test('an accepted guaranteed ICM chop freezes full house funding and shows agree
  }finally{ui.close();}
 });
 
+test('incomplete mixed payout edits retain the last valid preview and block saving',async()=>{
+ const seed=manualSeatingFixture(),ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  ui.click('[data-tab=payouts]');
+  const first=ui.q('[data-payout-value="0"]');
+  const before=[...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent);
+  assert.ok(before.every(Boolean));
+  ui.input(first,'');
+  assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),before);
+  assert.equal(ui.q('[data-payout-save]').disabled,true);
+  assert.match(ui.q('#payout-feedback').textContent,/last valid payout preview/i);
+  assert.deepEqual(ui.stored(),seed);
+  assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
 test('the pool sits above the right payout column and individual rows save a three-place percentage schedule',async()=>{
  const seed=manualSeatingFixture(),ui=await boot('https://example.test/',seed,'manage','t1');
  try{

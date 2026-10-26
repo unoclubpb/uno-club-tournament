@@ -288,7 +288,19 @@ function refreshRulePreview(form){
     if(orderError)setText('#payout-feedback',orderError+(difference!==0?' '+$('#payout-feedback').textContent:''));
     if(manual)manual.disabled=!!orderError||dirty||difference!==0||active(t).length<2||hasPendingEliminations(t);
     if(icm)icm.disabled=!!orderError||dirty||difference!==0||active(t).length<2||active(t).length>20||hasPendingEliminations(t);
-  }catch(error){$('#payout-feedback').classList.toggle('payout-order-error',error.code==='PAYOUT_ORDER');setText('#payout-feedback',error.message);for(const output of form.querySelectorAll('[data-payout-amount]'))output.textContent='—';}
+  }catch(error){
+    // Keep the last valid dollar preview while a payout entry is incomplete.
+    // Never allow an invalid draft to be saved or accepted as a chop.
+    const save=form.querySelector('[data-payout-save]');if(save)save.disabled=true;
+    if(manual)manual.disabled=true;if(icm)icm.disabled=true;
+    $('#payout-feedback').classList.add('payout-order-error');
+    setText('#payout-feedback',error.message+' — Showing the last valid payout preview until the entries are corrected.');
+    const outputs=[...form.querySelectorAll('[data-payout-amount]')];
+    if(outputs.some(output=>!output.textContent.trim())){
+      const saved=prizes(current());
+      outputs.forEach((output,i)=>{if(!output.textContent.trim())output.textContent=money(saved[i]||0);});
+    }
+  }
 }
 function changeRuleType(form,index,mode){
   const rules=readRuleRows(form);if(rules[index].mode===mode)return;
