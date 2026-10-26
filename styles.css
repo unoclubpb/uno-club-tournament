@@ -726,3 +726,9 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 /* Keep pre-start remote actions visible but unmistakably unavailable. */
 .remote-shell .remote-main-buttons>.button:disabled{background:#555c65!important;border-color:#555c65!important;color:#c9cdd1!important;opacity:.7;cursor:not-allowed;box-shadow:none}
 .remote-shell .remote-main-buttons .remote-seating-open{grid-column:1/-1}
+
+/* Keep Move Players anchored while Undo appears immediately to its left. */
+.management-panel .seat-move-help .seat-undo-button{margin-left:auto}
+.management-panel .seat-move-help .seat-undo-button+.move-players-toggle{margin-left:0}
+.management-panel .seat-move-help .move-players-toggle{margin-left:auto}
+.management-table-actions>.unseat-all-button{display:block;width:100%;text-align:center}
