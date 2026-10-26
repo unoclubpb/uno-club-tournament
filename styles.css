@@ -677,10 +677,10 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .remote-version{position:absolute;left:16px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));font-size:11px;line-height:16px;color:#8794a6;opacity:.85;pointer-events:none}
 
 /* Remote actions and safe tournament deletion. */
-.remote-shell .remote-action-orange{background:#c77721;border-color:#c77721;color:#fff}
-.remote-shell .remote-action-purple{background:#5944a5;border-color:#5944a5;color:#fff}
-.remote-shell .remote-action-orange:hover:not(:disabled){background:#a65e17}
-.remote-shell .remote-action-purple:hover:not(:disabled){background:#48358c}
+.remote-shell .remote-action-orange{background:#b82e36;border-color:#b82e36;color:#fff}
+.remote-shell .remote-action-purple{background:#2468a6;border-color:#2468a6;color:#fff}
+.remote-shell .remote-action-orange:hover:not(:disabled){background:#94252c;border-color:#94252c}
+.remote-shell .remote-action-purple:hover:not(:disabled){background:#1b5080;border-color:#1b5080}
 .tournament-danger-zone{margin-top:24px;padding:20px}.tournament-danger-zone h3{margin-bottom:8px}.tournament-danger-zone p{margin-bottom:15px}
 
 /* Balance control sits below seating settings, above Move Players. */
@@ -710,3 +710,10 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .seat-move-help .seat-undo-button:hover:not(:disabled){background:#942929;border-color:#942929}
 .seat-move-help .move-players-toggle{min-width:124px;flex:0 0 auto}
 .remote-seating .seat-move-help .seat-undo-button{margin-left:auto}
+
+/* Player withdrawal controls on Tournament Registration. */
+.registration-enrolled .registration-remove-player{margin-left:auto;white-space:normal;text-align:center;font-size:11px;line-height:1.2;padding:8px 10px;max-width:190px}
+#remove-player-form{display:grid;gap:14px}
+#remove-player-form .remove-player-choice{display:flex;align-items:flex-start;gap:10px;line-height:1.5;cursor:pointer}
+#remove-player-form .remove-player-choice input{flex:0 0 auto;margin-top:5px}
+#remove-player-form .button-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
