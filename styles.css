@@ -671,3 +671,7 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .tournament-points .points-adjustment{display:block;margin-top:5px;white-space:normal}
 .tournament-points [data-points-adjustment]{text-decoration:underline;text-underline-offset:2px;cursor:pointer;color:inherit;font-weight:inherit}
 .tournament-points .result-row>strong{min-width:0;overflow-wrap:anywhere}
+
+/* Tournament Remote version label. */
+.remote-shell{position:relative;min-height:100dvh;padding-bottom:calc(30px + env(safe-area-inset-bottom, 0px))}
+.remote-version{position:absolute;left:16px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));font-size:11px;line-height:16px;color:#8794a6;opacity:.85;pointer-events:none}
