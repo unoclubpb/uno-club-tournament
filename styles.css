@@ -868,3 +868,8 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 #structure-form .setup-tabs .button{width:100%;text-align:left;justify-content:flex-start;white-space:normal}
 #structure-form .setup-tab-content{min-width:0}
 @media(max-width:700px){#structure-form .setup-editor-layout{grid-template-columns:120px minmax(0,1fr);gap:10px}#structure-form .setup-tabs .button{flex:none;width:100%;font-size:.8rem;padding:10px 8px}}
+
+/* Setup Undo turns red whenever there is an unsaved edit to reverse. */
+#structure-form .setup-undo-button:not(:disabled){background:#b33434;border-color:#b33434;color:#fff}
+#structure-form .setup-undo-button:hover:not(:disabled){background:#942929;border-color:#942929}
+#structure-form .setup-undo-button:disabled{opacity:.45;cursor:not-allowed}
