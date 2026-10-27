@@ -987,3 +987,12 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 @media(max-width:420px){
  #structure-form [data-setup-panel="play"] .form-grid{grid-template-columns:minmax(0,1fr)}
 }
+
+/* Align entry card first input rows across each pair. */
+#structure-form [data-setup-panel="play"]>.form-section:nth-child(2)>.form-grid{margin-top:18px}
+#structure-form [data-setup-panel="play"]>.form-section:nth-child(4)>h3{margin-bottom:54px}
+/* Pull break pause option closer to the Antes dropdown. */
+#structure-form [data-setup-panel="levels"] .level-options-controls{display:flex;align-items:center;justify-content:flex-start;gap:12px;flex-wrap:wrap}
+#structure-form [data-setup-panel="levels"] .level-options-controls>label:first-child{flex:0 0 260px;max-width:45%}
+#structure-form [data-setup-panel="levels"] .level-options-controls>label.check{margin:0;flex:0 1 auto}
+@media(max-width:600px){#structure-form [data-setup-panel="levels"] .level-options-controls>label:first-child{flex-basis:200px;max-width:100%}}
