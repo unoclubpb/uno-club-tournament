@@ -1011,4 +1011,4 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 #structure-form .level-table thead th:last-child{text-align:left;padding-left:52px;white-space:nowrap}
 
 /* Shift only the Chip Up column heading 5px left. */
-#structure-form .level-table thead th:nth-child(7){position:relative;left:-5px}
+#structure-form .level-table thead th:nth-child(7){position:relative;left:-10px}
