@@ -956,3 +956,34 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 #structure-form .rebuy-last-level-row input{max-width:110px}
 #structure-form .rebuy-level-help{font-size:.87rem;line-height:1.4;flex:1 1 190px;padding-bottom:8px}
 @media(max-width:900px){#structure-form [data-setup-panel="play"]>.form-section{min-height:0}}
+
+
+/* Uniform Entry Settings controls, including selects and currency inputs. */
+#structure-form [data-setup-panel="play"] .form-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+#structure-form [data-setup-panel="play"] .form-grid > label{
+  display:block;min-width:0;width:100%;box-sizing:border-box;
+}
+#structure-form [data-setup-panel="play"] .form-grid input:not([type="checkbox"]),
+#structure-form [data-setup-panel="play"] .form-grid select,
+#structure-form [data-setup-panel="play"] .form-grid .input-wrap,
+#structure-form [data-setup-panel="play"] .form-grid input[name="startingStack"],
+#structure-form [data-setup-panel="play"] .form-grid input[name="rebuyChips"],
+#structure-form [data-setup-panel="play"] .form-grid input[name="addonChips"]{
+  display:block;width:100%;max-width:none;min-width:0;box-sizing:border-box;
+}
+#structure-form [data-setup-panel="play"] .form-grid input:not([type="checkbox"]),
+#structure-form [data-setup-panel="play"] .form-grid select{
+  height:42px;min-height:42px;
+}
+#structure-form [data-setup-panel="play"] .form-grid .input-wrap{position:relative}
+#structure-form [data-setup-panel="play"] .form-grid .input-wrap>span{top:50%;transform:translateY(-50%)}
+#structure-form [data-setup-panel="play"] input[name="rebuyMax"]:disabled{opacity:.55;cursor:not-allowed;background:var(--surface-muted,#eceeea)}
+@media(max-width:700px){
+ #structure-form [data-setup-panel="play"] .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:420px){
+ #structure-form [data-setup-panel="play"] .form-grid{grid-template-columns:minmax(0,1fr)}
+}
