@@ -1054,3 +1054,12 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 #structure-form .level-table select[name="layoutId"]:focus{outline:2px solid #f2d17e;outline-offset:1px}
 #structure-form .level-table select[name="layoutId"]:disabled{opacity:.5;cursor:not-allowed}
 #structure-form .level-table th:nth-child(7),#structure-form .level-table td:nth-child(7){min-width:175px}
+
+/* Saved Structures / Saved Layouts: scroll the complete card area inside the fixed-height setup page. */
+.setup-page .setup-library-layout{display:grid!important;grid-template-columns:minmax(155px,22%) minmax(0,1fr)!important;flex:1 1 auto;min-height:0!important;max-height:100%;overflow:hidden;align-items:stretch!important}
+.setup-page .setup-library-layout>.panel{align-self:start}
+.setup-page .setup-library-layout>.setup-library-results{display:flex;flex-direction:column;min-width:0;min-height:0!important;max-height:100%;overflow:hidden!important}
+.setup-page .setup-library-results>.section-label{flex:0 0 auto}
+.setup-page .setup-library-results>#saved-structures,.setup-page .setup-library-results>#saved-layouts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:max-content;align-content:start;flex:1 1 auto;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden;padding:4px 14px 38px 4px;scrollbar-gutter:stable;overscroll-behavior:contain}
+.setup-page .setup-library-results .structure-card{height:max-content;min-width:0}
+@media(max-width:760px){.setup-page .setup-library-results>#saved-structures,.setup-page .setup-library-results>#saved-layouts{grid-template-columns:minmax(0,1fr)}}
