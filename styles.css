@@ -1008,4 +1008,4 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 #structure-form [data-setup-panel="play"]>.form-section:nth-child(2)>.form-grid{position:relative;top:-10px}
 
 /* Center Order above the level-row arrow controls. */
-#structure-form .level-table thead th:last-child{text-align:left;padding-left:32px;white-space:nowrap}
+#structure-form .level-table thead th:last-child{text-align:left;padding-left:47px;white-space:nowrap}
