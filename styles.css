@@ -1128,3 +1128,8 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 /* Edit tournament lives in the existing tournament/TV context bar. */
 .context-actions .context-edit-tournament{margin-right:12px;white-space:nowrap;flex-shrink:0}
 @media(max-width:750px){.context-actions .context-edit-tournament{margin-right:8px}}
+
+/* Saved Layout TV thumbnails use the editor's identical 780x438.75 screen, scaled as a unit. */
+.setup-page #saved-layouts .saved-tv-screen{position:relative!important;display:block!important;aspect-ratio:16/9!important;height:auto!important;max-height:none!important;min-height:0!important;overflow:hidden!important;container-type:normal!important;background:#111d32!important;padding:0!important}
+.setup-page #saved-layouts .saved-tv-screen>.designer-tv.clock-appearance-preview{position:absolute!important;top:0!important;left:0!important;right:auto!important;bottom:auto!important;width:780px!important;height:438.75px!important;min-width:780px!important;max-width:none!important;min-height:438.75px!important;max-height:none!important;aspect-ratio:16/9!important;box-sizing:border-box!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:stretch!important;gap:0!important;padding:0!important;margin:0!important;transform-origin:top left!important;overflow:hidden!important}
+.setup-page #saved-layouts .saved-tv-screen .designer-tv .preview-countdown,.setup-page #saved-layouts .saved-tv-screen .designer-tv .preview-current,.setup-page #saved-layouts .saved-tv-screen .designer-tv .preview-next{font-size:inherit}
