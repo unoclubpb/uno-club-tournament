@@ -1110,3 +1110,12 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 .setup-page #saved-layouts .setup-clock-preview .preview-other{font-size:clamp(7px,0.7vw,9px)!important}
 .setup-page #saved-layouts .layout-card-actions{margin-top:6px!important}
 .setup-page #saved-layouts .layout-card-duplicate{grid-column:1/-1!important}
+
+/* Match Default Layout action-row height to Edit/Delete without displaying buttons. */
+.setup-page #saved-layouts .layout-card-reserved-row{grid-column:1/-1;display:block;min-height:34px;visibility:hidden}
+/* True 16:9 TV previews, scaled typography keeps blinds inside the screen. */
+.setup-page #saved-layouts .setup-clock-preview{aspect-ratio:16/9!important;width:100%!important;height:auto!important;max-height:none!important;min-height:0!important;overflow:hidden!important;flex:0 0 auto!important}
+.setup-page #saved-layouts .setup-clock-preview>.clock-appearance-preview{aspect-ratio:16/9!important;width:100%!important;height:100%!important;max-height:100%!important;min-height:0!important;box-sizing:border-box!important;overflow:hidden!important;justify-content:center!important;padding:clamp(2px,0.35vw,5px)!important;gap:clamp(1px,0.15vw,3px)!important}
+.setup-page #saved-layouts .setup-clock-preview .preview-countdown{font-size:clamp(13px,1.6vw,24px)!important;line-height:1!important}
+.setup-page #saved-layouts .setup-clock-preview .preview-current{font-size:clamp(10px,1.1vw,16px)!important;line-height:1!important}
+.setup-page #saved-layouts .setup-clock-preview .preview-next{font-size:clamp(8px,0.8vw,11px)!important;line-height:1.05!important}
