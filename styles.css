@@ -1077,3 +1077,13 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 .setup-page #saved-layout-form{flex:1 1 auto!important;min-height:0!important;max-height:100%!important;overflow:hidden!important}
 .setup-page #saved-layout-form>.clock-layout-editor-scroll{flex:1 1 auto;min-height:0;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable}
 .setup-page #saved-layout-form>.clock-layout-editor-actions{flex:0 0 auto;position:relative!important;bottom:auto!important;z-index:4}
+
+/* Saved Layout cards use the same compact dimensions and two-row action grid as Saved Structures. */
+.setup-page #saved-layouts .structure-card{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.setup-page #saved-layouts .structure-card>h2{overflow-wrap:anywhere}
+.setup-page #saved-layouts .structure-card>.muted{font-size:12px;line-height:1.35;margin:6px 0 10px}
+.setup-page #saved-layouts .setup-clock-preview{width:100%;min-width:0;max-height:125px;aspect-ratio:16/9;overflow:hidden;margin:8px 0 12px;position:relative}
+.setup-page #saved-layouts .setup-clock-preview>.clock-appearance-preview{max-width:100%;max-height:100%;overflow:hidden}
+.setup-page #saved-layouts .layout-card-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:auto;align-items:stretch}
+.setup-page #saved-layouts .layout-card-actions>button{min-width:0;width:100%;margin:0;justify-content:center;text-align:center;white-space:normal;padding:8px 5px}
+.setup-page #saved-layouts .layout-card-actions>button:disabled{opacity:.38;cursor:not-allowed;pointer-events:none}
