@@ -1000,3 +1000,6 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 /* Pixel-precise input alignment across paired Entry Settings cards. */
 #structure-form [data-setup-panel="play"]>.form-section:nth-child(2)>.form-grid{margin-top:14px}
 #structure-form [data-setup-panel="play"]>.form-section:nth-child(4)>h3{margin-bottom:54px}
+
+/* Move the actual Tournament Fee input row upward, independently of heading spacing. */
+#structure-form [data-setup-panel="play"]>.form-section:nth-child(4)>.form-grid{position:relative;top:-10px}
