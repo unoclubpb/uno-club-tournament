@@ -1048,3 +1048,9 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 .setup-library-layout{min-height:0!important;align-items:start!important}
 .setup-library-layout>section{min-height:0!important;overflow:visible!important}
 @media(max-height:650px){#saved-structures,#saved-layouts{max-height:calc(100dvh - 185px)!important}}
+
+/* Level Settings layout picker: visible, clickable and sized for saved layout names. */
+#structure-form .level-table select[name="layoutId"]{display:block;position:relative;z-index:1;width:100%;min-width:160px;max-width:none;min-height:38px;padding:7px 30px 7px 10px;appearance:auto;pointer-events:auto;cursor:pointer;background:#06111d;color:#f5f6f8;border:1px solid #586471;border-radius:6px;font-size:12px}
+#structure-form .level-table select[name="layoutId"]:focus{outline:2px solid #f2d17e;outline-offset:1px}
+#structure-form .level-table select[name="layoutId"]:disabled{opacity:.5;cursor:not-allowed}
+#structure-form .level-table th:nth-child(7),#structure-form .level-table td:nth-child(7){min-width:175px}
