@@ -947,7 +947,7 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 @media(max-width:900px){#structure-form [data-setup-panel="play"]{grid-template-columns:1fr;grid-auto-rows:auto}#structure-form [data-setup-panel="play"]>.form-section{min-height:0}}
 
 /* Align Tournament Fee inputs with the Add-Ons input row. */
-#structure-form [data-setup-panel="play"]>.form-section:nth-child(4)>h3{margin-bottom:42px}
+#structure-form [data-setup-panel="play"]>.form-section:nth-child(4)>h3{margin-bottom:60px}
 
 /* Compact Entry Settings cards and side-by-side rebuy cutoff explanation. */
 #structure-form [data-setup-panel="play"]>.form-section{min-height:225px}
