@@ -1,0 +1,1 @@
+export function Ha(t,e){if(!t||t.textContent===e)return;let[r,n]=e.split(":");t.replaceChildren(...[r,":",n].map((a,s)=>{let i=t.ownerDocument.createElement("span");return i.className=["timer-minutes","timer-colon","timer-seconds"][s],i.textContent=a,i}))}
