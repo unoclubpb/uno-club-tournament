@@ -1124,3 +1124,7 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 .management-tournament-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px}
 .management-tournament-title h2{margin:0;font-size:clamp(18px,1.6vw,25px);line-height:1.2;overflow-wrap:anywhere;min-width:0}
 .management-tournament-title .button{flex-shrink:0}
+
+/* Edit tournament lives in the existing tournament/TV context bar. */
+.context-actions .context-edit-tournament{margin-right:12px;white-space:nowrap;flex-shrink:0}
+@media(max-width:750px){.context-actions .context-edit-tournament{margin-right:8px}}
