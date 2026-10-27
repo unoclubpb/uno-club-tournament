@@ -1033,3 +1033,12 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 #saved-layout-form .setup-tabs .button{width:100%!important;justify-content:flex-start!important;text-align:left!important;white-space:normal!important}
 #saved-layout-form [data-layout-panel][hidden]{display:none!important}
 @media(max-width:650px){#saved-layout-form .setup-editor-layout{grid-template-columns:120px minmax(0,1fr)!important;gap:10px!important}}
+
+/* Designer workspace: clock on left, vertical tabs and active settings on right. */
+#saved-layout-form .designer-workspace{display:grid!important;grid-template-columns:minmax(0,1.2fr) minmax(360px,1fr)!important;gap:18px!important;align-items:start!important}
+#saved-layout-form .designer-controls-layout{display:grid!important;grid-template-columns:132px minmax(0,1fr)!important;gap:12px!important;align-items:start!important;margin-top:14px}
+#saved-layout-form .designer-controls-layout .setup-tabs{display:flex!important;flex-direction:column!important;gap:8px!important}
+#saved-layout-form .designer-controls-layout .setup-tabs button{display:flex!important;width:100%!important;justify-content:flex-start!important;text-align:left!important;padding:11px 10px!important}
+#saved-layout-form .designer-controls-layout .setup-tabs button.primary{background:#d5ac5c!important;color:#152332!important;border-color:#e8c67b!important;font-weight:800!important}
+#saved-layout-form .designer-tab-content{max-height:calc(100dvh - 295px);overflow-y:auto;min-width:0;padding:0 4px 14px}
+@media(max-width:900px){#saved-layout-form .designer-workspace{grid-template-columns:minmax(0,1fr)!important}#saved-layout-form .designer-controls-layout{grid-template-columns:132px minmax(0,1fr)!important}}
