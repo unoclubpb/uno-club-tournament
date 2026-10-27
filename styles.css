@@ -1003,3 +1003,6 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 
 /* Move the actual Tournament Fee input row upward, independently of heading spacing. */
 #structure-form [data-setup-panel="play"]>.form-section:nth-child(4)>.form-grid{position:relative;top:-2px}
+
+/* Shift the Rebuys field grid up 8px without moving its heading or checkbox. */
+#structure-form [data-setup-panel="play"]>.form-section:nth-child(2)>.form-grid{position:relative;top:-8px}
