@@ -1099,3 +1099,14 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 .setup-page #saved-layouts .setup-clock-preview .preview-level{font-size:clamp(10px,1vw,14px)!important}
 .setup-page #saved-layouts .setup-clock-preview .preview-other{font-size:clamp(8px,0.8vw,11px)!important;text-align:center}
 .setup-page #saved-layouts .default-layout-duplicate{grid-column:1/-1!important}
+
+/* Match Saved Layout card height to compact Saved Structures cards. */
+.setup-page #saved-layouts>.structure-card{height:auto!important;min-height:0!important;align-self:start;padding:16px!important;gap:0}
+.setup-page #saved-layouts .setup-clock-preview{aspect-ratio:16/7!important;max-height:90px!important;margin:4px 0 8px!important}
+.setup-page #saved-layouts .setup-clock-preview>.clock-appearance-preview{padding:3px 5px!important;gap:1px!important}
+.setup-page #saved-layouts .setup-clock-preview .preview-countdown{font-size:clamp(14px,1.8vw,26px)!important}
+.setup-page #saved-layouts .setup-clock-preview .preview-current{font-size:clamp(10px,1.2vw,16px)!important}
+.setup-page #saved-layouts .setup-clock-preview .preview-next{font-size:clamp(8px,0.85vw,11px)!important}
+.setup-page #saved-layouts .setup-clock-preview .preview-other{font-size:clamp(7px,0.7vw,9px)!important}
+.setup-page #saved-layouts .layout-card-actions{margin-top:6px!important}
+.setup-page #saved-layouts .layout-card-duplicate{grid-column:1/-1!important}
