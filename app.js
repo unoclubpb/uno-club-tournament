@@ -1,4 +1,4 @@
-import { renderLayoutEditor } from "./modules/clock-layout-editor.js?v=0.3.129";
+import { renderLayoutEditor } from "./modules/clock-layout-editor.js?v=0.3.130";
 import { renderClockAppearance } from "./modules/clock-appearance-controls.js";
 import { Kr } from "./modules/clock-time.js";
 import { Ha } from "./modules/clock-dom.js";
