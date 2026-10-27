@@ -1146,3 +1146,8 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 .clock-appearance-preview.clock-has-background-image::before{z-index:0}
 .clock-appearance-preview.clock-has-background-image>*{position:relative;z-index:1}
 .clock-appearance-preview.clock-has-background-image .designer-tv-time,.clock-appearance-preview.clock-has-background-image .designer-tv-blinds,.clock-appearance-preview.clock-has-background-image .designer-tv-side{background:transparent!important}
+
+/* Tournament Remote: compact three-button clock controls. */
+.remote-clock-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:8px;width:100%;margin-top:16px}
+.remote-clock-controls .button{width:100%;min-width:0;white-space:normal;padding:10px 6px;font-size:clamp(11px,2.5vw,14px);line-height:1.25}
+.remote-clock-controls #remote-clock{margin:0}
