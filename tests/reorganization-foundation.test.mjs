@@ -36,11 +36,20 @@ test("failed module loads can be retried", async () => {
   assert.equal(calls, 2);
 });
 
-// Safeguard: never publish the outdated source build in place of the finished runtime.
+// Safeguard: the finished features may live in extracted Phase 4 modules.
 test("published app retains finished Tournament Design and Management features", async () => {
  const {readFile} = await import("node:fs/promises");
  const app = await readFile(new URL("../src/app.mjs", import.meta.url), "utf8");
- for (const marker of ["Edit This Tournament", "Saved Structures", "Saved Layouts", "setup-library-layout", "show-structures", "show-layouts"]) {
-  assert.ok(app.includes(marker), "Missing published feature: " + marker);
+ const design = await readFile(new URL("../src/tournament-design-screen.mjs", import.meta.url), "utf8");
+ const layouts = await readFile(new URL("../src/tournament-design-layouts.mjs", import.meta.url), "utf8");
+ assert.match(app, /renderTournamentDesign/);
+ assert.match(app, /tournament-design-screen\\.mjs/);
+ assert.match(app, /renderSavedLayouts/);
+ assert.ok(app.includes("Edit This Tournament"), "Missing Management tournament editor");
+ for (const marker of ["Saved Structures", "Saved Layouts", "setup-library-layout", "show-structures", "show-layouts"]) {
+  assert.ok(design.includes(marker), "Missing Tournament Design feature: " + marker);
+ }
+ for (const marker of ["Create Layout", "Default Layout", "data-edit-layout", "data-delete-layout", "data-copy-layout"]) {
+  assert.ok(layouts.includes(marker), "Missing Saved Layouts feature: " + marker);
  }
 });
