@@ -486,16 +486,14 @@ test('TV controls hide while the clock keeps running, stay hidden through cloud 
  }finally{ui.close();}
 });
 
-test('main page titles and actions share the top banner while Home keeps its original layout',async()=>{
+test('main page titles and actions share top banner, Design hides active tournament creation',async()=>{
  const ui=await boot('https://example.test/uno-club-tournament/',manualSeatingFixture(),'home','t1');
  try{
   const homeHeader=ui.q('.header').outerHTML;assert.equal(ui.q('.page-banner'),null);
-  for(const [page,title] of [['setup','Tournament Design'],['players','Player Database'],['signup','Tournament Registration'],['manage','Tournament Management']]){
-   ui.click(`[data-go=${page==='signup'?'manage':page}]`);if(page==='signup')ui.click('[data-go=signup]');assert.equal(ui.q('.header h1').textContent,title);assert.equal(ui.w.document.querySelectorAll('h1').length,1);assert.equal(ui.q('.content .page-heading'),null);assert.equal(ui.w.document.querySelectorAll('.nav').length,1);
-   if(page==='setup'){assert.ok(ui.q('.header [data-action=new-tournament]'));ui.click('.header [data-action=new-tournament]');assert.ok(ui.q('#new-tournament-form'));ui.click('[data-action=close-modal]');ui.click('[data-action=new-structure]');assert.equal(ui.q('.header h1').textContent,title);assert.equal(ui.q('.page-banner-title small').textContent,'New structure');ui.click('.header [data-action=close-editor]');assert.ok(ui.q('#saved-structures'));}
-   if(page==='players'){assert.ok(ui.q('.header [data-action=add-player]'));ui.click('.header [data-action=add-player]');assert.ok(ui.q('#player-form'));ui.click('[data-action=close-modal]');}
-  }
-  assert.doesNotMatch(ui.w.document.body.textContent,/RUN THE ROOM/);ui.click('[data-go=home]');assert.equal(ui.q('.header').outerHTML,homeHeader);assert.equal(ui.q('.page-banner'),null);assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.errors,[]);
+  ui.click('[data-go=setup]');assert.equal(ui.q('.header h1').textContent,'Tournament Design');assert.equal(ui.q('.header [data-action=new-tournament]'),null);assert.equal(ui.q('.context'),null);assert.ok(ui.q('#saved-structures'));
+  ui.click('[data-action=new-structure]');assert.equal(ui.q('.page-banner-title small').textContent,'New structure');ui.click('[data-action=close-editor]');
+  ui.click('[data-go=manage]');assert.ok(ui.q('.header [data-action=event-settings]'));
+  ui.click('[data-go=home]');assert.equal(ui.q('.header').outerHTML,homeHeader);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
 test('management sidebar replaces the right pane and supports keyboard section navigation',async()=>{
@@ -712,14 +710,13 @@ test('TV controls are directly before Open Clock in the banner and rebuy/summary
  try{assert.equal(ui.q('.context-actions>.tv-display-controls').nextElementSibling.dataset.action,'open-clock');assert.equal(ui.q('.nav').nextElementSibling,null);assert.equal(ui.q('#record-rebuys').classList.contains('rebuy-available'),true);assert.equal(ui.q('#rebuy-total-help'),null);assert.doesNotMatch(ui.q('.content').textContent,/Remote controls require a cloud connection/);ui.click('[data-tab=summary]');assert.equal(ui.q('[data-tab=summary]').textContent,'Summary');assert.equal(ui.q('.management-panel h2').textContent,'Tournament Summary');assert.equal(ui.q('.management-panel>p'),null);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
 
-test('clock appearance is inside tournament settings and saves defaults or a tournament draft without changing other app colors',async()=>{
- const seed=manualSeatingFixture(),ui=await boot('https://example.test/',seed,'setup','t1');
+test('structure and active tournament editors use saved layouts instead of appearance controls',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(),'setup','t1');
  try{
-  assert.equal(ui.q('[data-action=clock-appearance]'),null);ui.click('[data-go=manage]');ui.click('[data-action=event-settings]');ui.click('[data-action=structure-clock-appearance]');let form=ui.q('#clock-appearance-form');assert.equal(form.querySelectorAll('[name=timerStyle]').length,4);ui.input(form.elements.background,'#112233');form.elements.timerStyle.value='stripes';form.querySelector('[name=timerStyle]:checked').dispatchEvent(new ui.w.Event('change',{bubbles:true}));assert.equal(form.querySelector('.clock-appearance-preview').dataset.timerStyle,'stripes');assert.equal(form.querySelector('.clock-appearance-preview').style.getPropertyValue('--clock-background'),'#112233');await ui.submit(form,'defaults');assert.equal(ui.stored().clockAppearanceDefaults.background,'#112233');assert.deepEqual(ui.stored().tournaments[0],seed.tournaments[0]);ui.click('[data-action=structure-clock-appearance]');form=ui.q('#clock-appearance-form');ui.input(form.elements.background,'#223344');form.elements.timerStyle.value='separate';form.querySelector('[name=timerStyle]:checked').dispatchEvent(new ui.w.Event('change',{bubbles:true}));await ui.submit(form,'event');assert.deepEqual(ui.stored().tournaments[0],seed.tournaments[0]);await ui.submit(ui.q('#structure-form'));assert.equal(ui.stored().tournaments[0].clockAppearance.background,'#223344');assert.equal(ui.q('.header').style.getPropertyValue('--clock-background'),'');
-  ui.click('[data-go=manage]');ui.click('[data-clock=start]');await flush();ui.w.history.pushState({},'','/?view=clock&tournament=t1');ui.w.dispatchEvent(new ui.w.PopStateEvent('popstate'));assert.equal(ui.q('.tv-shell').style.getPropertyValue('--clock-background'),'#223344');assert.equal(ui.q('.tv-shell').dataset.timerStyle,'separate');assert.ok(ui.q('#tv-time .timer-seconds'));assert.deepEqual(ui.errors,[]);
+  ui.click('[data-edit-template]');assert.equal(ui.q('[data-action=structure-clock-appearance]'),null);assert.ok(ui.q('[name=layoutId]'));ui.click('[data-action=close-editor]');
+  ui.click('[data-go=manage]');ui.click('[data-action=event-settings]');assert.equal(ui.q('[data-action=structure-clock-appearance]'),null);assert.ok(ui.q('#structure-form'));assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
-
 test('payout format changes require confirmation and preserve the original agreement on cancellation',async()=>{
  let seed=manualSeatingFixture();seed.tournaments[0].settings.payoutMode='guaranteed';const ui=await boot('https://example.test/',seed,'manage','t1');
  try{
@@ -821,28 +818,24 @@ test('Remote uses the TV appearance, including separate countdown spans and live
 });
 
 
-test('structure appearance is a draft until Save structure and is inherited without changing the current event',async()=>{
+test('structure settings still save without embedded clock appearance editor',async()=>{
  const seed=manualSeatingFixture(3),ui=await boot('https://example.test/',seed,'setup','t1');
  try{
-  ui.click('[data-edit-template]');let structure=ui.q('#structure-form');ui.input(structure.elements.structureName,'Blue Clock Structure');ui.input(structure.elements.startingStack,'12000');ui.click('[data-action=structure-clock-appearance]');let form=ui.q('#clock-appearance-form');assert.equal(ui.q('#dialog h2').textContent,'Structure Clock Appearance');assert.equal(form.querySelector('[value=tournament]'),null);ui.input(form.elements.background,'#112233');await ui.submit(form,'structure');assert.equal(ui.w.__fixture.saves,0);assert.deepEqual(ui.stored(),seed);structure=ui.q('#structure-form');assert.equal(structure.elements.structureName.value,'Blue Clock Structure');assert.equal(structure.elements.startingStack.value,'12,000');assert.equal(ui.q('.structure-clock-appearance .clock-appearance-preview').style.getPropertyValue('--clock-background'),'#112233');
-  ui.click('[data-action=structure-clock-appearance]');form=ui.q('#clock-appearance-form');ui.input(form.elements.background,'#ffffff');ui.click('#clock-appearance-form [data-action=close-modal]');await ui.submit(structure);assert.equal(ui.stored().templates[0].clockAppearance.background,'#112233');assert.deepEqual(ui.stored().tournaments[0],seed.tournaments[0]);assert.equal(ui.stored().templates[0].settings.startingStack,12000);
-  ui.click('[data-edit-template]');assert.equal(ui.q('.structure-clock-appearance .clock-appearance-preview').style.getPropertyValue('--clock-background'),'#112233');ui.click('[data-action=close-editor]');ui.click('[data-copy-template]');ui.click('[data-action=structure-clock-appearance]');form=ui.q('#clock-appearance-form');assert.equal(form.elements.background.value,'#112233');ui.input(form.elements.background,'#224466');await ui.submit(form,'structure');await ui.submit(ui.q('#structure-form'));assert.equal(ui.stored().templates[0].clockAppearance.background,'#112233');assert.equal(ui.stored().templates[1].clockAppearance.background,'#224466');ui.click(`[data-create-template="${ui.stored().templates[1].id}"]`);form=ui.q('#new-tournament-form');ui.input(form.elements.name,'Copied Structure Event');await ui.submit(form);assert.equal(ui.stored().tournaments[1].clockAppearance.background,'#224466');assert.deepEqual(ui.stored().tournaments[0],seed.tournaments[0]);assert.deepEqual(ui.errors,[]);
+  ui.click('[data-edit-template]');const structure=ui.q('#structure-form');assert.equal(ui.q('.structure-clock-appearance'),null);ui.input(structure.elements.startingStack,'12000');await ui.submit(structure);assert.equal(ui.stored().templates[0].settings.startingStack,12000);assert.deepEqual(ui.stored().tournaments[0],seed.tournaments[0]);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
-
-
-test('new tournament form includes optional clock colors, inherits the selected structure and saves only its own override',async()=>{
- const seed=manualSeatingFixture(3);seed.templates[0].clockAppearance={background:'#112233',timerStyle:'solid'};const other=structuredClone(seed.templates[0]);other.id='green-structure';other.name='Green Structure';other.clockAppearance={background:'#223344',timerStyle:'separate'};seed.templates.push(other);const ui=await boot('https://example.test/',seed,'setup','t1');
- try{assert.equal(ui.q('[data-action=clock-appearance]'),null);ui.click('[data-create-template]');let form=ui.q('#new-tournament-form');assert.ok(form.querySelector('.new-tournament-appearance'));assert.equal(form.elements.background.value,'#112233');form.elements.templateId.value='green-structure';form.elements.templateId.dispatchEvent(new ui.w.Event('change',{bubbles:true}));assert.equal(form.elements.background.value,'#223344');assert.equal(form.elements.timerStyle.value,'separate');ui.input(form.elements.background,'#334455');ui.input(form.elements.name,'Own Tournament Colors');await ui.submit(form);assert.equal(ui.stored().tournaments[1].clockAppearance.background,'#334455');assert.deepEqual(ui.stored().templates,seed.templates);assert.deepEqual(ui.stored().tournaments[0],seed.tournaments[0]);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
-});
-
-
-test('visible clock style choices include stripes and a saved multicolor gradient with editable color stops',async()=>{
+test('active tournament prevents creating another from structure or button',async()=>{
  const seed=manualSeatingFixture(3),ui=await boot('https://example.test/',seed,'setup','t1');
- try{ui.click('[data-edit-template]');ui.click('[data-action=structure-clock-appearance]');let form=ui.q('#clock-appearance-form');assert.equal(form.querySelectorAll('.clock-style-choice').length,4);assert.match(form.querySelector('.clock-style-options').textContent,/Multicolor Gradient/);assert.match(form.querySelector('.clock-style-options').textContent,/Multicolor Stripes/);ui.click('#clock-appearance-form [value=gradient]');ui.click('[data-gradient-preset=rainbow]');assert.equal(form.querySelector('[data-gradient-editor]').hidden,false);assert.equal(form.querySelectorAll('[data-gradient-stop]').length,5);assert.match(form.querySelector('.clock-appearance-preview').style.getPropertyValue('--clock-gradient'),/#ff3b30 0%.*#34c759 50%.*#af52de 100%/);ui.click('[data-action=gradient-add]');assert.equal(form.querySelectorAll('[data-gradient-stop]').length,6);ui.input(form.querySelectorAll('[data-gradient-color]')[1],'#112233');ui.input(form.querySelectorAll('[data-gradient-position]')[1],'10');assert.equal(form.querySelector('[data-appearance-feedback]').textContent,'');ui.click('[data-gradient-remove="2"]');assert.equal(form.querySelectorAll('[data-gradient-stop]').length,5);await ui.submit(form,'structure');assert.deepEqual(ui.stored(),seed);await ui.submit(ui.q('#structure-form'));assert.equal(ui.stored().templates[0].clockAppearance.gradientStops.length,5);assert.equal(ui.stored().templates[0].clockAppearance.gradientStops[1].color,'#112233');assert.equal(ui.stored().templates[0].clockAppearance.gradientStops[1].position,10);assert.deepEqual(ui.stored().tournaments[0],seed.tournaments[0]);ui.click('[data-edit-template]');ui.click('[data-action=structure-clock-appearance]');form=ui.q('#clock-appearance-form');assert.equal(form.querySelectorAll('[data-gradient-stop]').length,5);ui.input(form.querySelectorAll('[data-gradient-position]')[1],'100');assert.match(form.querySelector('[data-appearance-feedback]').textContent,/different positions/);const saved=ui.stored();await ui.submit(form,'structure');assert.deepEqual(ui.stored(),saved);assert.equal(ui.q('#dialog').open,true);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+ try{
+  assert.equal(ui.q('[data-action=new-tournament]'),null);ui.click('[data-create-template]');assert.equal(ui.q('#new-tournament-form'),null);assert.equal(ui.stored().tournaments.length,1);assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
 });
-
-
+test('Saved Layouts remains the entry point for custom clock appearance',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(3),'setup','t1');
+ try{
+  ui.click('[data-action=show-layouts]');assert.ok(ui.q('#saved-layouts'));assert.ok(ui.q('[data-action=create-layout]'));assert.ok(ui.q('[data-action=duplicate-default-layout]'));ui.click('[data-action=create-layout]');assert.ok(ui.q('#saved-layout-form'));assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
 test('Remote exposes Balance Tables only for imbalance and its seating screen moves a chosen player without showing Management',async()=>{
  const seed=manualSeatingFixture(20),ui=await boot('https://example.test/',seed,'remote','t1');
  try{assert.equal(ui.q('[data-remote-panel=tables]'),null);let remote=execute(seed,{type:'eliminate',tournamentId:'t1',entryId:'e20'});await ui.storage(remote);assert.equal(ui.q('[data-remote-panel=tables]'),null);remote=execute(remote,{type:'eliminate',tournamentId:'t1',entryId:'e19'});await ui.storage(remote);assert.equal(ui.q('#remote-balance-warning').textContent,'Balance Tables');assert.ok(ui.q('#remote-balance-warning .remote-action-red'));ui.click('[data-remote-panel=tables]');assert.ok(ui.q('.remote-seating'));assert.equal(ui.q('.management-sidebar'),null);assert.equal(ui.q('#seating-settings-form'),null);assert.equal(ui.q('[data-eliminate]'),null);assert.equal(ui.q('[data-action=combine-tables]').textContent,'Balance Tables');assert.equal(ui.q('[data-action=toggle-move-players]'),null);assert.equal(ui.q('[data-seat-grab=e1]').disabled,false);ui.click('[data-seat-grab=e1]');ui.click('[data-seat-target][data-table="2"][data-seat="9"] [data-seat-target-button]');await flush();const t=ui.stored().tournaments[0];assert.equal(t.entries[0].table,2);assert.equal(t.entries[0].seat,9);assert.deepEqual(t.entries.filter(e=>!e.eliminatedAt).reduce((counts,e)=>(counts[e.table]=(counts[e.table]||0)+1,counts),{}),{1:9,2:9});ui.click('[data-remote-panel=clock]');assert.equal(ui.q('[data-remote-panel=tables]'),null);assert.ok(ui.q('#remote-clock'));ui.w.history.pushState({},'','/?view=remote&tournament=t1&panel=tables');ui.w.dispatchEvent(new ui.w.PopStateEvent('popstate'));assert.equal(ui.q('.remote-seating'),null);assert.ok(ui.q('#remote-clock'));assert.deepEqual(ui.errors,[]);}finally{ui.close();}
