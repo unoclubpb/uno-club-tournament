@@ -35,3 +35,12 @@ test("failed module loads can be retried", async () => {
   assert.deepEqual(await loadScreen("phase1-retry"), { ready: true });
   assert.equal(calls, 2);
 });
+
+// Safeguard: never publish the outdated source build in place of the finished runtime.
+test("published app retains finished Tournament Design and Management features", async () => {
+ const {readFile} = await import("node:fs/promises");
+ const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+ for (const marker of ["REORGANIZATION · v0.4.0-reorg.5", "Edit This Tournament", "Saved Structures", "Saved Layouts", "setup-library-layout", "show-structures", "show-layouts"]) {
+  assert.ok(app.includes(marker), "Missing published feature: " + marker);
+ }
+});
