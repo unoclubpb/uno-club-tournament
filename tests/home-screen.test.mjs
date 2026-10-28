@@ -15,3 +15,10 @@ test('Home displays active tournament summary and resume action',()=>{
  assert.match(html,/data-resume="test-123"/);
  assert.match(html,/2 registered players/);
 });
+
+test('Home uses approved menu order and Tournament Design name',()=>{
+ const html=renderHome({t:null,icon,esc,money,statusLabel});
+ assert.ok(html.indexOf('data-go="players"')<html.indexOf('data-go="setup"'));
+ assert.match(html,/Tournament Design/);
+ assert.doesNotMatch(html,/Tournament Setup/);
+});
