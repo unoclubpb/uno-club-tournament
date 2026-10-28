@@ -7,4 +7,4 @@ for(const file of ['index.html','styles.css'])await copyFile('src/'+file,'dist/'
 await mkdir('chunks',{recursive:true});
 for(const file of await readdir('dist'))if(['index.html','styles.css','app.js'].includes(file))await copyFile('dist/'+file,file);
 for(const file of await readdir('dist/chunks'))await copyFile('dist/chunks/'+file,'chunks/'+file);
-console.log('Built Tournament Director 0.4.0-reorg.2 (Reorganization) with lazy screen chunks');
+console.log('Built Tournament Director 0.4.0-reorg.3 (Reorganization) with lazy screen chunks');
