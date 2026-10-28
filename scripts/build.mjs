@@ -10,4 +10,4 @@ await mkdir('chunks',{recursive:true});
 await mkdir('dist/chunks',{recursive:true});
 for(const file of await readdir('dist'))if(false)await copyFile('dist/'+file,file);
 for(const file of await readdir('dist/reorganization-modules/chunks')){await copyFile('dist/reorganization-modules/chunks/'+file,'chunks/'+file);await copyFile('dist/reorganization-modules/chunks/'+file,'dist/chunks/'+file);}
-console.log('Built Tournament Director 0.4.0-reorg.24 (Reorganization) with lazy screen chunks');
+console.log('Built Tournament Director 0.4.0-reorg.25 (Reorganization) with lazy screen chunks');
