@@ -1,0 +1,1 @@
+export function createLayoutDraft(layout,duplicate,defaults,clockAppearance){const original=layout||{name:'New Layout',appearance:clockAppearance(defaults)};return {id:duplicate?'':original.id||'',name:duplicate?original.name+' Copy':original.name,appearance:clockAppearance(original.appearance)};}
