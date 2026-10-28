@@ -4,6 +4,9 @@ on:
     branches:
       - Reorganization
   workflow_dispatch:
+concurrency:
+  group: reorganization-build
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:
@@ -39,5 +42,7 @@ jobs:
           git add app.js index.html styles.css chunks/
           if ! git diff --cached --quiet; then
             git commit -m "Phase 2: publish verified modular build on Reorganization"
+            git fetch origin Reorganization
+            git rebase origin/Reorganization
             git push origin HEAD:Reorganization
           fi
