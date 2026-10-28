@@ -4,13 +4,12 @@ import {readFile} from 'node:fs/promises';
 import {renderPlayers} from '../modules/phase3-player-screen.mjs';
 import {renderRegistration} from '../modules/phase3-registration-screen.mjs';
 const esc=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;');
-test('published runtime loads the two production screens on demand',async()=>{
- const app=await readFile(new URL('../app.js',import.meta.url),'utf8');
- assert.match(app,/import\("\.\/modules\/phase3-player-screen\.mjs"\)/);
- assert.match(app,/import\("\.\/modules\/phase3-registration-screen\.mjs"\)/);
- assert.match(app,/REORGANIZATION · v0\.4\.0-reorg\.13/);
- assert.match(app,/function cl\(\)\{if\(!__playerScreenModule\)/);
- assert.match(app,/function _d\(\)\{if\(!__registrationScreenModule\)/);
+test('main source loads Player Database and Registration only when requested',async()=>{
+ const app=await readFile(new URL('../src/app.mjs',import.meta.url),'utf8');
+ assert.match(app,/registerScreen\('players',\(\)=>import\('\.\/player-database-screen\.mjs'\)\)/);
+ assert.match(app,/registerScreen\('signup',\(\)=>import\('\.\/tournament-registration-screen\.mjs'\)\)/);
+ assert.match(app,/ensureScreenModule\(view\)/);
+ assert.match(app,/0\.4\.0-reorg\.15/);
 });
 test('production Player Database module preserves player list buttons and profile tabs',()=>{
  const C={players:[{id:'p1',name:'Amy',phone:'',archived:false}]};
