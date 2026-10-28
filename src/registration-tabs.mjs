@@ -1,0 +1,2 @@
+// Phase 3: extracted registration panel navigation; markup unchanged.
+export function renderRegistrationTabs(panel,registeredCount){return `<div class="registration-tabs" role="group" aria-label="Registration lists"><button class="button secondary" data-registration-panel="find" aria-pressed="${panel==='find'}">Find a player</button><button class="button secondary" data-registration-panel="registered" aria-pressed="${panel==='registered'}">Registered (${registeredCount})</button></div>`;}
