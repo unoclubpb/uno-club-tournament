@@ -9,3 +9,9 @@ function playerRows(rows){return rows.length?rows.map(p=>`<button class="player-
 
  return players();
 }
+
+export function renderPlayerRows(rows,ctx){
+ const {esc,empty,playerSearch}=ctx;
+ function playerRows(rows){return rows.length?rows.map(p=>`<button class="player-row" data-player="${p.id}"><span class="avatar">${esc(p.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(p.name)}</strong><small>${p.archived?'<span class="archived-status">Archived</span> · ':''}ID: ${playerNumberLabel(p)}${p.phone?' · '+esc(p.phone):''}</small></span><span>View player →</span></button>`).join(''):empty(playerSearch?'No matching players':'Your player database is empty',playerSearch?'Try a different name or player ID.':'Add your first player to save their information.','<button class="button primary" data-action="add-player">Add player</button>');}
+ return playerRows(rows);
+}
