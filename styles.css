@@ -1169,3 +1169,10 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 
 /* Reorganization: keep the account connection centered in the main app footer. */
 .app-footer{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:16px}.app-footer>span:last-child{text-align:right}.app-footer .footer-connection{justify-self:center;background:#244f42;color:#fff;border:1px solid #244f42;cursor:pointer;font-size:12px;letter-spacing:normal;padding:9px 16px}.app-footer .footer-connection:focus-visible{outline:2px solid #e6ba67;outline-offset:3px}@media(max-width:650px){.app-footer{grid-template-columns:1fr;justify-items:center;text-align:center;gap:12px}.app-footer>span:last-child{text-align:center}}
+
+/* Reorganization 19: Home uses the same three-part footer as other pages. */
+.home-page .app-footer{justify-content:space-between}
+.home-page .app-footer>span:first-child{display:block}
+.app-footer>span:last-child{grid-column:3;grid-row:1;justify-self:end}
+@media(max-width:650px){.app-footer>span:last-child{grid-column:1;grid-row:auto;justify-self:center}}
+@media(max-height:430px){.home-page .app-footer{display:grid!important}}
