@@ -4,10 +4,10 @@ import { APP_BUILD, SCREEN_IDS, isKnownScreen, versionLabel } from "../modules/a
 import { registerScreen, loadScreen, registeredScreens } from "../modules/screen-loader.js";
 
 test("Reorganization has a distinct version and branch label", () => {
-  assert.equal(APP_BUILD.version, "0.4.0-reorg.30");
+  assert.equal(APP_BUILD.version, "0.4.0-reorg.31");
   assert.equal(APP_BUILD.channel, "Reorganization");
   assert.equal(APP_BUILD.production, false);
-  assert.match(versionLabel(), /REORGANIZATION.*0\.4\.0-reorg\.30/);
+  assert.match(versionLabel(), /REORGANIZATION.*0\.4\.0-reorg\.31/);
   assert.equal(isKnownScreen("home"), true);
   assert.equal(isKnownScreen("clock"), true);
   assert.equal(isKnownScreen("unknown"), false);
