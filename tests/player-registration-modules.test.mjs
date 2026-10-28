@@ -40,3 +40,12 @@ test('Registration navigation preserves selected panel and registered count',()=
  assert.match(registered,/data-registration-panel="registered" aria-pressed="true"/);
  assert.match(registered,/Registered \(0\)/);
 });
+
+import {renderPlayerProfileTabs} from '../src/player-profile-tabs.mjs';
+test('Player profile tabs preserve all navigation buttons and selected state',()=>{
+ const history=renderPlayerProfileTabs('history');
+ assert.match(history,/data-profile-panel="history" aria-pressed="true"/);
+ assert.match(history,/data-profile-panel="details" aria-pressed="false"/);
+ assert.match(history,/data-profile-panel="points" aria-pressed="false"/);
+ for(const panel of ['details','history','points'])assert.match(renderPlayerProfileTabs(panel),new RegExp('data-profile-panel="'+panel+'" aria-pressed="true"'));
+});
