@@ -22,7 +22,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.25 · Reorganization';
+const APP_VERSION='0.4.0-reorg.26 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -146,7 +146,7 @@ function bannerDetails(){
   let title=esc(names[view]||names.home),context='',action='';
   if(view==='setup'){
     if(editor){context=editor.event?'Tournament settings':editor.isNew?'New structure':'Edit structure';action='<button class="button secondary small" data-action="close-editor">Cancel</button>';}
-    else action='<button class="button primary small" data-action="new-tournament">+ New Tournament</button>';
+    else if(!current()||current().status==='completed'||current().archivedAt)action='<button class="button primary small" data-action="new-tournament">+ New Tournament</button>';
   }
   if(view==='players'){
     const player=state.players.find(p=>p.id===playerDetail);
@@ -158,7 +158,7 @@ function bannerDetails(){
   if(view==='archives'&&archiveDetail)action='<button class="button secondary small" data-action="archives-back">Back to Tournament Archives</button>';
   return {title,context,action};
 }
-function header(){const showContext=!['home','players','leaderboard','archives'].includes(view)&&(view!=='signup'||!!current()),banner=bannerDetails();return `<header class="header${banner?' page-banner':''}"><a class="brand" href="${APP_ROOT}?view=home" data-go="home"><span>UNO CLUB<small>TOURNAMENT DIRECTOR</small></span></a>${banner?`<div class="page-banner-title"><h1 id="page-title">${banner.title}</h1>${banner.context?`<small>${esc(banner.context)}</small>`:''}</div>`:''}<div class="header-right">${banner?.action||''}</div></header>${showContext?`<div class="context"><div><span class="eyebrow">TOURNAMENT</span><strong class="current-tournament-name" title="${esc(current()?.name||'No current tournament')}">${esc(current()?.name||'No current tournament')}</strong></div><div class="context-actions">${view==='manage'?tvDisplayControls(current()):''}<button class="button small dark" data-action="open-clock" title="Automatic TV placement and full screen: pending Windows wireless HDMI testing.">${icon('clock')} Open clock window</button></div></div>`:''}${!online?`<div class="mode-note warning">${esc(remoteError||'Connection interrupted. Reconnect to save changes.')} <button data-action="refresh">Retry</button></div>`:''}`;}
+function header(){const showContext=!['home','players','leaderboard','archives','setup'].includes(view)&&(view!=='signup'||!!current()),banner=bannerDetails();return `<header class="header${banner?' page-banner':''}"><a class="brand" href="${APP_ROOT}?view=home" data-go="home"><span>UNO CLUB<small>TOURNAMENT DIRECTOR</small></span></a>${banner?`<div class="page-banner-title"><h1 id="page-title">${banner.title}</h1>${banner.context?`<small>${esc(banner.context)}</small>`:''}</div>`:''}<div class="header-right">${banner?.action||''}</div></header>${showContext?`<div class="context"><div><span class="eyebrow">TOURNAMENT</span><strong class="current-tournament-name" title="${esc(current()?.name||'No current tournament')}">${esc(current()?.name||'No current tournament')}</strong></div><div class="context-actions">${view==='manage'?tvDisplayControls(current()):''}<button class="button small dark" data-action="open-clock" title="Automatic TV placement and full screen: pending Windows wireless HDMI testing.">${icon('clock')} Open clock window</button></div></div>`:''}${!online?`<div class="mode-note warning">${esc(remoteError||'Connection interrupted. Reconnect to save changes.')} <button data-action="refresh">Retry</button></div>`:''}`;}
 
 
 function nav(){return `<nav class="nav" aria-label="Tournament pages">${['home','players','setup','manage','archives','leaderboard'].map(k=>`<button class="${(view===k||view==='signup'&&k==='manage')?'active':''}" data-go="${k}">${icon(k)}<span>${names[k]}</span></button>`).join('')}</nav>`;}
@@ -502,7 +502,7 @@ function clockSidebar(t,c){
   return `<div class="tv-players"><span>PLAYERS REMAINING</span><strong style="font-size:min(${open?9:7.5}vw,${52/count.length}vw)">${count}</strong>${!open?`<small class="tv-rebuy-count">Rebuys: ${financials(t).rebuyCount}</small>`:''}</div>${open?`<div class="tv-rebuys-open">${notice}</div>`:`<div class="tv-pool"><span>PRIZE POOL</span><strong style="font-size:min(7.5vw,${52/pool.length}vw)">${pool}</strong></div><div class="tv-prizes"><span>PAYOUTS</span><div class="tv-payout-list">${prizes(t).map((v,i)=>`<p><span>${(t.icmChop||t.manualChop)?.participants[i]?esc(pName((t.icmChop||t.manualChop).participants[i])):ordinal(i+1)}</span><strong>${tvMoney(v)}</strong></p>`).join('')}</div></div>`}`;
 }
 
-function tvToolbar(){return `${automaticTvLaunch?'<div class="tv-launch-fallback"><button type="button" class="button primary small" data-action="tv-fullscreen">Place TV & Enter Full Screen</button><small>If placement is blocked, move this window to the TV first.</small><small>Windows wireless HDMI: pending testing</small></div>':''}<div class="tv-toolbar"><button data-go="home">← Home</button><span class="tv-mode">${online?'CONNECTED':'CONNECTION INTERRUPTED'}</span><button data-action="sound">Sound: ${sound?'on':'off'}</button><button data-action="fullscreen">Full screen ⛶</button></div>`;}
+function tvToolbar(){return `<div class="tv-toolbar"><button data-go="home">← Home</button><span class="tv-mode">${online?'CONNECTED':'CONNECTION INTERRUPTED'}</span><button data-action="sound">Sound: ${sound?'on':'off'}</button><button data-action="fullscreen">Full screen ⛶</button></div>`;}
 function compactRebuyNotice(t,c){
   if(!rebuyOpen(t,c))return 'Rebuys closed';
   const phase=rebuyPhase(t,c);
@@ -906,7 +906,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
     case 'icm-chop':icmDialog();break;
     case 'icm-calculate':calculateIcm();break;
     case 'rebuy-count':await rebuyCountDialog();break;
-    case 'cancel-seat-pick':clearSeatPick();break;case 'account':showAccount();break;case 'close-modal':seatMoveChoice=null;tableCombineChoice=null;dlg.close();break;case 'new-tournament':newTournament();break;case 'add-player':await newPlayer();break;
+    case 'cancel-seat-pick':clearSeatPick();break;case 'account':showAccount();break;case 'close-modal':seatMoveChoice=null;tableCombineChoice=null;dlg.close();break;case 'new-tournament':if(current()&&current().status!=='completed'&&!current().archivedAt){toast('Finish or archive the current tournament before creating another.',true);break;}newTournament();break;case 'add-player':await newPlayer();break;
     case 'players-back':playerDetail=null;render();break;case 'open-clock':openClock();break;case 'refresh':await refresh();if(online&&version===0)await saveInitialWorkspace();break;
     case 'import-browser':await importBrowserData();break;case 'clear-device-copy':clearDeviceCopyDialog();break;
     case 'signout':{const {error}=await db.auth.signOut();if(error)throw error;acceptSession(null);break;}
