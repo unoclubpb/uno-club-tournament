@@ -20,3 +20,12 @@ test('Registration excludes enrolled and archived players without changing recor
  assert.equal(entries.length,1);
  assert.equal(players.length,3);
 });
+
+import {renderRegistrationRows} from '../src/registration-rows.mjs';
+test('Registration row module preserves cards, limit, escaping and disabled state',()=>{
+ const esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;');
+ assert.match(renderRegistrationRows([{id:'p1',name:'Amy & Co'}],{status:'open'},esc),/Amy &amp; Co/);
+ assert.match(renderRegistrationRows([{id:'p1',name:'Amy'}],{status:'completed'},esc),/disabled/);
+ assert.match(renderRegistrationRows([],{status:'open'},esc),/No matching unregistered players/);
+ assert.equal((renderRegistrationRows(Array.from({length:100},(_,i)=>({id:'p'+i,name:'Player'})),{status:'open'},esc).match(/data-register=/g)||[]).length,80);
+});
