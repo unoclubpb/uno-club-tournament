@@ -1,3 +1,4 @@
+import {rebuyBreakCheck} from './tournament-design-rebuy.mjs';
 import {renderDesignSettings,readDesignSettings} from './tournament-design-settings.mjs';
 import {renderTournamentDesign} from './tournament-design-screen.mjs';
 import {renderSavedLayouts} from './tournament-design-layouts.mjs';
@@ -23,7 +24,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.29 · Reorganization';
+const APP_VERSION='0.4.0-reorg.30 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -709,7 +710,6 @@ function changeGradient(form,kind,index){
   writeGradientStops(form,stops);refreshAppearancePreview(form);
 }
 function editTemplate(templateId,copy=false){const value=clone(state.templates.find(t=>t.id===templateId));value.clockAppearance=clockAppearance(value.clockAppearance||state.clockAppearanceDefaults);if(copy){value.id=id();value.name+=' — copy';}editor={value,isNew:copy,event:false,version};view='setup';render();}
-function rebuyBreakCheck(settings,levels){if(!settings.rebuyEnabled)return null;const round=Number(settings.rebuyLastRound);if(!Number.isInteger(round)||round<1)return null;let n=0,index=-1;for(let i=0;i<levels.length;i++)if(levels[i].kind==='play'&&++n===round){index=i;break;}return {round,index,missing:index<0||levels[index+1]?.kind!=='break'};}
 function rebuyBreakNotice(){const form=$('#structure-form'),target=$('#rebuy-break-notice');if(!form||!target||!editor)return;const settings=readSettings(form,editor.value.settings),levels=form.querySelector('[data-level]')?readLevels(form):editor.value.levels,check=rebuyBreakCheck(settings,levels);target.innerHTML=check?.missing?`<div role="alert" class="mode-note warning"><strong>Break Required</strong><p>A break must immediately follow Round ${check.round}.</p><button type="button" class="button primary" data-action="required-rebuy-break">Add Break</button> <button type="button" class="button secondary" data-action="go-rebuy-levels">Go to Levels</button></div>`:'';}
 function addRequiredRebuyBreak(){captureEditor();const check=rebuyBreakCheck(editor.value.settings,editor.value.levels);if(!check?.missing)return;if(check.index<0){toast('Add playing rounds through Round '+check.round+' first.',true);return;}const levels=editor.value.levels,pos=check.index+1;levels.splice(pos,0,{kind:'break',minutes:10,sb:0,bb:0,ante:0,game:'',chipUp:false});let n=0;const rounds=levels.map(l=>l.kind==='play'?++n:n),nearby=levels.map((l,i)=>({i,kind:l.kind,distance:Math.abs(rounds[i]-rounds[pos])})).filter(v=>v.kind==='break'&&v.i!==pos&&v.distance<=4);render();if(!nearby.length){toast('Required break added. Save to keep it.');return;}modal('Another Break Is Nearby',`<p>Other breaks are within four playing rounds of the required break. Select any to delete or keep all breaks.</p>${nearby.map(v=>`<label class="check"><input type="checkbox" data-remove-nearby-break="${v.i}"> Break after Round ${rounds[v.i]}</label>`).join('')}<div class="button-row"><button type="button" class="button danger" data-action="delete-nearby-rebuy-breaks">Delete Selected Breaks</button><button type="button" class="button secondary" data-action="keep-nearby-rebuy-breaks">Keep Both Breaks</button></div>`);}
 function captureEditor(){const form=$('#structure-form');if(!form)return;editor.value.name=form.elements.structureName.value;editor.value.settings=readPayout(form,readSettings(form,editor.value.settings));if(form.querySelector('[data-level]'))editor.value.levels=readLevels(form);}
