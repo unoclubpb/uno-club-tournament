@@ -19,7 +19,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.17 · Reorganization';
+const APP_VERSION='0.4.0-reorg.18 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -150,11 +150,12 @@ function bannerDetails(){
     if(player){title=esc(player.name)+(player.archived?' <span class="archived-status">(Archived)</span>':'');context='Player Database';action='<button class="button secondary small" data-action="players-back">Back to players</button>';}
     else action='<button class="button primary small" data-action="add-player">+ Add Player</button>';
   }
+  if(view==='manage'&&current()&&current().status!=='completed'&&!current().archivedAt)action='<button type="button" class="button secondary small context-edit-tournament" data-action="event-settings">Edit This Tournament</button>';
   if(view==='signup')action='<button class="button secondary small" data-go="manage">Back to Tournament Management</button>';
   if(view==='archives'&&archiveDetail)action='<button class="button secondary small" data-action="archives-back">Back to Tournament Archives</button>';
   return {title,context,action};
 }
-function header(){const showContext=!['home','players','leaderboard','archives'].includes(view)&&(view!=='signup'||!!current()),banner=bannerDetails();return `<header class="header${banner?' page-banner':''}"><a class="brand" href="${APP_ROOT}?view=home" data-go="home"><span>UNO CLUB<small>TOURNAMENT DIRECTOR</small></span></a>${banner?`<div class="page-banner-title"><h1 id="page-title">${banner.title}</h1>${banner.context?`<small>${esc(banner.context)}</small>`:''}</div>`:''}<div class="header-right">${banner?.action||''}</div></header>${showContext?`<div class="context"><div><span class="eyebrow">TOURNAMENT</span><strong class="current-tournament-name" title="${esc(current()?.name||'No current tournament')}">${esc(current()?.name||'No current tournament')}</strong></div><div class="context-actions">${view==='manage'&&current()&&current().status!=='completed'&&!current().archivedAt?'<button type="button" class="button secondary small context-edit-tournament" data-action="event-settings">Edit This Tournament</button>':''}${view==='manage'?tvDisplayControls(current()):''}<button class="button small dark" data-action="open-clock" title="Automatic TV placement and full screen: pending Windows wireless HDMI testing.">${icon('clock')} Open clock window</button></div></div>`:''}${!online?`<div class="mode-note warning">${esc(remoteError||'Connection interrupted. Reconnect to save changes.')} <button data-action="refresh">Retry</button></div>`:''}`;}
+function header(){const showContext=!['home','players','leaderboard','archives'].includes(view)&&(view!=='signup'||!!current()),banner=bannerDetails();return `<header class="header${banner?' page-banner':''}"><a class="brand" href="${APP_ROOT}?view=home" data-go="home"><span>UNO CLUB<small>TOURNAMENT DIRECTOR</small></span></a>${banner?`<div class="page-banner-title"><h1 id="page-title">${banner.title}</h1>${banner.context?`<small>${esc(banner.context)}</small>`:''}</div>`:''}<div class="header-right">${banner?.action||''}</div></header>${showContext?`<div class="context"><div><span class="eyebrow">TOURNAMENT</span><strong class="current-tournament-name" title="${esc(current()?.name||'No current tournament')}">${esc(current()?.name||'No current tournament')}</strong></div><div class="context-actions">${view==='manage'?tvDisplayControls(current()):''}<button class="button small dark" data-action="open-clock" title="Automatic TV placement and full screen: pending Windows wireless HDMI testing.">${icon('clock')} Open clock window</button></div></div>`:''}${!online?`<div class="mode-note warning">${esc(remoteError||'Connection interrupted. Reconnect to save changes.')} <button data-action="refresh">Retry</button></div>`:''}`;}
 
 
 function nav(){return `<nav class="nav" aria-label="Tournament pages">${['home','players','setup','manage','archives','leaderboard'].map(k=>`<button class="${(view===k||view==='signup'&&k==='manage')?'active':''}" data-go="${k}">${icon(k)}<span>${names[k]}</span></button>`).join('')}</nav>`;}
