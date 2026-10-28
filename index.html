@@ -1,1 +1,120 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#060f18"><title>Uno Club Tournament Director</title><meta name="description" content="Your tournament, under control. Saved structures, player sign-up, phone controls, and a dedicated TV clock."><link rel="stylesheet" href="./styles.css?v=0.4.0-reorg.3"></head><body><div id="app"><div class="boot"><strong>UNO CLUB</strong><p>Opening Tournament Director…</p></div></div><div id="toast" role="status" aria-live="polite"></div><dialog id="dialog"></dialog><script type="module" src="./app.js?v=0.4.0-reorg.3"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#060f18"><title>Uno Club Tournament Director</title><meta name="description" content="Your tournament, under control. Saved structures, player sign-up, phone controls, and a dedicated TV clock."><link rel="apple-touch-icon" sizes="180x180" href="./tournament-remote-icon.png?v=0.4.0-reorg.4"><link rel="icon" type="image/png" href="./tournament-remote-icon.png?v=0.4.0-reorg.4"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Tournament Remote"><link rel="stylesheet" href="./styles.css?v=0.4.0-reorg.4"></head><body><div id="app"><div class="boot"><strong>UNO CLUB</strong><p>Opening Tournament Director…</p></div></div><div id="toast" role="status" aria-live="polite"></div><dialog id="dialog"></dialog><script type="module" src="./app.js?v=0.4.0-reorg.4"></script><script>
+  // Keep the displayed release number consistent across both entry points.
+  (() => {
+    const updateVersion = () => {
+      document.querySelectorAll('.app-footer span').forEach(el => {
+        const updated = el.textContent.replace(/v0\.3\.\d+/g, 'v0.4.0-reorg.4');
+        if (updated !== el.textContent) el.textContent = updated;
+      });
+      if (new URLSearchParams(location.search).get('view') === 'remote' &&
+          !document.querySelector('.remote-version, .remote-version-launcher')) {
+        const label = document.createElement('div');
+        label.className = 'remote-version-launcher';
+        label.textContent = 'v0.4.0-reorg.4';
+        label.setAttribute('aria-label', 'App version');
+        label.style.cssText = 'position:fixed;left:16px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:5;font:11px/16px system-ui,sans-serif;color:#8794a6;opacity:.85;pointer-events:none';
+        document.body.appendChild(label);
+      }
+    };
+    const observer = new MutationObserver(updateVersion);
+    observer.observe(document.getElementById('app'), {childList:true,subtree:true});
+    updateVersion();
+  })();
+</script>
+<style>
+#clock-main.remote-action-red{background:#b33434;border-color:#b33434;color:white}
+#clock-main.remote-action-green{background:#21794a;border-color:#21794a;color:white}
+</style>
+<script>
+(() => {
+ const update=()=>{
+  const button=document.getElementById('clock-main');
+  if(!button)return;
+  const action=button.getAttribute('data-clock');
+  button.classList.toggle('remote-action-red',action==='pause');
+  button.classList.toggle('remote-action-green',action==='resume');
+  button.classList.toggle('primary',action==='start');
+  const label=action==='pause'?'Pause Clock':action==='resume'?'Resume Clock':action==='start'?'Start Tournament':null;
+  if(label!==null&&button.textContent!==label)button.textContent=label;
+ };
+ const root=document.getElementById('app');
+ new MutationObserver(update).observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['data-clock']});
+ update();
+})();
+</script>
+<script>
+/* Check for new releases without adding any visible controls.
+   Do not interrupt an active clock or a currently open remote session. */
+(() => {
+  const current = '0.4.0-reorg.4';
+  const remote = new URLSearchParams(location.search).get('view') === 'remote';
+  let checking = false;
+  let lastCheck = 0;
+  const check = async () => {
+    if (checking || document.hidden || !navigator.onLine) return;
+    if (Date.now() - lastCheck < 60000) return;
+    checking = true;
+    lastCheck = Date.now();
+    try {
+      const response = await fetch('./version.json?check=' + Date.now(), {cache:'no-store'});
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.version === current) return;
+      const parts = v => v.match(/\d+/g).map(Number);
+      const a = parts(data.version), b = parts(current);
+      const newer = a.some((n,i) => n > b[i] && a.slice(0,i).every((p,j) => p === b[j]));
+      if (!newer) return;
+      // Avoid disrupting a running tournament. Refresh on the next safe opening.
+      if (!remote) {
+        const activeClock = document.querySelector('#clock-main[data-clock="pause"]');
+        if (activeClock) return;
+      }
+      const next = new URL(location.href);
+      next.searchParams.set('appv',data.version);
+      if (next.href !== location.href) location.replace(next.href);
+    } catch (_) {
+      // Offline or temporarily unavailable: continue using the current app.
+    } finally { checking = false; }
+  };
+  window.addEventListener('pageshow',check);
+  document.addEventListener('visibilitychange',() => { if (!document.hidden) check(); });
+  window.addEventListener('online',check);
+  setInterval(check, 5*60*1000);
+  setTimeout(check,2500);
+})();
+</script>
+<script>
+/* Keep the dedicated TV clock awake when the browser and OS allow it. */
+(() => {
+  if (new URLSearchParams(location.search).get('view') !== 'clock') return;
+  let lock = null;
+  let pending = false;
+  const acquire = async () => {
+    if (document.visibilityState !== 'visible' || lock || pending || !navigator.wakeLock?.request) return;
+    pending = true;
+    try {
+      const requested = await navigator.wakeLock.request('screen');
+      lock = requested;
+      requested.addEventListener('release', () => {
+        if (lock === requested) lock = null;
+      }, {once:true});
+    } catch (_) {
+      // Browser, OS, or battery policy may deny wake lock; clock remains usable.
+    } finally {
+      pending = false;
+    }
+  };
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) acquire();
+  });
+  window.addEventListener('focus', acquire);
+  window.addEventListener('pageshow', acquire);
+  window.addEventListener('pagehide', () => {
+    const current = lock;
+    lock = null;
+    if (current) current.release().catch(() => {});
+  });
+  acquire();
+})();
+</script>
+</body></html>
