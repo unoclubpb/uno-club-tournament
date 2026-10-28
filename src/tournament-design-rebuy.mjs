@@ -1,0 +1,1 @@
+export function rebuyBreakCheck(settings,levels){if(!settings.rebuyEnabled)return null;const round=Number(settings.rebuyLastRound);if(!Number.isInteger(round)||round<1)return null;let n=0,index=-1;for(let i=0;i<levels.length;i++)if(levels[i].kind==='play'&&++n===round){index=i;break;}return {round,index,missing:index<0||levels[index+1]?.kind!=='break'};}
