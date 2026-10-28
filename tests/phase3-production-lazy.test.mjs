@@ -8,7 +8,7 @@ test('published runtime loads the two production screens on demand',async()=>{
  const app=await readFile(new URL('../app.js',import.meta.url),'utf8');
  assert.match(app,/import\("\.\/modules\/phase3-player-screen\.mjs"\)/);
  assert.match(app,/import\("\.\/modules\/phase3-registration-screen\.mjs"\)/);
- assert.match(app,/REORGANIZATION · v0\.4\.0-reorg\.12/);
+ assert.match(app,/REORGANIZATION · v0\.4\.0-reorg\.13/);
  assert.match(app,/function cl\(\)\{if\(!__playerScreenModule\)/);
  assert.match(app,/function _d\(\)\{if\(!__registrationScreenModule\)/);
 });
