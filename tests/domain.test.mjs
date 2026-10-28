@@ -264,3 +264,23 @@ test('tournament creation and settings can override clock appearance without cha
 test('explicit random balancing order selects eligible movers without shuffling retained seats or moving locks/pending players',()=>{
  let {s,event}=manualSeats(20);s=act(s,event,{type:'eliminate',entryId:s.tournaments[0].entries[19].id});s=act(s,event,{type:'eliminate',entryId:s.tournaments[0].entries[18].id});const before=clone(s),entries=s.tournaments[0].entries,chosen=entries[1].id;entries[0].seatLocked=true;entries[2].pendingElimination={id:'pending-reserved',requestedAt:start,expiresAt:start+5000};const order=[entries[0].id,entries[2].id,chosen,...entries.map(e=>e.id).filter(id=>![entries[0].id,entries[2].id,chosen].includes(id))];const result=act(s,event,{type:'combine-tables',mode:'combine',order});assert.equal(result.tournaments[0].entries[1].table,2);assert.equal(result.tournaments[0].entries[0].table,1);assert.deepEqual(result.tournaments[0].entries[2],entries[2]);for(let i=3;i<18;i++)assert.deepEqual(result.tournaments[0].entries[i],entries[i]);assertValidSeats(result.tournaments[0]);assert.equal(result.tournaments[0].entries.filter(e=>!e.eliminatedAt&&e.table===1).length,9);assert.equal(result.tournaments[0].entries.filter(e=>!e.eliminatedAt&&e.table===2).length,9);
 });
+
+test('saved clock layout library retains edits, rejects duplicate names, and protects assigned layouts',()=>{
+ let state=initialState();
+ assert.deepEqual(state.clockLayouts,[]);
+ const appearance={...state.clockAppearanceDefaults,background:'#102030',timerFontScale:125};
+ state=execute(state,{type:'clock-layout-save',layout:{id:'layout-one',name:'Feature Layout',appearance}});
+ assert.equal(state.clockLayouts[0].name,'Feature Layout');
+ assert.equal(state.clockLayouts[0].appearance.background,'#102030');
+ assert.equal(state.clockLayouts[0].appearance.timerFontScale,125);
+ assert.throws(()=>execute(state,{type:'clock-layout-save',layout:{id:'layout-two',name:'feature layout',appearance}}),/already exists/);
+ assert.throws(()=>execute(state,{type:'clock-layout-save',layout:{name:'Default Layout',appearance}}),/reserved/);
+ const template={...clone(state.templates[0]),levels:clone(state.templates[0].levels)};
+ template.levels[0].layoutId='layout-one';
+ state=execute(state,{type:'template-save',template});
+ assert.throws(()=>execute(state,{type:'clock-layout-delete',id:'layout-one'}),/assigned/);
+ template.levels[0].layoutId='';
+ state=execute(state,{type:'template-save',template});
+ state=execute(state,{type:'clock-layout-delete',id:'layout-one'});
+ assert.equal(state.clockLayouts.length,0);
+});
