@@ -1049,3 +1049,34 @@ test('stale rebuy totals cannot overwrite a newer count from another device',asy
  const seed=manualSeatingFixture(2);seed.tournaments[0].clock={index:8,status:'paused',remainingMs:300000,deadline:null};const ui=await boot('https://example.test/',seed,'manage','t1');
  try{ui.click('#record-rebuys');ui.input(ui.q('#rebuy-count'),'4');const newer=clone(seed);newer.tournaments[0].rebuyCount=8;await ui.storage(newer);await ui.submit(ui.q('#rebuy-count-form'));assert.equal(ui.stored().tournaments[0].rebuyCount,8);assert.match(ui.q('#toast').textContent,/Tournament changed/);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
+
+test('Tournament Design saved layout library creates, edits, duplicates and deletes clock layouts',async()=>{
+ const ui=await boot('https://example.test/',manualSeatingFixture(),'setup','t1');
+ try{
+  ui.click('[data-action=show-layouts]');
+  assert.ok(ui.q('#saved-layouts'));
+  assert.ok(ui.q('[data-action=duplicate-default-layout]'));
+  assert.equal(ui.q('[data-delete-layout=default]'),null);
+  ui.click('[data-action=create-layout]');
+  const form=ui.q('#saved-layout-form');
+  assert.ok(form);
+  ui.input(form.elements.layoutName,'Wednesday Clock');
+  await ui.submit(form);
+  assert.equal(ui.stored().clockLayouts.length,1);
+  const layoutId=ui.stored().clockLayouts[0].id;
+  ui.click('[data-edit-layout="'+layoutId+'"]');
+  const edit=ui.q('#saved-layout-form');
+  ui.input(edit.elements.layoutName,'Wednesday Clock Updated');
+  await ui.submit(edit);
+  assert.equal(ui.stored().clockLayouts[0].name,'Wednesday Clock Updated');
+  ui.click('[data-copy-layout="'+layoutId+'"]');
+  await ui.submit(ui.q('#saved-layout-form'));
+  assert.equal(ui.stored().clockLayouts.length,2);
+  ui.click('[data-delete-layout="'+layoutId+'"]');
+  assert.ok(ui.q('#confirmation-message'));
+  ui.click('[data-confirm-answer=yes]');
+  await flush();
+  assert.equal(ui.stored().clockLayouts.length,1);
+  assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
