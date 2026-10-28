@@ -43,7 +43,7 @@ test("published app retains finished Tournament Design and Management features",
  const design = await readFile(new URL("../src/tournament-design-screen.mjs", import.meta.url), "utf8");
  const layouts = await readFile(new URL("../src/tournament-design-layouts.mjs", import.meta.url), "utf8");
  assert.match(app, /renderTournamentDesign/);
- assert.match(app, /tournament-design-screen\\.mjs/);
+ assert.ok(app.includes("tournament-design-screen.mjs"), "Tournament Design module import missing");
  assert.match(app, /renderSavedLayouts/);
  assert.ok(app.includes("Edit This Tournament"), "Missing Management tournament editor");
  for (const marker of ["Saved Structures", "Saved Layouts", "setup-library-layout", "show-structures", "show-layouts"]) {
