@@ -1,7 +1,10 @@
 import { build } from 'esbuild';
-import { mkdir,copyFile } from 'node:fs/promises';
+import { mkdir,copyFile,readdir,rm } from 'node:fs/promises';
+await rm('dist',{recursive:true,force:true});
 await mkdir('dist',{recursive:true});
-await build({entryPoints:['src/app.mjs'],bundle:true,format:'esm',target:['es2022'],outfile:'dist/app.js',minify:true});
+await build({entryPoints:['src/app.mjs'],bundle:true,splitting:true,format:'esm',target:['es2022'],outdir:'dist',entryNames:'app',chunkNames:'chunks/[name]-[hash]',minify:true});
 for(const file of ['index.html','styles.css'])await copyFile('src/'+file,'dist/'+file);
-for(const file of ['index.html','styles.css','app.js'])await copyFile('dist/'+file,file);
-console.log('Built Tournament Director v0.3.35 for GitHub Pages');
+await mkdir('chunks',{recursive:true});
+for(const file of await readdir('dist'))if(['index.html','styles.css','app.js'].includes(file))await copyFile('dist/'+file,file);
+for(const file of await readdir('dist/chunks'))await copyFile('dist/chunks/'+file,'chunks/'+file);
+console.log('Built Tournament Director 0.4.0-reorg.2 (Reorganization) with lazy screen chunks');
