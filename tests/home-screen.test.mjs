@@ -22,3 +22,16 @@ test('Home uses approved menu order and Tournament Design name',()=>{
  assert.match(html,/Tournament Design/);
  assert.doesNotMatch(html,/Tournament Setup/);
 });
+
+test('published Home menu uses the same seven-card order and labels as the modular source',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const app=await readFile(new URL('../app.js',import.meta.url),'utf8');
+ const start=app.indexOf('function Do(){');
+ const end=app.indexOf('function ad(',start);
+ assert.ok(start>=0&&end>start);
+ const source=app.slice(start,end);
+ const titles=['Player Database','Tournament Design','Tournament Registration','Tournament Management','Tournament Remote','Open Clock Display','Leaderboard'];
+ let last=-1;
+ for(const title of titles){const at=source.indexOf('"'+title+'"');assert.ok(at>last,'Home card out of order: '+title);last=at;}
+ assert.doesNotMatch(source,/Tournament Setup/);
+});
