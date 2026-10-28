@@ -34,7 +34,7 @@ jobs:
           find dist/chunks -type f -name '*.js' -print -exec node --check '{}' \;
           test -f dist/app.js
           test -n "$(find dist/chunks -name '*.js' -print -quit)"
-          grep -q '0.4.0-reorg.3' version.json
+          grep -q '0.4.0-reorg.4' version.json
       - name: Publish verified build files only to Reorganization
         run: |
           git config user.name "github-actions[bot]"
