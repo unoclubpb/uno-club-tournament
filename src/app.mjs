@@ -1,4 +1,4 @@
-import {renderDesignSettings} from './tournament-design-settings.mjs';
+import {renderDesignSettings,readDesignSettings} from './tournament-design-settings.mjs';
 import {renderTournamentDesign} from './tournament-design-screen.mjs';
 import {renderSavedLayouts} from './tournament-design-layouts.mjs';
 import {levelRows as designLevelRows,readLevels} from './tournament-design-levels.mjs';
@@ -23,7 +23,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.28 · Reorganization';
+const APP_VERSION='0.4.0-reorg.29 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -170,7 +170,7 @@ function homeTournament(){const isActive=t=>!t.archivedAt&&t.status!=='completed
 function home(){return homeModule?homeModule.renderHome({t:homeTournament(),icon,esc,money,statusLabel}):homeLoadError&&homeLoadError!=='loading'?'<section class="panel" role="alert"><h2>Home could not load</h2><p>'+esc(homeLoadError)+'</p><button class="button secondary" data-action="retry-home">Retry</button></section>':'<section class="panel" role="status" aria-live="polite"><p>Loading Home…</p></section>'+nav();}
 
 function settingsFields(s){return renderDesignSettings(s,{num,money});}
-function readSettings(form,base){const s=clone(base),f=new FormData(form);for(const el of form.querySelectorAll('input[name],select[name]')){if(!(el.name in s))continue;if(el.type==='checkbox')s[el.name]=el.checked;else if(el.dataset.chips)s[el.name]=Number(el.value.replace(/,/g,''));else if(el.dataset.money){const dollars=wholeDollars(el.value);if(!el.value.trim()||!Number.isSafeInteger(dollars)||dollars<0)throw new Error('Enter monetary amounts as whole dollars.');s[el.name]=dollars*100;}else if(el.type==='number')s[el.name]=Number(el.value);else s[el.name]=el.value;}return s;}
+function readSettings(form,base){return readDesignSettings(form,base,{clone,wholeDollars});}
 function levelRows(levels){return designLevelRows(levels,{esc,clockLayouts:state.clockLayouts||[]});}
 function refreshSavedLayoutPreviews(){if(view!=='setup')return;for(const frame of document.querySelectorAll('[data-saved-layout-preview]')){const key=frame.dataset.savedLayoutPreview,layout=(state.clockLayouts||[]).find(l=>l.id===key),screen=frame.querySelector('.designer-tv');if(screen){applyClockAppearance(screen,layout?.appearance||state.clockAppearanceDefaults||ORIGINAL_CLOCK_APPEARANCE);if(frame.clientWidth)screen.style.zoom=String(frame.clientWidth/780);}}const live=$('#saved-layout-form .designer-tv');if(live&&layoutDraft)applyClockAppearance(live,layoutDraft.appearance);}
 function updateLayoutDesignerClock(){const form=$('#saved-layout-form');if(!form)return;const timer=form.querySelector('[data-countdown]');if(!timer)return;const remaining=900-Math.floor(Date.now()/1000)%900;const minutes=timer.querySelector('.timer-minutes'),seconds=timer.querySelector('.timer-seconds');if(minutes)minutes.textContent=String(Math.floor(remaining/60)).padStart(2,'0');if(seconds)seconds.textContent=String(remaining%60).padStart(2,'0');const bar=form.querySelector('.designer-tv-progress i');if(bar)bar.style.width=(remaining/9)+'%';}
