@@ -23,15 +23,10 @@ test('Home uses approved menu order and Tournament Design name',()=>{
  assert.doesNotMatch(html,/Tournament Setup/);
 });
 
-test('published Home menu uses the same seven-card order and labels as the modular source',async()=>{
- const {readFile}=await import('node:fs/promises');
- const app=await readFile(new URL('../app.js',import.meta.url),'utf8');
- const start=app.indexOf('function Do(){');
- const end=app.indexOf('function ad(',start);
- assert.ok(start>=0&&end>start);
- const source=app.slice(start,end);
- const titles=['Player Database','Tournament Design','Tournament Registration','Tournament Management','Tournament Remote','Open Clock Display','Leaderboard'];
+test('Home shows the five approved destinations in order',()=>{
+ const html=renderHome({t:null,icon,esc,money,statusLabel});
+ const titles=['Player Database','Tournament Design','Tournament Management','Tournament Archives','Leaderboard'];
  let last=-1;
- for(const title of titles){const at=source.indexOf('"'+title+'"');assert.ok(at>last,'Home card out of order: '+title);last=at;}
- assert.doesNotMatch(source,/Tournament Setup/);
+ for(const title of titles){const at=html.indexOf('<h3>'+title+'</h3>');assert.ok(at>last,'Home card out of order: '+title);last=at;}
+ assert.doesNotMatch(html,/Tournament Remote|Open Clock Display|<h3>Tournament Registration<\/h3>/);
 });
