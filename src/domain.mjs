@@ -52,7 +52,7 @@ export function rebuyPhase(t,c){
   return t.levels[c.index].kind==='break'?'final-break':'final-round';
 }
 
-export const initialState=()=>({schemaVersion:1,players:[],templates:[sampleTemplate()],tournaments:[]});
+export const initialState=()=>({schemaVersion:1,players:[],templates:[sampleTemplate()],clockLayouts:[],tournaments:[]});
 export const paymentTotal=p=>p.total??((p.prize||0)+(p.house||0));
 export const tablesRequired=t=>Math.ceil(t.entries.filter(e=>!e.eliminatedAt).length/t.settings.seatsPerTable);
 // Keep occupied tables available until the organizer moves those players.
@@ -67,6 +67,7 @@ function upgradeSettings(old){
 }
 export function upgradeState(value){
   const s=clone(value);
+  s.clockLayouts??=[];
   assignPlayerNumbers(s.players);
   for(const template of s.templates){
     const starter=template.name==='Uno Club — 15-minute levels'&&template.settings.financeVersion!==2&&template.settings.entryPrize===1000&&template.settings.entryHouse===1000;
@@ -291,6 +292,21 @@ export function execute(state,action,now=Date.now()){
   }
   if(a.type==='player-archive'){const p=s.players.find(p=>p.id===a.id);check(p,'Player not found.');p.archived=!p.archived;return s;}
   if(a.type==='clock-appearance-defaults'){s.clockAppearanceDefaults=clockAppearance(a.appearance);return s;}
+  if(a.type==='clock-layout-save'){
+    const layout=clone(a.layout||{}),name=String(layout.name||'').trim();
+    check(name.length>0&&name.length<=100,'Enter a layout name (up to 100 characters).');
+    check(name.toLocaleLowerCase()!=='default layout','Default Layout is reserved.');
+    check(!s.clockLayouts.some(v=>v.id!==layout.id&&v.name.trim().toLocaleLowerCase()===name.toLocaleLowerCase()),'A layout with that name already exists.');
+    const record={id:layout.id||id(),name,appearance:clockAppearance(layout.appearance||s.clockAppearanceDefaults)};
+    const index=s.clockLayouts.findIndex(v=>v.id===record.id);
+    if(index<0)s.clockLayouts.push(record);else s.clockLayouts[index]=record;
+    return s;
+  }
+  if(a.type==='clock-layout-delete'){
+    check(s.clockLayouts.some(v=>v.id===a.id),'Layout not found.');
+    check(!s.templates.some(v=>v.levels.some(l=>l.layoutId===a.id))&&!s.tournaments.some(v=>v.levels.some(l=>l.layoutId===a.id)),'This layout is assigned to a saved structure or tournament. Reassign those levels before deleting it.');
+    s.clockLayouts=s.clockLayouts.filter(v=>v.id!==a.id);return s;
+  }
   if(a.type==='template-save'){const template=clone(a.template);template.clockAppearance=clockAppearance(template.clockAppearance||s.clockAppearanceDefaults);if(template.settings.payoutMode==='guaranteed')template.settings.payouts=[65,35];validateTemplate(template);const ix=s.templates.findIndex(v=>v.id===template.id);if(ix<0)s.templates.push(template);else s.templates[ix]=template;return s;}
   if(a.type==='template-delete'){check(s.templates.length>1,'Keep at least one saved structure.');s.templates=s.templates.filter(v=>v.id!==a.id);return s;}
   if(a.type==='tournament-create'){
