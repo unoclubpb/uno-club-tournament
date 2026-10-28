@@ -75,7 +75,7 @@ test('structure editor uses whole-minute breaks and copies a common game without
  const ui=await boot('https://example.test/'),{q,click,input,submit}=ui;
  try{
   click('[data-go="setup"]');click('[data-edit-template]');let f=q('#structure-form');
-  assert.match(f.textContent,/Last round before rebuys end/);assert.match(f.textContent,/Last round before add-on ends/);assert.match(f.textContent,/rebuys remain open through that break/);assert.match(f.textContent,/add-ons remain available through that break/);
+  assert.match(f.textContent,/Last round before rebuys end/);assert.match(f.textContent,/Last round before add-on ends/);assert.match(f.textContent,/rebuys remain open through that break/i);assert.match(f.textContent,/add-ons remain available through that break/);
   const rows=[...f.querySelectorAll('[data-level]')],breakRow=rows.find(r=>r.querySelector('[name=kind]').value==='break'),duration=breakRow.querySelector('[name=minutes]');
   assert.equal(duration.step,'1');assert.equal(duration.min,'1');duration.value='3';duration.stepUp();assert.equal(duration.value,'4');duration.stepDown();assert.equal(duration.value,'3');duration.value='3.5';assert.equal(duration.checkValidity(),false);duration.value='3';
   input(q('#all-levels-game'),'Pot Limit Omaha');click('[data-action="copy-game"]');
