@@ -29,3 +29,14 @@ test('Registration row module preserves cards, limit, escaping and disabled stat
  assert.match(renderRegistrationRows([],{status:'open'},esc),/No matching unregistered players/);
  assert.equal((renderRegistrationRows(Array.from({length:100},(_,i)=>({id:'p'+i,name:'Player'})),{status:'open'},esc).match(/data-register=/g)||[]).length,80);
 });
+
+import {renderRegistrationTabs} from '../src/registration-tabs.mjs';
+test('Registration navigation preserves selected panel and registered count',()=>{
+ const find=renderRegistrationTabs('find',3);
+ assert.match(find,/data-registration-panel="find" aria-pressed="true"/);
+ assert.match(find,/data-registration-panel="registered" aria-pressed="false"/);
+ assert.match(find,/Registered \(3\)/);
+ const registered=renderRegistrationTabs('registered',0);
+ assert.match(registered,/data-registration-panel="registered" aria-pressed="true"/);
+ assert.match(registered,/Registered \(0\)/);
+});
