@@ -491,7 +491,7 @@ test('main page titles and actions share the top banner while Home keeps its ori
  const ui=await boot('https://example.test/uno-club-tournament/',manualSeatingFixture(),'home','t1');
  try{
   const homeHeader=ui.q('.header').outerHTML;assert.equal(ui.q('.page-banner'),null);
-  for(const [page,title] of [['setup','Tournament Setup'],['players','Player Database'],['signup','Tournament Registration'],['manage','Tournament Management']]){
+  for(const [page,title] of [['setup','Tournament Design'],['players','Player Database'],['signup','Tournament Registration'],['manage','Tournament Management']]){
    ui.click(`[data-go=${page}]`);assert.equal(ui.q('.header h1').textContent,title);assert.equal(ui.w.document.querySelectorAll('h1').length,1);assert.equal(ui.q('.content .page-heading'),null);assert.equal(ui.w.document.querySelectorAll('.nav').length,1);
    if(page==='setup'){assert.ok(ui.q('.header [data-action=new-tournament]'));ui.click('.header [data-action=new-tournament]');assert.ok(ui.q('#new-tournament-form'));ui.click('[data-action=close-modal]');ui.click('[data-action=new-structure]');assert.equal(ui.q('.header h1').textContent,title);assert.equal(ui.q('.page-banner-title small').textContent,'New structure');ui.click('.header [data-action=close-editor]');assert.ok(ui.q('#saved-structures'));}
    if(page==='players'){assert.ok(ui.q('.header [data-action=add-player]'));ui.click('.header [data-action=add-player]');assert.ok(ui.q('#player-form'));ui.click('[data-action=close-modal]');}
