@@ -1,3 +1,4 @@
+import {updateDesignLayoutClock} from './tournament-design-layout-clock.mjs';
 import {createLayoutDraft} from './tournament-design-layout-draft.mjs';
 import {rebuyBreakCheck} from './tournament-design-rebuy.mjs';
 import {renderDesignSettings,readDesignSettings} from './tournament-design-settings.mjs';
@@ -25,7 +26,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.31 · Reorganization';
+const APP_VERSION='0.4.0-reorg.32 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -175,7 +176,7 @@ function settingsFields(s){return renderDesignSettings(s,{num,money});}
 function readSettings(form,base){return readDesignSettings(form,base,{clone,wholeDollars});}
 function levelRows(levels){return designLevelRows(levels,{esc,clockLayouts:state.clockLayouts||[]});}
 function refreshSavedLayoutPreviews(){if(view!=='setup')return;for(const frame of document.querySelectorAll('[data-saved-layout-preview]')){const key=frame.dataset.savedLayoutPreview,layout=(state.clockLayouts||[]).find(l=>l.id===key),screen=frame.querySelector('.designer-tv');if(screen){applyClockAppearance(screen,layout?.appearance||state.clockAppearanceDefaults||ORIGINAL_CLOCK_APPEARANCE);if(frame.clientWidth)screen.style.zoom=String(frame.clientWidth/780);}}const live=$('#saved-layout-form .designer-tv');if(live&&layoutDraft)applyClockAppearance(live,layoutDraft.appearance);}
-function updateLayoutDesignerClock(){const form=$('#saved-layout-form');if(!form)return;const timer=form.querySelector('[data-countdown]');if(!timer)return;const remaining=900-Math.floor(Date.now()/1000)%900;const minutes=timer.querySelector('.timer-minutes'),seconds=timer.querySelector('.timer-seconds');if(minutes)minutes.textContent=String(Math.floor(remaining/60)).padStart(2,'0');if(seconds)seconds.textContent=String(remaining%60).padStart(2,'0');const bar=form.querySelector('.designer-tv-progress i');if(bar)bar.style.width=(remaining/9)+'%';}
+function updateLayoutDesignerClock(){updateDesignLayoutClock($('#saved-layout-form'));}
 function savedLayoutView(){return renderSavedLayouts({layoutDraft,clockLayouts:state.clockLayouts||[],esc,renderLayoutEditor,renderClockAppearance,renderClockLayoutScreen});}
 function openLayout(layout=null,duplicate=false){layoutDraft=createLayoutDraft(layout,duplicate,state.clockAppearanceDefaults,clockAppearance);setupLibraryTab='layouts';view='setup';render();}
 function setup(){return renderTournamentDesign({layoutDraft,editor,setupLibraryTab,state,current,tournamentStarted,esc,structureClockAppearance,settingsFields,levelRows,payoutFields,savedLayoutView,num,money});}
