@@ -19,7 +19,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.19 · Reorganization';
+const APP_VERSION='0.4.0-reorg.20 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -150,7 +150,7 @@ function bannerDetails(){
     if(player){title=esc(player.name)+(player.archived?' <span class="archived-status">(Archived)</span>':'');context='Player Database';action='<button class="button secondary small" data-action="players-back">Back to players</button>';}
     else action='<button class="button primary small" data-action="add-player">+ Add Player</button>';
   }
-  if(view==='manage'&&current()&&current().status!=='completed'&&!current().archivedAt)action='<button type="button" class="button secondary small context-edit-tournament" data-action="event-settings">Edit This Tournament</button>';
+  if(view==='manage'&&current()&&current().status!=='completed'&&!current().archivedAt)action='<button type="button" class="button gold small context-edit-tournament" data-action="event-settings">Edit This Tournament</button>';
   if(view==='signup')action='<button class="button secondary small" data-go="manage">Back to Tournament Management</button>';
   if(view==='archives'&&archiveDetail)action='<button class="button secondary small" data-action="archives-back">Back to Tournament Archives</button>';
   return {title,context,action};
