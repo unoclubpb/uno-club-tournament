@@ -4,10 +4,10 @@ import { APP_BUILD, SCREEN_IDS, isKnownScreen, versionLabel } from "../modules/a
 import { registerScreen, loadScreen, registeredScreens } from "../modules/screen-loader.js";
 
 test("Reorganization has a distinct version and branch label", () => {
-  assert.equal(APP_BUILD.version, "0.4.0-reorg.12");
+  assert.equal(APP_BUILD.version, "0.4.0-reorg.13");
   assert.equal(APP_BUILD.channel, "Reorganization");
   assert.equal(APP_BUILD.production, false);
-  assert.match(versionLabel(), /REORGANIZATION.*0\.4\.0-reorg\.12/);
+  assert.match(versionLabel(), /REORGANIZATION.*0\.4\.0-reorg\.13/);
   assert.equal(isKnownScreen("home"), true);
   assert.equal(isKnownScreen("clock"), true);
   assert.equal(isKnownScreen("unknown"), false);
@@ -40,7 +40,7 @@ test("failed module loads can be retried", async () => {
 test("published app retains finished Tournament Design and Management features", async () => {
  const {readFile} = await import("node:fs/promises");
  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
- for (const marker of ["REORGANIZATION · v0.4.0-reorg.12", "Edit This Tournament", "Saved Structures", "Saved Layouts", "setup-library-layout", "show-structures", "show-layouts"]) {
+ for (const marker of ["REORGANIZATION · v0.4.0-reorg.13", "Edit This Tournament", "Saved Structures", "Saved Layouts", "setup-library-layout", "show-structures", "show-layouts"]) {
   assert.ok(app.includes(marker), "Missing published feature: " + marker);
  }
 });
