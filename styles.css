@@ -1166,3 +1166,6 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 
 /* Reorganization: prominent registration entry and archive browser */
 .management-registration-entry{display:flex;margin:0 0 16px}.management-registration-entry>.button{width:100%;min-height:54px;font-size:1.12rem;font-weight:700}.archive-list .archive-results{display:grid;gap:8px;margin-top:16px}.archive-list .history-tournament{width:100%;text-align:left}.archive-detail>.muted{margin-bottom:18px}.archive-detail .summary-heading button[data-action="archive-tournament"]{display:none}
+
+/* Reorganization: keep the account connection centered in the main app footer. */
+.app-footer{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:16px}.app-footer>span:last-child{text-align:right}.app-footer .footer-connection{justify-self:center;background:#244f42;color:#fff;border:1px solid #244f42;cursor:pointer;font-size:12px;letter-spacing:normal;padding:9px 16px}.app-footer .footer-connection:focus-visible{outline:2px solid #e6ba67;outline-offset:3px}@media(max-width:650px){.app-footer{grid-template-columns:1fr;justify-items:center;text-align:center;gap:12px}.app-footer>span:last-child{text-align:center}}
