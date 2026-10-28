@@ -55,7 +55,7 @@ let icmReview=null;let remotePanel=new URLSearchParams(location.search).get('pan
 const payoutDrafts=new WeakMap();
 let clockToolbar,seatDragging,pickedSeat=null,seatMoveChoice=null,tableCombineChoice=null,renderedWorkspaceVersion=0;
 let playerSearch='',signupSearch='',registrationPanel='find',profilePanel='details',playerDetail=null,showArchived=false,tab='players',lastClockKey='',sound=false;
-const icons={home:'<path d="m3 10 9-7 9 7v11h-6v-7H9v7H3Z"/>',setup:'<path d="m9 3-1 3-3 1-2 3 2 2-1 3 3 2 3-1 2 2 3-1 1-3 3-1 2-3-2-2 1-3-3-2-3 1-2-2Z"/><circle cx="12" cy="12" r="3"/>',players:'<circle cx="12" cy="7" r="3"/><path d="M6 21v-3a6 6 0 0 1 12 0v3M3 8a2 2 0 0 0 0 4m18-4a2 2 0 0 1 0 4M1 20v-2a4 4 0 0 1 4-4m18 6v-2a4 4 0 0 0-4-4"/>',signup:'<path d="M14 3H4v18h11M14 3l5 5v5M14 3v5h5M8 8h3m-3 5h5m-5 4h3"/><circle cx="18" cy="18" r="4"/><path d="M18 16v4m-2-2h4"/>',clock:'<rect x="2" y="3" width="20" height="14" rx="1"/><path d="M12 17v4m-5 0h10"/>',manage:'<path d="M7 3h10v7a5 5 0 0 1-10 0ZM7 5H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 3v5m-4 1h8"/>'};
+const icons={home:'<path d="m3 10 9-7 9 7v11h-6v-7H9v7H3Z"/>',setup:'<path d="m9 3-1 3-3 1-2 3 2 2-1 3 3 2 3-1 2 2 3-1 1-3 3-1 2-3-2-2 1-3-3-2-3 1-2-2Z"/><circle cx="12" cy="12" r="3"/>',players:'<circle cx="12" cy="7" r="3"/><path d="M6 21v-3a6 6 0 0 1 12 0v3M3 8a2 2 0 0 0 0 4m18-4a2 2 0 0 1 0 4M1 20v-2a4 4 0 0 1 4-4m18 6v-2a4 4 0 0 0-4-4"/>',signup:'<path d="M14 3H4v18h11M14 3l5 5v5M14 3v5h5M8 8h3m-3 5h5m-5 4h3"/><circle cx="18" cy="18" r="4"/><path d="M18 16v4m-2-2h4"/>',clock:'<rect x="2" y="3" width="20" height="14" rx="1"/><path d="M12 17v4m-5 0h10"/>',manage:'<path d="M7 3h10v7a5 5 0 0 1-10 0ZM7 5H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 3v5m-4 1h8"/>',archives:'<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v12h14V8M10 12h4"/>'};
 const icon=k=>`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[k]||icons.clock}</svg>`;
 const names={home:'Home',setup:'Tournament Design',players:'Player Database',signup:'Tournament Registration',manage:'Tournament Management',remote:'Tournament Remote',archives:'Tournament Archives',leaderboard:'Leaderboard',clock:'Clock Display'};
 const current=()=>state.tournaments.find(t=>t.id===selected);
@@ -537,11 +537,11 @@ function selectCurrentTournament(){
 function historicalSummaryScreen(){const t=state.tournaments.find(t=>t.id===historyTournamentId);const heading=t?`${esc(t.name)} · ${dateLabel(t.date)}`:'Tournament not found';const summary=t?summaryPanel(t).replace(/<button[^>]*data-action="archive-tournament"[^>]*>.*?<\/button>/,''):'<p>This tournament is no longer available.</p>';return `<header class="header page-banner"><button type="button" class="button secondary small" data-action="history-summary-back" aria-label="Back to player">←</button><div class="page-banner-title"><h1 id="page-title">${heading}</h1></div></header><div class="workspace"><main class="content"><section class="panel">${summary}</section></main></div>`;}
 function archives(){
   const seasons=pointsState(state).seasons;
-  const now=new Date(),lastMonth=new Date(now.getFullYear(),now.getMonth()-1,1),startYear=new Date(now.getFullYear()-1,0,1);
+  const now=new Date(),lastMonth=new Date(now.getFullYear(),now.getMonth()-1,1);
   const list=state.tournaments.filter(t=>!!t.archivedAt).filter(t=>{
     const date=new Date((t.date||'')+'T12:00:00');
     if(archiveFilter.period==='month'&&(date.getFullYear()!==lastMonth.getFullYear()||date.getMonth()!==lastMonth.getMonth()))return false;
-    if(archiveFilter.period==='year'&&date<startYear)return false;
+    if(archiveFilter.period==='year'&&date.getFullYear()!==now.getFullYear()-1)return false;
     if(archiveFilter.period==='season'&&t.pointsSeasonId!==archiveFilter.seasonId)return false;
     return !archiveFilter.search||`${t.name} ${t.date}`.toLowerCase().includes(archiveFilter.search.toLowerCase());
   }).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||String(b.archivedAt).localeCompare(String(a.archivedAt)));
