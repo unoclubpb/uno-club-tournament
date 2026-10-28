@@ -12,26 +12,26 @@
   <meta name="description" content="Uno Club Tournament Remote controls.">
   <link rel="apple-touch-icon" href="./tournament-remote-icon.png">
   <link rel="icon" type="image/png" href="./tournament-remote-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=0.3.43-seating-layout">
+  <link rel="stylesheet" href="./styles.css?v=0.4.0-reorg.1">
 </head>
 <body>
   <div id="app"><div class="boot"><strong>UNO CLUB</strong><p>Opening Tournament Remote…</p></div></div>
-  <div class="remote-version-launcher" aria-label="App version" style="position:fixed;left:16px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:5;font:11px/16px system-ui,sans-serif;color:#8794a6;opacity:.85;pointer-events:none">v0.3.43</div>
-  <div id="toast" role="status" aria-live="polite"></div>
+  <div class="remote-version-launcher" aria-label="App version" style="position:fixed;left:16px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:5;font:11px/16px system-ui,sans-serif;color:#8794a6;opacity:.85;pointer-events:none">v0.4.0-reorg.1</div>
+  <div class="reorg-branch-label" role="status">REORGANIZATION · v0.4.0-reorg.1</div><div id="toast" role="status" aria-live="polite"></div>
   <dialog id="dialog"></dialog>
-  <script type="module" src="./app.js?v=0.3.43-seating-layout"></script>
+  <script type="module" src="./app.js?v=0.4.0-reorg.1"></script>
 <script>
   // Keep the displayed release number consistent across both entry points.
   (() => {
     const updateVersion = () => {
       document.querySelectorAll('.app-footer span').forEach(el => {
-        if (el.textContent.includes('v0.3.41') || el.textContent.includes('v0.3.42')) el.textContent = el.textContent.replace(/v0\.3\.4[12]/g, 'v0.3.43');
+        el.textContent = el.textContent.replace(/v0\.3\.\d+|v0\.4\.0-reorg\.\d+/g, 'v0.4.0-reorg.1');
       });
       if (new URLSearchParams(location.search).get('view') === 'remote' &&
           !document.querySelector('.remote-version, .remote-version-launcher')) {
         const label = document.createElement('div');
         label.className = 'remote-version-launcher';
-        label.textContent = 'v0.3.43';
+        label.textContent = 'v0.4.0-reorg.1';
         label.setAttribute('aria-label', 'App version');
         label.style.cssText = 'position:fixed;left:16px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:5;font:11px/16px system-ui,sans-serif;color:#8794a6;opacity:.85;pointer-events:none';
         document.body.appendChild(label);
@@ -43,6 +43,7 @@
   })();
 </script>
 <style>
+.reorg-branch-label{position:fixed;top:8px;right:8px;z-index:10000;padding:5px 9px;background:#2c2254;color:#fff;border:1px solid #a89bff;border-radius:6px;font:700 11px/1.2 system-ui,sans-serif;pointer-events:none}
 #clock-main.remote-action-red{background:#b33434;border-color:#b33434;color:white}
 #clock-main.remote-action-green{background:#21794a;border-color:#21794a;color:white}
 </style>
