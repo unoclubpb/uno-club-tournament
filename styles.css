@@ -1186,3 +1186,21 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 .setup-page #saved-layouts .default-layout-actions{grid-template-rows:repeat(2,minmax(38px,auto))}
 .setup-page #saved-layouts .default-layout-actions::before{content:"";grid-column:1 / -1;grid-row:1;visibility:hidden}
 .setup-page #saved-layouts .default-layout-actions>button{grid-column:1 / -1;grid-row:2}
+
+/* Reorganization v34: Saved Layout designer color controls must drive every visible preview item. */
+#saved-layout-form .designer-tv.clock-appearance-preview .preview-countdown[data-countdown]{color:var(--clock-timer);-webkit-text-fill-color:currentColor}
+#saved-layout-form .designer-tv.clock-appearance-preview[data-timer-style="separate"] .timer-minutes,
+#saved-layout-form .designer-tv.clock-appearance-preview[data-timer-style="separate"] .timer-colon{color:var(--clock-minutes);-webkit-text-fill-color:currentColor}
+#saved-layout-form .designer-tv.clock-appearance-preview[data-timer-style="separate"] .timer-seconds{color:var(--clock-seconds);-webkit-text-fill-color:currentColor}
+#saved-layout-form .designer-tv.clock-appearance-preview[data-timer-style="gradient"] .preview-countdown,
+#saved-layout-form .designer-tv.clock-appearance-preview[data-timer-style="stripes"] .preview-countdown{-webkit-text-fill-color:transparent}
+#saved-layout-form .designer-tv.clock-appearance-preview .preview-current{color:var(--clock-current-blinds)}
+#saved-layout-form .designer-tv.clock-appearance-preview .designer-tv-heading span,
+#saved-layout-form .designer-tv.clock-appearance-preview .designer-tv-heading strong,
+#saved-layout-form .designer-tv.clock-appearance-preview .designer-tv-time>span,
+#saved-layout-form .designer-tv.clock-appearance-preview .designer-tv-blinds>span,
+#saved-layout-form .designer-tv.clock-appearance-preview .designer-tv-blinds>small,
+#saved-layout-form .designer-tv.clock-appearance-preview .designer-tv-side>span,
+#saved-layout-form .designer-tv.clock-appearance-preview .designer-tv-side>strong{color:var(--clock-text)}
+#saved-layout-form .designer-tv.clock-appearance-preview .designer-tv-heading .preview-level{color:var(--clock-level)}
+#saved-layout-form .designer-tv.clock-appearance-preview .preview-next{color:var(--clock-next-blinds)}
