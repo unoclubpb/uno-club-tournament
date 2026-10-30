@@ -45,11 +45,12 @@ test("published app retains finished Tournament Design and Management features",
  assert.match(app, /renderTournamentDesign/);
  assert.ok(app.includes("tournament-design-screen.mjs"), "Tournament Design module import missing");
  assert.match(app, /renderSavedLayouts/);
+ assert.ok(app.includes("data-action=\"create-layout\""), "Missing header Create Layout action");
  assert.ok(app.includes("Edit This Tournament"), "Missing Management tournament editor");
  for (const marker of ["Saved Structures", "Saved Layouts", "setup-library-layout", "show-structures", "show-layouts"]) {
   assert.ok(design.includes(marker), "Missing Tournament Design feature: " + marker);
  }
- for (const marker of ["Create Layout", "Default Layout", "data-edit-layout", "data-delete-layout", "data-copy-layout"]) {
+ for (const marker of ["Default Layout", "data-edit-layout", "data-delete-layout", "data-copy-layout"]) {
   assert.ok(layouts.includes(marker), "Missing Saved Layouts feature: " + marker);
  }
 });
