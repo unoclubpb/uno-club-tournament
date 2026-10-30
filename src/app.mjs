@@ -27,7 +27,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.34 · Reorganization';
+const APP_VERSION='0.4.0-reorg.35 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -864,6 +864,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   if(el.dataset.profilePanel){if(pointsEditor){toast('Save or cancel your point edits first.');return;}profilePanel=el.dataset.profilePanel;if(profilePanel!=='details'){profileHistoryMode=profilePanel==='points'?'points':'tournaments';showPlayerHistory();}$('.player-profile-panels').dataset.panel=profilePanel;for(const button of document.querySelectorAll('[data-profile-panel]'))button.setAttribute('aria-pressed',String(button.dataset.profilePanel===profilePanel));return;}
   if(el.dataset.player){pointsEditor=null;profileHistoryMode='tournaments';playerDetail=el.dataset.player;profilePanel='details';render();return;}
   if(el.dataset.createTemplate){newTournament(el.dataset.createTemplate);return;}
+  if(el.dataset.designItem){const item=el.textContent.trim();const section=document.querySelector('[data-layout-panel="appearance"]');document.querySelector('#designer-selected-item').value=item;document.querySelector('#designer-item-title').value=item.toUpperCase();for(const node of document.querySelectorAll('[data-layout-panel]'))node.hidden=node!==section;for(const button of document.querySelectorAll('[data-layout-tab]'))button.classList.toggle('primary',button.dataset.layoutTab==='appearance');return;}
   if(el.dataset.layoutTab){for(const node of document.querySelectorAll('[data-layout-panel]'))node.hidden=node.dataset.layoutPanel!==el.dataset.layoutTab;for(const button of document.querySelectorAll('[data-layout-tab]'))button.classList.toggle('primary',button.dataset.layoutTab===el.dataset.layoutTab);return;}
   if(el.dataset.editLayout||el.dataset.copyLayout){const layout=(state.clockLayouts||[]).find(l=>l.id===(el.dataset.editLayout||el.dataset.copyLayout));if(layout)openLayout(layout,!!el.dataset.copyLayout);return;}
   if(el.dataset.deleteLayout){if(await confirmApp('Delete this saved layout?'))await commit({type:'clock-layout-delete',id:el.dataset.deleteLayout});return;}
@@ -915,7 +916,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
     case 'signout':{const {error}=await db.auth.signOut();if(error)throw error;acceptSession(null);break;}
     case 'show-structures':setupLibraryTab='structures';render();break;
     case 'show-layouts':setupLibraryTab='layouts';render();break;
-    case 'create-layout':openLayout();break;
+    case 'create-layout':{const layouts=state.clockLayouts||[];if(!layouts.length){openLayout();break;}modal('Create Clock Layout',`<form id="layout-base-form"><p>Choose an existing layout as your starting point.</p><label>Base New Layout On<select name="baseId"><option value="default">Default Layout</option>${layouts.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('')}</select></label><div class="button-row"><button type="submit" class="button primary">Create Layout</button><button type="button" class="button secondary" data-action="close-modal">Cancel</button></div></form>`);break;}
     case 'duplicate-default-layout':openLayout({name:'Default Layout Copy',appearance:clockAppearance(state.clockAppearanceDefaults)},false);break;
     case 'cancel-layout':layoutDraft=null;setupLibraryTab='layouts';render();break;
     case 'new-structure':{const value=sampleTemplate();value.name='New tournament structure';value.clockAppearance=clockAppearance(state.clockAppearanceDefaults);editor={value,isNew:true,event:false,version};view='setup';render();break;}
@@ -1000,6 +1001,7 @@ document.addEventListener('submit',async event=>{event.preventDefault();const fo
   }
   if(form.id==='player-form'){let overrideCutoff=fd.get('overrideCutoff')==='true';const registrationTournamentId=fd.get('registrationTournamentId');if(registrationTournamentId&&!overrideCutoff){const permission=await registrationPermission(state.tournaments.find(t=>t.id===registrationTournamentId),true);if(!permission.allowed)return;overrideCutoff=permission.overrideCutoff;}if(await commit({type:'player-save',id:fd.get('id')||id(),name:fd.get('name'),phone:fd.get('phone'),notes:fd.get('notes'),...(registrationTournamentId?{registrationTournamentId,overrideCutoff}:{})})){if(dlg.open)dlg.close();toast('Player saved.');render();}return;}
   if(form.id==='new-tournament-form'){if(current()&&current().status!=='completed'&&!current().archivedAt){toast('Finish or archive the current tournament before creating another.',true);return;}const eventId=id();if(await commit({type:'tournament-create',id:eventId,name:fd.get('name'),date:fd.get('date'),templateId:fd.get('templateId'),clockAppearance:readAppearance(form)})){dlg.close();chooseTournament(eventId);go('signup');toast('Tournament created.');}return;}
+  if(form.id==='layout-base-form'){event.preventDefault();const key=String(fd.get('baseId')||'default');const base=key==='default'?null:(state.clockLayouts||[]).find(l=>l.id===key);dlg.close();openLayout(base?{name:'New Layout',appearance:base.appearance}:null);return;}
   if(form.id==='saved-layout-form'){
     if(!layoutDraft)throw new Error('Open a layout before saving.');
     const layout={id:layoutDraft.id||id(),name:String(fd.get('layoutName')||'').trim(),appearance:readAppearance(form)};
