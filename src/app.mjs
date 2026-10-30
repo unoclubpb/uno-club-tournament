@@ -1,3 +1,4 @@
+import {refreshDesignLayoutPreviews} from './tournament-design-layout-previews.mjs';
 import {updateDesignLayoutClock} from './tournament-design-layout-clock.mjs';
 import {createLayoutDraft} from './tournament-design-layout-draft.mjs';
 import {rebuyBreakCheck} from './tournament-design-rebuy.mjs';
@@ -26,7 +27,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.32 · Reorganization';
+const APP_VERSION='0.4.0-reorg.33 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -175,7 +176,7 @@ function home(){return homeModule?homeModule.renderHome({t:homeTournament(),icon
 function settingsFields(s){return renderDesignSettings(s,{num,money});}
 function readSettings(form,base){return readDesignSettings(form,base,{clone,wholeDollars});}
 function levelRows(levels){return designLevelRows(levels,{esc,clockLayouts:state.clockLayouts||[]});}
-function refreshSavedLayoutPreviews(){if(view!=='setup')return;for(const frame of document.querySelectorAll('[data-saved-layout-preview]')){const key=frame.dataset.savedLayoutPreview,layout=(state.clockLayouts||[]).find(l=>l.id===key),screen=frame.querySelector('.designer-tv');if(screen){applyClockAppearance(screen,layout?.appearance||state.clockAppearanceDefaults||ORIGINAL_CLOCK_APPEARANCE);if(frame.clientWidth)screen.style.zoom=String(frame.clientWidth/780);}}const live=$('#saved-layout-form .designer-tv');if(live&&layoutDraft)applyClockAppearance(live,layoutDraft.appearance);}
+function refreshSavedLayoutPreviews(){if(view!=='setup')return;refreshDesignLayoutPreviews({document,clockLayouts:state.clockLayouts||[],defaults:state.clockAppearanceDefaults,originalAppearance:ORIGINAL_CLOCK_APPEARANCE,layoutDraft,applyClockAppearance});}
 function updateLayoutDesignerClock(){updateDesignLayoutClock($('#saved-layout-form'));}
 function savedLayoutView(){return renderSavedLayouts({layoutDraft,clockLayouts:state.clockLayouts||[],esc,renderLayoutEditor,renderClockAppearance,renderClockLayoutScreen});}
 function openLayout(layout=null,duplicate=false){layoutDraft=createLayoutDraft(layout,duplicate,state.clockAppearanceDefaults,clockAppearance);setupLibraryTab='layouts';view='setup';render();}
