@@ -1,7 +1,7 @@
 // Shared application foundation for the Reorganization branch.
 // Screen extraction and lazy loading will be introduced in later phases.
 export const APP_BUILD = Object.freeze({
-  version: "0.4.0-reorg.35",
+  version: "0.4.0-reorg.36",
   channel: "Reorganization",
   production: false
 });
