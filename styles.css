@@ -1211,3 +1211,13 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 .setup-page .clock-layout-editor-shell .designer-preview-surface{width:min(100%,calc((100dvh - 320px) * 16 / 9))!important;aspect-ratio:16/9;flex-shrink:0}
 .setup-page .clock-layout-editor-shell .designer-workspace{align-items:start}
 @media(max-width:900px){.setup-page .clock-layout-editor-shell .designer-workspace{grid-template-columns:minmax(0,1fr)!important}.setup-page .clock-layout-editor-shell .designer-preview-surface{width:min(100%,calc((100dvh - 350px) * 16 / 9))!important}}
+
+/* Reorganization v38: pin the full clock preview; scroll only right-side controls. */
+.setup-page #saved-layout-form>.clock-layout-editor-scroll{overflow:hidden!important;scrollbar-gutter:auto!important;min-height:0!important}
+.setup-page #saved-layout-form .designer-workspace{height:100%;min-height:0;overflow:hidden;align-items:stretch!important}
+.setup-page #saved-layout-form .designer-preview-column{min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.setup-page #saved-layout-form .designer-preview-surface{flex:0 0 auto;max-height:calc(100% - 48px);width:min(100%,calc((100dvh - 320px) * 16 / 9))!important}
+.setup-page #saved-layout-form .designer-right-column{height:100%;min-height:0;overflow:hidden}
+.setup-page #saved-layout-form .designer-controls-scroll{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.setup-page #saved-layout-form .designer-toolbar-row{flex-shrink:0}
+@media(max-width:900px){.setup-page #saved-layout-form>.clock-layout-editor-scroll{overflow-y:auto!important}.setup-page #saved-layout-form .designer-workspace{height:auto;overflow:visible}.setup-page #saved-layout-form .designer-right-column{height:min(360px,45vh)}.setup-page #saved-layout-form .designer-preview-surface{max-height:none}}
