@@ -27,7 +27,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.35 · Reorganization';
+const APP_VERSION='0.4.0-reorg.36 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -150,7 +150,9 @@ function bannerDetails(){
   if(view==='home')return null;
   let title=esc(names[view]||names.home),context='',action='';
   if(view==='setup'){
-    if(editor){context=editor.event?'Tournament settings':editor.isNew?'New structure':'Edit structure';action='<button class="button secondary small" data-action="close-editor">Cancel</button>';}
+    if(layoutDraft){context=layoutDraft.id?'Edit Clock Layout':'Create Clock Layout';action='<button type="button" class="button secondary small" data-action="cancel-layout">Back to Saved Layouts</button>';}
+    else if(!editor){action=setupLibraryTab==='layouts'?'<button type="button" class="button primary small" data-action="create-layout">+ Create Layout</button>':'<button type="button" class="button primary small" data-action="new-structure">+ Create Structure</button>';}
+    else if(editor){context=editor.event?'Tournament settings':editor.isNew?'New structure':'Edit structure';action='<button class="button secondary small" data-action="close-editor">Cancel</button>';}
     else if(!current()||current().status==='completed'||current().archivedAt)action='<button class="button primary small" data-action="new-tournament">+ New Tournament</button>';
   }
   if(view==='players'){
