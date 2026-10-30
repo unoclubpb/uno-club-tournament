@@ -1221,3 +1221,10 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 .setup-page #saved-layout-form .designer-controls-scroll{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
 .setup-page #saved-layout-form .designer-toolbar-row{flex-shrink:0}
 @media(max-width:900px){.setup-page #saved-layout-form>.clock-layout-editor-scroll{overflow-y:auto!important}.setup-page #saved-layout-form .designer-workspace{height:auto;overflow:visible}.setup-page #saved-layout-form .designer-right-column{height:min(360px,45vh)}.setup-page #saved-layout-form .designer-preview-surface{max-height:none}}
+
+/* Reorganization v40: matching saved structure/layout action grids. */
+.setup-page #saved-structures .saved-structure-actions,
+.setup-page #saved-layouts .layout-card-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:stretch}
+.setup-page #saved-structures .saved-structure-actions>button,
+.setup-page #saved-layouts .layout-card-actions>button{width:100%;min-width:0;min-height:38px;margin:0;padding:8px 5px;text-align:center;justify-content:center;white-space:normal}
+.setup-page #saved-layouts .layout-card-actions:not(.default-layout-actions)>button:last-child{grid-column:1 / -1;width:calc(50% - 4px);justify-self:center}
