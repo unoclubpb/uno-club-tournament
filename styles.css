@@ -1204,3 +1204,10 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 #saved-layout-form .designer-tv.clock-appearance-preview .designer-tv-side>strong{color:var(--clock-text)}
 #saved-layout-form .designer-tv.clock-appearance-preview .designer-tv-heading .preview-level{color:var(--clock-level)}
 #saved-layout-form .designer-tv.clock-appearance-preview .preview-next{color:var(--clock-next-blinds)}
+
+/* Reorganization v36: keep the complete 16:9 Clock Designer preview within the fixed setup viewport. */
+.setup-page .clock-layout-editor-shell{padding:8px 14px!important}
+.setup-page .clock-layout-editor-shell .clock-layout-editor-scroll{padding:6px 10px!important}
+.setup-page .clock-layout-editor-shell .designer-preview-surface{width:min(100%,calc((100dvh - 320px) * 16 / 9))!important;aspect-ratio:16/9;flex-shrink:0}
+.setup-page .clock-layout-editor-shell .designer-workspace{align-items:start}
+@media(max-width:900px){.setup-page .clock-layout-editor-shell .designer-workspace{grid-template-columns:minmax(0,1fr)!important}.setup-page .clock-layout-editor-shell .designer-preview-surface{width:min(100%,calc((100dvh - 350px) * 16 / 9))!important}}
