@@ -27,7 +27,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.37 · Reorganization';
+const APP_VERSION='0.4.0-reorg.38 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -150,7 +150,7 @@ function bannerDetails(){
   if(view==='home')return null;
   let title=esc(names[view]||names.home),context='',action='';
   if(view==='setup'){
-    if(layoutDraft){context=layoutDraft.id?'Edit Clock Layout':'Create Clock Layout';action='<button type="button" class="button secondary small" data-action="cancel-layout">Back to Saved Layouts</button>';}
+    if(layoutDraft){context=layoutDraft.id?'Edit Clock Layout':'Create Clock Layout';action='<button type="button" class="button primary small" data-action="save-layout">Save Layout</button><button type="button" class="button secondary small" data-action="cancel-layout">Back to Saved Layouts</button>';}
     else if(!editor){action=setupLibraryTab==='layouts'?'<button type="button" class="button primary small" data-action="create-layout">+ Create Layout</button>':'<button type="button" class="button primary small" data-action="new-structure">+ Create Structure</button>';}
     else if(editor){context=editor.event?'Tournament settings':editor.isNew?'New structure':'Edit structure';action='<button class="button secondary small" data-action="close-editor">Cancel</button>';}
     else if(!current()||current().status==='completed'||current().archivedAt)action='<button class="button primary small" data-action="new-tournament">+ New Tournament</button>';
@@ -181,7 +181,9 @@ function levelRows(levels){return designLevelRows(levels,{esc,clockLayouts:state
 function refreshSavedLayoutPreviews(){if(view!=='setup')return;refreshDesignLayoutPreviews({document,clockLayouts:state.clockLayouts||[],defaults:state.clockAppearanceDefaults,originalAppearance:ORIGINAL_CLOCK_APPEARANCE,layoutDraft,applyClockAppearance});}
 function updateLayoutDesignerClock(){updateDesignLayoutClock($('#saved-layout-form'));}
 function savedLayoutView(){return renderSavedLayouts({layoutDraft,clockLayouts:state.clockLayouts||[],esc,renderLayoutEditor,renderClockAppearance,renderClockLayoutScreen});}
-function openLayout(layout=null,duplicate=false){layoutDraft=createLayoutDraft(layout,duplicate,state.clockAppearanceDefaults,clockAppearance);setupLibraryTab='layouts';view='setup';render();}
+let layoutInitialSnapshot=null;
+function layoutFormSnapshot(form){return JSON.stringify([...new FormData(form).entries()].filter(([key])=>key!=='preset').map(([key,value])=>[key,String(value)]));}
+function openLayout(layout=null,duplicate=false){layoutDraft=createLayoutDraft(layout,duplicate,state.clockAppearanceDefaults,clockAppearance);setupLibraryTab='layouts';view='setup';render();layoutInitialSnapshot=$('#saved-layout-form')?layoutFormSnapshot($('#saved-layout-form')):null;}
 function setup(){return renderTournamentDesign({layoutDraft,editor,setupLibraryTab,state,current,tournamentStarted,esc,structureClockAppearance,settingsFields,levelRows,payoutFields,savedLayoutView,num,money});}
 function guaranteeEligibility(s,t=null){const {guaranteeAmount,guaranteePlayers}=guaranteeSettings(s);return `${t?`${t.entries.length} registered. `:''}${money(guaranteeAmount)} guaranteed to First Place with ${num(guaranteePlayers)} registered players. Below ${num(guaranteePlayers)}, two places are paid: 65% / 35%.`;}
 function readGuarantee(form,s){
@@ -920,7 +922,8 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
     case 'show-layouts':setupLibraryTab='layouts';render();break;
     case 'create-layout':{const layouts=state.clockLayouts||[];if(!layouts.length){openLayout();break;}modal('Create Clock Layout',`<form id="layout-base-form"><p>Choose an existing layout as your starting point.</p><label>Base New Layout On<select name="baseId"><option value="default">Default Layout</option>${layouts.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('')}</select></label><div class="button-row"><button type="submit" class="button primary">Create Layout</button><button type="button" class="button secondary" data-action="close-modal">Cancel</button></div></form>`);break;}
     case 'duplicate-default-layout':openLayout({name:'Default Layout Copy',appearance:clockAppearance(state.clockAppearanceDefaults)},false);break;
-    case 'cancel-layout':layoutDraft=null;setupLibraryTab='layouts';render();break;
+    case 'save-layout':$('#saved-layout-form')?.requestSubmit();break;
+    case 'cancel-layout':{const form=$('#saved-layout-form');if(form&&layoutInitialSnapshot!==null&&layoutFormSnapshot(form)!==layoutInitialSnapshot){if(!await confirmApp('You have unsaved layout changes. Go back without saving?','Discard Changes','Discard Changes'))break;}layoutDraft=null;layoutInitialSnapshot=null;setupLibraryTab='layouts';render();break;}
     case 'new-structure':{const value=sampleTemplate();value.name='New tournament structure';value.clockAppearance=clockAppearance(state.clockAppearanceDefaults);editor={value,isNew:true,event:false,version};view='setup';render();break;}
     case 'event-settings':{const t=current();editor={event:true,version,value:{id:t.id,name:t.name,settings:clone(t.settings),levels:clone(t.levels),clockAppearance:clockAppearance(t.clockAppearance)}};view='setup';render();break;}
     case 'close-editor':editor=null;render();break;
