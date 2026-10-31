@@ -37,13 +37,13 @@ jobs:
           node - <<'NODE'
           const fs = require('fs');
           const html = fs.readFileSync('index.html', 'utf8');
-          const match = html.match(/const current='(\\d+\\.\\d+\\.\\d+-reorg\\.\\d+)'/);
+          const match = html.match(/const current='(\d+\.\d+\.\d+-reorg\.\d+)'/);
           if (!match) throw new Error('Cannot find app release version in index.html');
           const version = match[1];
           if (!html.includes('styles.css?v=' + version) || !html.includes('app.js?v=' + version)) {
             throw new Error('Versioned app assets are not synchronized');
           }
-          fs.writeFileSync('version.json', JSON.stringify({ version, channel: 'Reorganization' }) + '\\n');
+          fs.writeFileSync('version.json', JSON.stringify({ version, channel: 'Reorganization' }) + '\n');
           console.log('Verified published version:', version);
           NODE
       - name: Publish verified build files only to Reorganization
