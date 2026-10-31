@@ -60,11 +60,14 @@
      const el=document.createElement('div');el.dataset.part=part;el.className='clock-edit-part'+(state.selected===o.id&&state.part===part?' active':'');
      el.textContent=part==='title'?o.title:o.value;
      Object.assign(el.style,{left:o[part+'X']+'%',top:o[part+'Y']+'%',fontSize:o[part+'Size']+'px',display:part==='title'&&!o.title?'none':'block',fontFamily:o[part+'Font']||'Arial'});
-     if(part==='value'&&o.kind==='roundClock'&&digitsAppearance){
+     if(part==='value'&&o.kind==='roundClock'&&digitsAppearance&&(!o.valueStyle||o.valueStyle==='stripes')){
       const style=digitsAppearance;
       if(style.backgroundImage&&style.backgroundImage!=='none'){el.style.backgroundImage=style.backgroundImage;el.style.backgroundClip='text';el.style.webkitBackgroundClip='text';el.style.webkitTextFillColor='transparent';}
       else {el.style.color=style.color;if(style.webkitTextFillColor&&style.webkitTextFillColor!=='transparent')el.style.webkitTextFillColor=style.webkitTextFillColor;}
      }
+     if(o[part+'Style']==='solid'){el.style.backgroundImage='none';el.style.webkitTextFillColor='currentColor';}
+     if(o[part+'Style']==='gradient'){el.style.backgroundImage='linear-gradient(90deg,#f45f83,#f3cb49,#61bafb)';el.style.backgroundClip='text';el.style.webkitBackgroundClip='text';el.style.webkitTextFillColor='transparent';}
+     if(o[part+'Style']==='stripes'&&!(part==='value'&&o.kind==='roundClock'&&digitsAppearance)){el.style.backgroundImage='repeating-linear-gradient(110deg,#f33 0 14px,#ffdc45 14px 28px,#48a6ff 28px 42px)';el.style.backgroundClip='text';el.style.webkitBackgroundClip='text';el.style.webkitTextFillColor='transparent';}
      group.append(el);
     }
     // Sizing is controlled by the contextual Size slider, not resize handles.
