@@ -1,16 +1,16 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#060f18"><title>Uno Club Tournament Director</title><meta name="description" content="Your tournament, under control. Saved structures, player sign-up, phone controls, and a dedicated TV clock."><link rel="apple-touch-icon" sizes="180x180" href="./tournament-remote-icon.png?v=0.4.0-reorg.45"><link rel="icon" type="image/png" href="./tournament-remote-icon.png?v=0.4.0-reorg.45"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Tournament Remote"><link rel="stylesheet" href="./styles.css?v=0.4.0-reorg.45"></head><body><div id="app"><div class="boot"><strong>UNO CLUB</strong><p>Opening Tournament Director…</p></div></div><div id="toast" role="status" aria-live="polite"></div><dialog id="dialog"></dialog><script type="module" src="./app.js?v=0.4.0-reorg.45"></script><script>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#060f18"><title>Uno Club Tournament Director</title><meta name="description" content="Your tournament, under control. Saved structures, player sign-up, phone controls, and a dedicated TV clock."><link rel="apple-touch-icon" sizes="180x180" href="./tournament-remote-icon.png?v=0.4.0-reorg.46"><link rel="icon" type="image/png" href="./tournament-remote-icon.png?v=0.4.0-reorg.46"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Tournament Remote"><link rel="stylesheet" href="./styles.css?v=0.4.0-reorg.46"></head><body><div id="app"><div class="boot"><strong>UNO CLUB</strong><p>Opening Tournament Director…</p></div></div><div id="toast" role="status" aria-live="polite"></div><dialog id="dialog"></dialog><script type="module" src="./app.js?v=0.4.0-reorg.46"></script><script>
   // Keep the displayed release number consistent across both entry points.
   (() => {
     const updateVersion = () => {
       document.querySelectorAll('.app-footer span').forEach(el => {
-        const updated = el.textContent.replace(/v0\.3\.\d+/g, 'v0.4.0-reorg.45');
+        const updated = el.textContent.replace(/v0\.3\.\d+/g, 'v0.4.0-reorg.46');
         if (updated !== el.textContent) el.textContent = updated;
       });
       if (new URLSearchParams(location.search).get('view') === 'remote' &&
           !document.querySelector('.remote-version, .remote-version-launcher')) {
         const label = document.createElement('div');
         label.className = 'remote-version-launcher';
-        label.textContent = 'v0.4.0-reorg.45';
+        label.textContent = 'v0.4.0-reorg.46';
         label.setAttribute('aria-label', 'App version');
         label.style.cssText = 'position:fixed;left:16px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:5;font:11px/16px system-ui,sans-serif;color:#8794a6;opacity:.85;pointer-events:none';
         document.body.appendChild(label);
@@ -43,44 +43,58 @@
 })();
 </script>
 <script>
-/* Published-version checker. Unlike GitHub commit metadata, version.json
-   is served by the same host as the running website. */
+/* Published update status: persistent modal, never reload during a check. */
 (() => {
- const current='0.4.0-reorg.45';
+ const current='0.4.0-reorg.46';
  const compare=(a,b)=>{const p=v=>String(v).match(/\d+/g)?.map(Number)||[];const x=p(a),y=p(b);for(let i=0;i<Math.max(x.length,y.length);i++){if((x[i]||0)!==(y[i]||0))return (x[i]||0)-(y[i]||0)}return 0};
- let busy=false,last=0;
- const safe=()=>!document.querySelector('#clock-main[data-clock="pause"]')&&new URLSearchParams(location.search).get('view')!=='clock';
- const status=(msg)=>{const e=document.querySelector('#published-release-status');if(e)e.textContent=msg};
- function refresh(){const u=new URL(location.href);u.searchParams.set('appv',String(Date.now()));location.replace(u.href)}
+ let busy=false,last=0,published=null;
+ const safe=()=>!document.querySelector('#clock-main[data-clock="pause"]')&&!['clock','remote'].includes(new URLSearchParams(location.search).get('view'));
+ function popup(){
+  let d=document.getElementById('release-update-dialog');
+  if(d)return d;
+  d=document.createElement('dialog');d.id='release-update-dialog';d.className='release-update-dialog';
+  d.innerHTML='<h2>Check for Updates</h2><p><strong>Installed:</strong> <span data-installed></span></p><p><strong>Published:</strong> <span data-published>Checking…</span></p><p data-message role="status" aria-live="polite"></p><div class="release-update-actions"><button type="button" class="button primary" data-install hidden>Install Update</button><button type="button" class="button secondary" data-close>Close</button></div>';
+  d.querySelector('[data-installed]').textContent='v'+current;
+  d.querySelector('[data-close]').addEventListener('click',()=>d.close());
+  d.querySelector('[data-install]').addEventListener('click',()=>{
+   if(!published||compare(published,current)<=0)return;
+   if(!safe()){d.querySelector('[data-message]').textContent='Close the active clock or remote before installing an update.';return;}
+   const u=new URL(location.href);u.searchParams.set('appv',published);location.assign(u.href);
+  });
+  document.body.append(d);return d;
+ }
+ function show(message,version,allowInstall=false){
+  const d=popup();d.querySelector('[data-published]').textContent=version?'v'+version:'Unavailable';
+  d.querySelector('[data-message]').textContent=message;
+  d.querySelector('[data-install]').hidden=!allowInstall;
+  if(!d.open)d.showModal();
+ }
  async function check(manual=false){
-  if(busy||(!manual&&(document.hidden||Date.now()-last<60000)))return;
-  busy=true;last=Date.now();status('Checking published version…');
+  if(busy)return;
+  if(!manual&&(document.hidden||Date.now()-last<60000))return;
+  busy=true;last=Date.now();
+  if(manual)show('Checking the published website version…',null);
   try{
-   const response=await fetch('./version.json?check='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
-   if(!response.ok)throw Error('Version file unavailable');
-   const data=await response.json();
-   if(!/^\d+\.\d+\.\d+-reorg\.\d+$/.test(data.version))throw Error('Invalid release information');
-   const published=data.version;
-   if(compare(published,current)>0){status('Published v'+published+' available'+(safe()?' — updating…':' — close active clock to update'));if(safe())refresh();}
-   else if(compare(published,current)<0)status('Published: v'+published+' · Installed: v'+current+' (website deployment still behind)');
-   else status('Published and installed: v'+current);
-  }catch(err){status('Cannot check published version; check connection');}
+   const r=await fetch('./version.json?check='+Date.now(),{cache:'no-store'});
+   if(!r.ok)throw Error('Published version file unavailable');
+   const data=await r.json();
+   if(!/^\d+\.\d+\.\d+-reorg\.\d+$/.test(data.version))throw Error('Invalid version file');
+   published=data.version;
+   const diff=compare(published,current);
+   const msg=diff>0?'A newer version is published and ready to install.':diff<0?'The published website is still behind the installed version. No update is available yet.':'You are up to date.';
+   const badge=document.querySelector('#published-release-status');if(badge)badge.textContent='Published: v'+published;
+   if(manual)show(msg,published,diff>0);
+  }catch(err){if(manual)show('Unable to check the published version. Please try again.',null);const badge=document.querySelector('#published-release-status');if(badge)badge.textContent='Version check unavailable';}
   finally{busy=false}
  }
  function install(){
-  const footer=document.querySelector('.app-footer');
-  if(!footer||document.querySelector('#published-release-status'))return;
+  const footer=document.querySelector('.app-footer');if(!footer||footer.querySelector('#check-published-release'))return;
   const wrap=document.createElement('span');wrap.className='release-checker';
-  wrap.innerHTML='<button type="button" class="button secondary small" id="check-published-release">Check for Update</button><small id="published-release-status" aria-live="polite">Published version not checked</small>';
-  footer.append(wrap);wrap.querySelector('button').addEventListener('click',()=>check(true));
-  check(true);
+  wrap.innerHTML='<button type="button" class="button secondary small" id="check-published-release">Check for Updates</button><small id="published-release-status">Published version not checked</small>';
+  footer.append(wrap);wrap.querySelector('button').addEventListener('click',()=>check(true));check(false);
  }
  new MutationObserver(install).observe(document.getElementById('app'),{childList:true,subtree:true});
- install();
- window.addEventListener('pageshow',()=>check());
- document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});
- window.addEventListener('online',()=>check());
- setInterval(()=>check(),5*60*1000);
+ install();window.addEventListener('pageshow',()=>check());document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});window.addEventListener('online',()=>check());setInterval(()=>check(),5*60*1000);
 })();
 </script>
 <script>
@@ -117,4 +131,4 @@
   acquire();
 })();
 </script>
-<script defer src="./clock-drag-editor.js?v=0.4.0-reorg.45"></script></body></html>
+<script defer src="./clock-drag-editor.js?v=0.4.0-reorg.46"></script></body></html>
