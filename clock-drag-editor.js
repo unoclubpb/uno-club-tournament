@@ -176,7 +176,7 @@
   }
   function undo(redo=false){const source=redo?state.future:state.history,dest=redo?state.history:state.future;if(!source.length)return;dest.push(snap());state.objects=JSON.parse(source.pop());state.selected=null;state.part=null;redraw()}
   bar.addEventListener('click',e=>{if(e.target.closest('[data-clock-undo]'))undo();if(e.target.closest('[data-clock-redo]'))undo(true)});
-  form.querySelectorAll('[data-design-item]').forEach(b=>{b.draggable=false;b.addEventListener('click',()=>{const kind=b.dataset.designItem;if(state.objects.some(o=>o.kind===kind)){checkpoint();state.objects=state.objects.filter(o=>o.kind!==kind);if(!state.objects.some(o=>o.id===state.selected)){state.selected=state.objects[0]?.id||null;state.part=null;}redraw();}else add(kind)})});
+  form.querySelectorAll('[data-design-item]').forEach(b=>{b.draggable=false;b.addEventListener('click',event=>{event.stopPropagation();const kind=b.dataset.designItem;if(state.objects.some(o=>o.kind===kind)){checkpoint();state.objects=state.objects.filter(o=>o.kind!==kind);if(!state.objects.some(o=>o.id===state.selected)){state.selected=state.objects[0]?.id||null;state.part=null;}redraw();}else add(kind)})});
   // Keep DOM nodes stable during pointer gestures. Replacing them mid-drag
   // cancels native double-click targeting and pointer capture in browsers.
   const syncPositions=()=>{
