@@ -37,7 +37,8 @@
    const helpRow=document.createElement('div');
    helpRow.className='designer-preview-help-row';
    previewHelp.parentNode.insertBefore(helpRow,previewHelp);
-   helpRow.append(previewHelp,backgroundButton);
+   helpRow.append(backgroundButton);
+   previewHelp.remove();
    backgroundButton.style.position='static';
    backgroundButton.style.inset='auto';
   }
