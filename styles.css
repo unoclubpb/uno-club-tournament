@@ -1462,3 +1462,18 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
  .app-footer>span:nth-of-type(2){grid-column:2!important}
  .app-footer>.release-checker{grid-column:3!important}
 }
+
+
+/* Reorganization v70: Background action sits below the preview, aligned with help text. */
+.setup-page #saved-layout-form .designer-preview-help-row{
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:12px!important;flex:0 0 auto!important;min-width:0!important;
+ margin-top:7px!important;
+}
+.setup-page #saved-layout-form .designer-preview-help-row>.small-copy{
+ margin:0!important;min-width:0!important;flex:1 1 auto!important;
+}
+.setup-page #saved-layout-form .designer-preview-help-row>.designer-background-button{
+ position:static!important;inset:auto!important;transform:none!important;
+ flex:0 0 auto!important;margin:0!important;z-index:auto!important;
+}
