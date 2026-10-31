@@ -1251,3 +1251,7 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 
 .clock-style-row{display:flex;align-items:center;gap:8px}.clock-style-row select{flex:1;min-width:0}.clock-style-row button{min-width:40px;min-height:38px;border:1px solid var(--line);background:var(--paper);border-radius:7px;cursor:pointer}.clock-palette{padding:10px;border:1px solid var(--line);border-radius:8px;margin:5px 0;display:flex;flex-direction:column;gap:8px}.clock-palette[hidden]{display:none}.clock-palette label{display:flex;align-items:center;justify-content:space-between;gap:8px}.clock-palette input[type=color]{width:54px;height:34px;cursor:pointer}
 .clock-edit-part{white-space:nowrap}.clock-edit-part.active{outline:2px dashed #facc15;outline-offset:6px}
+
+/* Clock Designer tab state follows the active panel on both click and item selection. */
+#saved-layout-form [data-layout-tab][aria-pressed="true"]{background:#2563eb!important;color:#fff!important;border-color:#2563eb!important}
+#saved-layout-form [data-layout-tab][aria-pressed="false"]{background:#fff!important;color:var(--ink)!important;border-color:#d9dfd6!important}
