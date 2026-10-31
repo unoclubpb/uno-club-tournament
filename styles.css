@@ -1563,3 +1563,11 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 .setup-page #saved-layout-form .clock-grid-modes [data-clock-mode="free"]{
  text-indent:-4px!important;
 }
+
+
+/* Reorganization v78: clock-item buttons show when an item is already on the preview. */
+.setup-page #saved-layout-form .designer-item-library [data-design-item].clock-item-present{
+ background:#2563eb!important;border-color:#2563eb!important;
+ color:#fff!important;-webkit-text-fill-color:#fff!important;
+ font-weight:700!important;opacity:1!important;cursor:default!important;
+}
