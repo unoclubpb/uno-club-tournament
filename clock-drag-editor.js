@@ -73,6 +73,14 @@
     }
    });
   };
+  let lastTap=null;
+  const markSelection=()=>{
+   for(const g of layer.querySelectorAll('.clock-edit-group')){
+    const selected=g.dataset.id===state.selected;
+    g.classList.toggle('active',selected);
+    for(const p of g.querySelectorAll('[data-part]'))p.classList.toggle('active',selected&&p.dataset.part===state.part);
+   }
+  };
   layer.addEventListener('dblclick',e=>{
    const el=e.target.closest('[data-part]');if(!el)return;
    state.selected=el.parentElement.dataset.id;state.part=el.dataset.part;
@@ -85,6 +93,11 @@
    const part=e.target.closest('[data-part]');
    const wasSelected=state.selected===o.id;
    state.selected=o.id;
+   const now=Date.now();
+   const key=part?o.id+':'+part.dataset.part:null;
+   const twice=key&&lastTap&&lastTap.key===key&&now-lastTap.when<550;
+   lastTap=key?{key,when:now}:null;
+   if(twice){state.part=part.dataset.part;markSelection();state.drag=null;return;}
    if(!wasSelected)state.part=null;
    if(!wasSelected){group.classList.add('active');}
    const rect=surface.getBoundingClientRect();
@@ -113,8 +126,8 @@
   });
   const finish=()=>{
    const d=state.drag;if(!d)return;state.drag=null;
-   if(d.moved&&snap()!==d.before){state.history.push(d.before);state.future=[];}
-   redraw();
+   if(d.moved&&snap()!==d.before){state.history.push(d.before);state.future=[];redraw();}
+   else {markSelection();buttons();}
   };
   layer.addEventListener('pointerup',finish);
   layer.addEventListener('pointercancel',finish);
