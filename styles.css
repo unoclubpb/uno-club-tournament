@@ -1310,3 +1310,5 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 .setup-page #saved-layout-form .designer-toolbar-row .clock-layout-segmented>button{height:48px!important;min-height:48px!important;flex:1 1 0!important;border-radius:0!important;background:#fff!important;color:#203330!important}
 .setup-page #saved-layout-form .designer-toolbar-row .clock-layout-segmented>button[aria-pressed="true"]{background:#2563eb!important;color:#fff!important}
 .setup-page #saved-layout-form .designer-toolbar-row .clock-layout-segmented>button[aria-pressed="false"]{background:#fff!important;color:#203330!important}
+
+.setup-page #saved-layout-form .clock-edit-tools{transform:translateY(-58px)!important}
