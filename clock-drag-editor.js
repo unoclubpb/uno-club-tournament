@@ -7,6 +7,9 @@
   const form=document.querySelector('#saved-layout-form'),surface=form?.querySelector('.designer-preview-surface');
   if(!form||!surface||form.dataset.dragEditorReady)return;
   form.dataset.dragEditorReady='true';
+  // The library is click-to-toggle; remove the obsolete drag-and-drop guidance.
+  const itemHelp=form.querySelector('[data-layout-panel="items"] > .small-copy');
+  if(itemHelp) itemHelp.remove();
   const state={objects:[],selected:null,part:null,history:[],future:[],drag:null};
   const defaults=[['roundClock',4,30,44,49,16,58],['roundNumber',73,5,24,20,12,27],['currentBlinds',51,37,28,29,13,28],['nextBlinds',51,68,28,25,12,24],['playersRemaining',80,40,18,24,11,27],['prizePool',80,70,18,24,11,24]];
   state.objects=defaults.map(([kind,x,y,w,h,titleSize,valueSize])=>{const [title,value]=items[kind];return {id:kind+'-starter',kind,x,y,w,h,title,value,titleX:4,titleY:10,valueX:4,valueY:43,titleSize,valueSize,titleVisible:true};});
