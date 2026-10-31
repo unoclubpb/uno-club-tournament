@@ -115,7 +115,7 @@
    }
    if(backgroundButton)backgroundButton.setAttribute('aria-pressed',String(tab==='background'));
   };
-  form.querySelectorAll('[data-layout-tab]').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.layoutTab)));
+  form.querySelectorAll('[data-layout-tab]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();setTab(btn.dataset.layoutTab)}));
   setTab('items'); // Initialize the active blue/white tab before any user interaction.
   const selectAppearanceTab=()=>setTab('appearance');
   const updateControls=()=>{
