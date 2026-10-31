@@ -31,16 +31,29 @@
   modes.addEventListener('change',e=>{state.mode=e.target.value==='snap'?'snap':'free';surface.classList.toggle('clock-grid-active',state.mode==='snap');persist()});
   surface.classList.toggle('clock-grid-active',state.mode==='snap');
   const controls=document.createElement('div');controls.className='clock-edit-controls';
-  controls.innerHTML='<label>Selected Element <input data-clock-selection readonly></label><label>Displayed Title <span class="clock-title-entry"><input data-clock-title maxlength="80" placeholder="Optional — no title displayed"><button type="button" data-clear-title aria-label="Clear displayed title">×</button></span></label><label>Size <input type="range" min="8" max="250" data-clock-size value="100"><output data-clock-size-output>100</output></label><label>Color Style <select data-clock-style><option value="solid">Solid Color</option><option value="gradient">Multicolor Gradient</option><option value="stripes">Multicolor Stripes</option></select></label><label>Font <select data-clock-font><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Tahoma</option><option>Trebuchet MS</option><option>Courier New</option></select></label><button type="button" data-clock-remove>Remove selected item</button>';
+  controls.innerHTML='<label>Displayed Title <span class="clock-title-entry"><input data-clock-title maxlength="80" placeholder="Optional — no title displayed"><button type="button" data-clear-title aria-label="Clear displayed title">×</button></span></label><label>Size <input type="range" min="8" max="250" data-clock-size value="100"><output data-clock-size-output>100</output></label><label>Color Style <span class="clock-style-row"><select data-clock-style><option value="solid">Solid Color</option><option value="gradient">Multicolor Gradient</option><option value="stripes">Multicolor Stripes</option></select><button type="button" data-palette-toggle title="Edit colors" aria-label="Edit colors">🎨</button></span></label><div class="clock-palette" data-clock-palette hidden></div><label>Font <select data-clock-font><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Tahoma</option><option>Trebuchet MS</option><option>Courier New</option></select></label><label>Text Shadow <input type="checkbox" data-clock-shadow></label><label>Shadow Depth <input type="range" data-clock-shadow-depth min="0" max="30" value="5"></label><button type="button" data-clock-remove>Remove selected item</button>';
   const panel=form.querySelector('[data-layout-panel="appearance"]');
   if(panel){
-   for(const el of [...panel.children])if(el.matches('label,p'))el.hidden=true;
+   for(const el of [...panel.children])if(el!==controls&&el.tagName!=='H3')el.hidden=true;
    panel.append(controls);
   }
   const persist=()=>{savedField.value=encodeURIComponent(JSON.stringify({objects:state.objects,mode:state.mode}));};
   const snap=()=>JSON.stringify(state.objects);
   const checkpoint=()=>{state.history.push(snap());if(state.history.length>80)state.history.shift();state.future=[];buttons()};
   const buttons=()=>{bar.querySelector('[data-clock-undo]').disabled=!state.history.length;bar.querySelector('[data-clock-redo]').disabled=!state.future.length;persist()};
+  const paletteDefaults={solid:['#f4c542'],gradient:['#e85050','#f4c542','#4fa6ec'],stripes:['#e85050','#f4c542','#4fa6ec']};
+  const currentObject=()=>state.objects.find(v=>v.id===state.selected);
+  const currentPart=()=>state.part||'value';
+  const colorsFor=(o,part,style)=>{o.palette??={};o.palette[part]??={};return o.palette[part][style]??=[...paletteDefaults[style]];};
+  const drawPalette=()=>{
+   const el=controls.querySelector('[data-clock-palette]'),o=currentObject();if(!o||el.hidden)return;
+   const part=currentPart(),style=o[part+'Style']||(o.kind==='roundClock'?'stripes':'solid'),colors=colorsFor(o,part,style);
+   el.replaceChildren();
+   colors.forEach((color,i)=>{const row=document.createElement('label');row.textContent=style==='solid'?'Text Color':'Color '+(i+1);
+     const pick=document.createElement('input');pick.type='color';pick.value=/^#[0-9a-f]{6}$/i.test(color)?color:'#ffffff';pick.dataset.colorIndex=i;row.append(pick);el.append(row);});
+   if(style!=='solid'){const add=document.createElement('button');add.type='button';add.textContent='+ Add Color';add.dataset.addColor='';add.disabled=colors.length>=8;el.append(add);
+    const remove=document.createElement('button');remove.type='button';remove.textContent='Remove Last Color';remove.dataset.removeColor='';remove.disabled=colors.length<=2;el.append(remove);}
+  };
   const updateControls=()=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
    const part=state.part;
@@ -51,9 +64,11 @@
    const size=part==='title'?o.titleSize:part==='value'?o.valueSize:(o.groupSize||100);
    controls.querySelector('[data-clock-size]').value=size;
    controls.querySelector('[data-clock-size-output]').textContent=String(size)+'%';
-   controls.querySelector('[data-clock-selection]').value=part==='title'?(o.title||'Title (blank)'):part==='value'?'Digits / Value':(items[o.kind]?.[0]||o.kind)+' (Group)';
+   controls.querySelector('[data-clock-shadow]').checked=!!o[(part||'value')+'Shadow'];
+   controls.querySelector('[data-clock-shadow-depth]').value=o[(part||'value')+'ShadowDepth']??5;
    controls.querySelector('[data-clock-style]').value=o[(part||'value')+'Style']||(o.kind==='roundClock'?'stripes':'solid');
    controls.querySelector('[data-clock-font]').value=o[(part||'value')+'Font']||'Arial';
+   drawPalette();
   };
   const redraw=()=>{
    layer.replaceChildren();
@@ -69,9 +84,13 @@
       if(style.backgroundImage&&style.backgroundImage!=='none'){el.style.backgroundImage=style.backgroundImage;el.style.backgroundClip='text';el.style.webkitBackgroundClip='text';el.style.webkitTextFillColor='transparent';}
       else {el.style.color=style.color;if(style.webkitTextFillColor&&style.webkitTextFillColor!=='transparent')el.style.webkitTextFillColor=style.webkitTextFillColor;}
      }
-     if(o[part+'Style']==='solid'){el.style.backgroundImage='none';el.style.webkitTextFillColor='currentColor';}
-     if(o[part+'Style']==='gradient'){el.style.backgroundImage='linear-gradient(90deg,#f45f83,#f3cb49,#61bafb)';el.style.backgroundClip='text';el.style.webkitBackgroundClip='text';el.style.webkitTextFillColor='transparent';}
-     if(o[part+'Style']==='stripes'&&!(part==='value'&&o.kind==='roundClock'&&digitsAppearance)){el.style.backgroundImage='repeating-linear-gradient(110deg,#f33 0 14px,#ffdc45 14px 28px,#48a6ff 28px 42px)';el.style.backgroundClip='text';el.style.webkitBackgroundClip='text';el.style.webkitTextFillColor='transparent';}
+     const styleName=o[part+'Style']||(part==='value'&&o.kind==='roundClock'?'stripes':'solid');
+     const colors=colorsFor(o,part,styleName);
+     if(styleName==='solid'){el.style.backgroundImage='none';el.style.webkitTextFillColor='currentColor';el.style.color=colors[0];}
+     if(styleName==='gradient'){el.style.backgroundImage='linear-gradient(90deg,'+colors.join(',')+')';el.style.backgroundClip='text';el.style.webkitBackgroundClip='text';el.style.webkitTextFillColor='transparent';}
+     if(styleName==='stripes'){el.style.backgroundImage='repeating-linear-gradient(110deg,'+colors.map((v,i)=>v+' '+i*14+'px '+(i+1)*14+'px').join(',')+')';el.style.backgroundClip='text';el.style.webkitBackgroundClip='text';el.style.webkitTextFillColor='transparent';}
+     const depth=o[part+'ShadowDepth']??5;
+     el.style.textShadow=o[part+'Shadow']?('0 '+Math.round(depth/3)+'px '+depth+'px #000'):'none';
      group.append(el);
     }
     // Sizing is controlled by the contextual Size slider, not resize handles.
@@ -115,7 +134,7 @@
   layer.addEventListener('dblclick',e=>{
    const el=e.target.closest('[data-part]');if(!el)return;
    state.selected=el.parentElement.dataset.id;state.part=el.dataset.part;
-   redraw();
+   redraw();form.querySelector('[data-layout-tab="appearance"]')?.click();
   });
   layer.addEventListener('pointerdown',e=>{
    const group=e.target.closest('.clock-edit-group');if(!group)return;
@@ -128,9 +147,9 @@
    const key=part?o.id+':'+part.dataset.part:null;
    const twice=key&&lastTap&&lastTap.key===key&&now-lastTap.when<550;
    lastTap=key?{key,when:now}:null;
-   if(twice){state.part=part.dataset.part;markSelection();state.drag=null;return;}
+   if(twice){state.part=part.dataset.part;markSelection();state.drag=null;updateControls();form.querySelector('[data-layout-tab="appearance"]')?.click();return;}
    if(!wasSelected)state.part=null;
-   if(!wasSelected){group.classList.add('active');}
+   if(!wasSelected){group.classList.add('active');updateControls();form.querySelector('[data-layout-tab="appearance"]')?.click();}
    const rect=surface.getBoundingClientRect();
    state.drag={id:o.id,part:!resize&&state.part&&part?state.part:null,resize,x:e.clientX,y:e.clientY,original:JSON.parse(JSON.stringify(o)),before:snap(),rect,moved:false};
    layer.setPointerCapture(e.pointerId);
@@ -159,7 +178,7 @@
   const finish=()=>{
    const d=state.drag;if(!d)return;state.drag=null;
    if(d.moved&&snap()!==d.before){state.history.push(d.before);state.future=[];redraw();}
-   else {markSelection();buttons();}
+   else {markSelection();updateControls();buttons();}
   };
   layer.addEventListener('pointerup',finish);
   layer.addEventListener('pointercancel',finish);
@@ -176,15 +195,20 @@
     else {const previous=o.groupSize||100;const factor=size/previous;o.titleSize=Math.round(o.titleSize*factor);o.valueSize=Math.round(o.valueSize*factor);o.groupSize=size;}
     redraw();
    }
+   if(e.target.matches('[data-clock-shadow-depth]')){o[currentPart()+'ShadowDepth']=Number(e.target.value);redraw();}
   });
   controls.addEventListener('change',e=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
    if(e.target.matches('[data-clock-style]')){checkpoint();o[(state.part||'value')+'Style']=e.target.value;redraw();}
    if(e.target.matches('[data-clock-font]')){checkpoint();o[(state.part||'value')+'Font']=e.target.value;redraw();}
+   if(e.target.matches('[data-clock-shadow]')){checkpoint();o[currentPart()+'Shadow']=e.target.checked;redraw();}
+   if(e.target.matches('[data-color-index]')){checkpoint();colorsFor(o,currentPart(),o[currentPart()+'Style']||'solid')[Number(e.target.dataset.colorIndex)]=e.target.value;redraw();}
   });
   controls.addEventListener('click',e=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
    if(e.target.matches('[data-clear-title]')){checkpoint();o.title='';redraw();}
+   if(e.target.closest('[data-palette-toggle]')){const p=controls.querySelector('[data-clock-palette]');p.hidden=!p.hidden;drawPalette();}
+   if(e.target.matches('[data-add-color],[data-remove-color]')){checkpoint();const palette=colorsFor(o,currentPart(),o[currentPart()+'Style']||'solid');if(e.target.matches('[data-add-color]')&&palette.length<8)palette.push('#ffffff');if(e.target.matches('[data-remove-color]')&&palette.length>2)palette.pop();redraw();}
    if(e.target.matches('[data-clock-remove]')){checkpoint();state.objects=state.objects.filter(v=>v.id!==state.selected);state.selected=null;redraw();}
   });
   form.addEventListener('submit',persist,true);
