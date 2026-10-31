@@ -1262,3 +1262,17 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 #saved-layout-form .clock-layout-segmented [data-layout-tab]+[data-layout-tab]{border-left:1px solid #2563eb!important}
 #saved-layout-form .clock-layout-segmented [data-layout-tab][aria-pressed="true"]{background:#2563eb!important;color:white!important}
 #saved-layout-form .clock-layout-segmented [data-layout-tab][aria-pressed="false"]{background:#fff!important;color:#203330!important}
+
+/* Uno Club shared connected-toggle treatment: equal halves and readable inactive text */
+.uno-segmented{display:inline-flex!important;align-items:stretch!important;gap:0!important;padding:0!important;border:1px solid #2563eb!important;border-radius:9px!important;overflow:hidden!important;min-width:0}
+.uno-segmented>button{flex:1 1 0!important;width:50%!important;min-width:0!important;min-height:39px!important;max-width:none!important;white-space:nowrap!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important;color:#203330!important;-webkit-text-fill-color:#203330!important}
+.uno-segmented>button+button{border-left:1px solid #2563eb!important}
+.uno-segmented>button[aria-pressed="true"]{background:#2563eb!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
+.uno-segmented>button[aria-pressed="false"]{background:#fff!important;color:#203330!important;-webkit-text-fill-color:#203330!important}
+#saved-layout-form .clock-layout-segmented{display:flex!important;flex:1 1 0!important;width:auto!important}
+#saved-layout-form .clock-layout-segmented>button{flex:1 1 0!important;width:50%!important}
+#saved-layout-form .clock-edit-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#saved-layout-form .clock-grid-modes{display:flex;align-items:center;gap:8px;margin:0 0 0 auto;justify-content:flex-end}
+#saved-layout-form .clock-grid-modes .uno-segmented{min-width:220px}
+#saved-layout-form .clock-grid-modes .uno-segmented>button{font-size:13px;padding:7px 9px}
+#saved-layout-form .clock-mode-label{font-size:13px;font-weight:600}
