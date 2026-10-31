@@ -10,12 +10,12 @@
   // The library is click-to-toggle; remove the obsolete drag-and-drop guidance.
   const itemHelp=form.querySelector('[data-layout-panel="items"] > .small-copy');
   if(itemHelp) itemHelp.remove();
-  const state={objects:[],removed:{},selected:null,part:null,history:[],future:[],drag:null};
+  const state={objects:[],removed:{},backgroundColor:'#111d32',selected:null,part:null,history:[],future:[],drag:null};
   const defaults=[['roundClock',4,30,44,49,16,58],['roundNumber',73,5,24,20,12,27],['currentBlinds',51,37,28,29,13,28],['nextBlinds',51,68,28,25,12,24],['playersRemaining',80,40,18,24,11,27],['prizePool',80,70,18,24,11,24]];
   state.objects=defaults.map(([kind,x,y,w,h,titleSize,valueSize])=>{const [title,value]=items[kind];return {id:kind+'-starter',kind,x,y,w,h,title,value,titleX:4,titleY:10,valueX:4,valueY:43,titleSize,valueSize,titleVisible:true};});
   state.selected=state.objects[0].id;
   state.mode='free';
-  try{const saved=JSON.parse(decodeURIComponent(form.dataset.editorState||'null'));if(saved&&Array.isArray(saved.objects)){state.objects=saved.objects;state.removed=saved.removed||{};state.mode=saved.mode==='snap'?'snap':'free';state.selected=state.objects[0]?.id||null;}}catch{}
+  try{const saved=JSON.parse(decodeURIComponent(form.dataset.editorState||'null'));if(saved&&Array.isArray(saved.objects)){state.objects=saved.objects;state.removed=saved.removed||{};state.backgroundColor=saved.backgroundColor||'#111d32';state.mode=saved.mode==='snap'?'snap':'free';state.selected=state.objects[0]?.id||null;}}catch{}
   session=state;
   const original=surface.querySelector('.designer-tv');
   const clockDigits=original?.querySelector('[data-countdown]');
@@ -68,7 +68,7 @@
    // Remove legacy preview-only fields entirely; retain the working editor controls.
    panel.replaceChildren(controls);
   }
-  const persist=()=>{savedField.value=encodeURIComponent(JSON.stringify({objects:state.objects,removed:state.removed,mode:state.mode}));};
+  const persist=()=>{savedField.value=encodeURIComponent(JSON.stringify({objects:state.objects,removed:state.removed,backgroundColor:state.backgroundColor,mode:state.mode}));};
   const snap=()=>JSON.stringify(state.objects);
   const checkpoint=()=>{state.history.push(snap());if(state.history.length>80)state.history.shift();state.future=[];buttons()};
   const buttons=()=>{bar.querySelector('[data-clock-undo]').disabled=!state.history.length;bar.querySelector('[data-clock-redo]').disabled=!state.future.length;persist()};
@@ -86,13 +86,34 @@
    if(style!=='solid'){const add=document.createElement('button');add.type='button';add.textContent='+ Add Color';add.dataset.addColor='';add.disabled=colors.length>=9;const actions=document.createElement('div');actions.className='clock-palette-actions';actions.append(add);
     const remove=document.createElement('button');remove.type='button';remove.textContent='Remove Last Color';remove.dataset.removeColor='';remove.disabled=colors.length<=2;actions.append(remove);el.insertBefore(actions,grid);}
   };
+  const backgroundPanel=form.querySelector('[data-layout-panel="background"]');
+  if(backgroundPanel){
+   const colorLabel=document.createElement('label');
+   colorLabel.className='clock-background-color-row';
+   colorLabel.textContent='Background Color';
+   const colorPicker=document.createElement('input');
+   colorPicker.type='color';colorPicker.value=state.backgroundColor;
+   colorPicker.setAttribute('aria-label','Clock background color');
+   colorLabel.append(colorPicker);
+   backgroundPanel.insertBefore(colorLabel,backgroundPanel.querySelector('fieldset')||backgroundPanel.children[0]?.nextSibling||null);
+   const applyBackground=()=>{surface.style.setProperty('background-color',state.backgroundColor,'important');};
+   colorPicker.addEventListener('input',()=>{state.backgroundColor=colorPicker.value;applyBackground();persist();});
+   applyBackground();
+  }
+  let previousBackgroundTab='items';
   const setTab=(tab)=>{
+   const backgroundIsOpen=form.querySelector('[data-layout-panel="background"]')?.hidden===false;
+   if(tab==='background'){
+    if(backgroundIsOpen)tab=previousBackgroundTab;
+    else previousBackgroundTab=form.querySelector('.designer-toolbar-row [data-layout-tab][aria-pressed="true"]')?.dataset.layoutTab||'items';
+   }
    for(const panel of form.querySelectorAll('[data-layout-panel]'))panel.hidden=panel.dataset.layoutPanel!==tab;
    for(const btn of form.querySelectorAll('[data-layout-tab]')){
     const active=btn.dataset.layoutTab===tab;
     btn.classList.toggle('primary',active);btn.classList.toggle('secondary',!active);
     btn.setAttribute('aria-pressed',String(active));
    }
+   if(backgroundButton)backgroundButton.setAttribute('aria-pressed',String(tab==='background'));
   };
   form.querySelectorAll('[data-layout-tab]').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.layoutTab)));
   setTab('items'); // Initialize the active blue/white tab before any user interaction.
