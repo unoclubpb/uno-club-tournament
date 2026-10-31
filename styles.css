@@ -1574,3 +1574,11 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 
 /* Reorganization v79: highlighted Clock Items remain clickable to remove them. */
 .setup-page #saved-layout-form .designer-item-library [data-design-item].clock-item-present{cursor:pointer!important}
+
+
+/* Reorganization v81: three color pickers per row and side-by-side palette actions. */
+.setup-page #saved-layout-form .clock-palette-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;width:100%!important}
+.setup-page #saved-layout-form .clock-palette-grid>label{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:5px!important;min-width:0!important}
+.setup-page #saved-layout-form .clock-palette-grid input[type=color]{width:100%!important;height:40px!important;min-width:0!important}
+.setup-page #saved-layout-form .clock-palette-actions{display:flex!important;gap:8px!important;width:100%!important}
+.setup-page #saved-layout-form .clock-palette-actions button{flex:1 1 0!important;min-width:0!important;font-size:12px!important;white-space:normal!important}
