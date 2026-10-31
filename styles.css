@@ -1590,3 +1590,33 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 /* Reorganization v84: transparent, outlined palette button when not selected. */
 .setup-page #saved-layout-form [data-palette-toggle][aria-pressed="false"],
 .setup-page #saved-layout-form [data-palette-toggle]:not([aria-pressed]){background:transparent!important;border:1px solid var(--line)!important;color:var(--ink)!important;-webkit-text-fill-color:var(--ink)!important}
+
+
+/* Reorganization v85: matching field outlines and transparent inactive actions. */
+.setup-page #saved-layout-form .designer-preview-help-row>.designer-background-button{
+ background:transparent!important;
+ border:1px solid var(--line)!important;
+ color:var(--ink)!important;-webkit-text-fill-color:var(--ink)!important;
+ font-weight:700!important;
+}
+.setup-page #saved-layout-form .designer-preview-help-row>.designer-background-button[aria-pressed="true"]{
+ background:#2563eb!important;border-color:#2563eb!important;
+ color:#fff!important;-webkit-text-fill-color:#fff!important;
+}
+.setup-page #saved-layout-form .designer-preview-help-row>.designer-background-button[aria-pressed="false"]:hover{
+ background:rgba(255,255,255,.06)!important;
+}
+.setup-page #saved-layout-form [data-palette-toggle][aria-pressed="false"],
+.setup-page #saved-layout-form [data-palette-toggle]:not([aria-pressed]){
+ background:transparent!important;border:1px solid var(--line)!important;
+ border-radius:7px!important;box-shadow:none!important;
+}
+.setup-page #saved-layout-form .clock-background-color-row{
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:12px!important;margin:8px 0 14px!important;
+}
+.setup-page #saved-layout-form .clock-background-color-row input[type="color"]{
+ width:68px!important;height:42px!important;
+ background:transparent!important;border:1px solid var(--line)!important;
+ border-radius:7px!important;cursor:pointer!important;
+}
