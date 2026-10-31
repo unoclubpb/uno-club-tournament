@@ -76,10 +76,14 @@
   const paletteDefaults={solid:['#f4c542'],gradient:['#e85050','#f4c542','#4fa6ec'],stripes:['#e85050','#f4c542','#4fa6ec']};
   const currentObject=()=>state.objects.find(v=>v.id===state.selected);
   const currentPart=()=>state.part||'value';
+  const targetParts=()=>state.part?[state.part]:['title','value'];
+  const partStyle=(o,part)=>o[part+'Style']||(o.kind==='roundClock'&&part==='value'?'stripes':'solid');
+  const selectedStyle=o=>state.part?partStyle(o,state.part):(partStyle(o,'title')===partStyle(o,'value')?partStyle(o,'title'):'mixed');
   const colorsFor=(o,part,style)=>{o.palette??={};o.palette[part]??={};return o.palette[part][style]??=[...paletteDefaults[style]];};
   const drawPalette=()=>{
    const el=controls.querySelector('[data-clock-palette]'),o=currentObject();if(!o||el.hidden)return;
-   const part=currentPart(),style=o[part+'Style']||(o.kind==='roundClock'?'stripes':'solid'),colors=colorsFor(o,part,style);
+   const part=currentPart(),style=selectedStyle(o),colors=colorsFor(o,part,style==='mixed'?'solid':style);
+   if(style==='mixed'){el.replaceChildren();return;}
    el.replaceChildren();
    const grid=document.createElement('div');grid.className='clock-palette-grid';el.append(grid);
    colors.forEach((color,i)=>{const row=document.createElement('label');row.textContent=style==='solid'?'Text Color':'Color '+(i+1);
@@ -135,10 +139,14 @@
    else {const factorMin=Math.max(10/Math.max(o.titleSize,0.01),10/Math.max(o.valueSize,0.01));const factorMax=Math.min(120/Math.max(o.titleSize,0.01),120/Math.max(o.valueSize,0.01));const baseline=o.groupSize??100;slider.min=Math.max(1,Math.ceil(baseline*factorMin));slider.max=Math.max(Number(slider.min)+1,Math.floor(baseline*factorMax));}
    slider.value=clamp(size,Number(slider.min),Number(slider.max));
    controls.querySelector('[data-clock-size-output]').textContent=String(size)+'%';
-   controls.querySelector('[data-clock-shadow]').checked=!!o[(part||'value')+'Shadow'];
-   controls.querySelector('[data-clock-shadow-depth]').value=o[(part||'value')+'ShadowDepth']??5;
-   controls.querySelector('[data-clock-style]').value=o[(part||'value')+'Style']||(o.kind==='roundClock'?'stripes':'solid');
-   controls.querySelector('[data-clock-font]').value=o[(part||'value')+'Font']||'Arial';
+   controls.querySelector('[data-clock-shadow]').checked=targetParts().every(p=>!!o[p+'Shadow']);
+   controls.querySelector('[data-clock-shadow-depth]').value=o[currentPart()+'ShadowDepth']??5;
+   const styleSelect=controls.querySelector('[data-clock-style]');
+   styleSelect.querySelector('option[value="mixed"]')?.remove();
+   const style=selectedStyle(o);
+   if(style==='mixed'){const opt=document.createElement('option');opt.value='mixed';opt.textContent='Mixed Styles';styleSelect.prepend(opt);}
+   styleSelect.value=style;
+   controls.querySelector('[data-clock-font]').value=o[currentPart()+'Font']||'Arial';
    drawPalette();
    controls.querySelector('[data-palette-toggle]')?.setAttribute('aria-pressed',String(!controls.querySelector('[data-clock-palette]').hidden));
   };
@@ -239,8 +247,8 @@
    const twice=key&&lastTap&&lastTap.key===key&&now-lastTap.when<550;
    lastTap=key?{key,when:now}:null;
    if(twice){state.part=part.dataset.part;markSelection();state.drag=null;updateControls();selectAppearanceTab();return;}
-   if(!wasSelected)state.part=null;
-   if(!wasSelected){group.classList.add('active');updateControls();selectAppearanceTab();}
+   state.part=null;
+   group.classList.add('active');updateControls();selectAppearanceTab();
    const rect=surface.getBoundingClientRect();
    state.drag={id:o.id,part:!resize&&state.part&&part?state.part:null,resize,x:e.clientX,y:e.clientY,original:JSON.parse(JSON.stringify(o)),before:snap(),rect,moved:false};
    layer.setPointerCapture(e.pointerId);
@@ -295,20 +303,20 @@
     controls.querySelector('[data-clock-size-output]').textContent=String(Math.round(size))+'%';
     redraw();
    }
-   if(e.target.matches('[data-clock-shadow-depth]')){o[currentPart()+'ShadowDepth']=Number(e.target.value);redraw();}
+   if(e.target.matches('[data-clock-shadow-depth]')){for(const p of targetParts())o[p+'ShadowDepth']=Number(e.target.value);redraw();}
   });
   controls.addEventListener('change',e=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
-   if(e.target.matches('[data-clock-style]')){checkpoint();o[(state.part||'value')+'Style']=e.target.value;redraw();}
-   if(e.target.matches('[data-clock-font]')){checkpoint();o[(state.part||'value')+'Font']=e.target.value;redraw();}
-   if(e.target.matches('[data-clock-shadow]')){checkpoint();o[currentPart()+'Shadow']=e.target.checked;redraw();}
-   if(e.target.matches('[data-color-index]')){checkpoint();colorsFor(o,currentPart(),o[currentPart()+'Style']||'solid')[Number(e.target.dataset.colorIndex)]=e.target.value;redraw();}
+   if(e.target.matches('[data-clock-style]')){if(e.target.value==='mixed')return;checkpoint();for(const p of targetParts())o[p+'Style']=e.target.value;redraw();}
+   if(e.target.matches('[data-clock-font]')){checkpoint();for(const p of targetParts())o[p+'Font']=e.target.value;redraw();}
+   if(e.target.matches('[data-clock-shadow]')){checkpoint();for(const p of targetParts())o[p+'Shadow']=e.target.checked;redraw();}
+   if(e.target.matches('[data-color-index]')){checkpoint();const style=selectedStyle(o);if(style==='mixed')return;for(const p of targetParts())colorsFor(o,p,style)[Number(e.target.dataset.colorIndex)]=e.target.value;redraw();}
   });
   controls.addEventListener('click',e=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
    if(e.target.matches('[data-clear-title]')){checkpoint();o.title='';redraw();}
-   if(e.target.closest('[data-palette-toggle]')){const p=controls.querySelector('[data-clock-palette]');const o=currentObject();if(!o)return;const style=o[currentPart()+'Style']||(o.kind==='roundClock'?'stripes':'solid');p.hidden=!p.hidden;const toggle=controls.querySelector('[data-palette-toggle]');toggle?.setAttribute('aria-pressed',String(!p.hidden));if(!p.hidden){drawPalette();if(style==='solid')p.querySelector('input[type=color]')?.click();}}
-   if(e.target.matches('[data-add-color],[data-remove-color]')){checkpoint();const palette=colorsFor(o,currentPart(),o[currentPart()+'Style']||'solid');if(e.target.matches('[data-add-color]')&&palette.length<9)palette.push('#ffffff');if(e.target.matches('[data-remove-color]')&&palette.length>2)palette.pop();redraw();}
+   if(e.target.closest('[data-palette-toggle]')){const p=controls.querySelector('[data-clock-palette]');const o=currentObject();if(!o)return;const style=selectedStyle(o);if(style==='mixed')return;p.hidden=!p.hidden;const toggle=controls.querySelector('[data-palette-toggle]');toggle?.setAttribute('aria-pressed',String(!p.hidden));if(!p.hidden){drawPalette();if(style==='solid')p.querySelector('input[type=color]')?.click();}}
+   if(e.target.matches('[data-add-color],[data-remove-color]')){checkpoint();const style=selectedStyle(o);if(style==='mixed')return;const palette=colorsFor(o,currentPart(),style);if(e.target.matches('[data-add-color]')&&palette.length<9)palette.push('#ffffff');if(e.target.matches('[data-remove-color]')&&palette.length>2)palette.pop();for(const p of targetParts()){if(p!==currentPart())o.palette[p][style]=[...palette];}redraw();}
    if(e.target.matches('[data-clock-remove]')){checkpoint();const previous=currentObject();if(previous)state.removed[previous.kind]=structuredClone(previous);state.objects=state.objects.filter(v=>v.id!==state.selected);state.selected=null;redraw();}
   });
   form.addEventListener('submit',persist,true);
