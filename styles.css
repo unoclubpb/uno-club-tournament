@@ -1548,3 +1548,18 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 .setup-page #saved-layout-form .clock-edit-controls>*{
  max-width:100%!important;box-sizing:border-box!important;
 }
+
+
+/* Reorganization v76: Background action uses a gold outline, not toggle styling. */
+.setup-page #saved-layout-form .designer-preview-help-row>.designer-background-button{
+ background:#17283d!important;border:1px solid #e6ba67!important;
+ color:#fff!important;-webkit-text-fill-color:#fff!important;
+ font-weight:700!important;box-shadow:none!important;
+}
+.setup-page #saved-layout-form .designer-preview-help-row>.designer-background-button:hover{
+ background:#203650!important;
+}
+/* Shift only the Free Movement label slightly left, without moving its button. */
+.setup-page #saved-layout-form .clock-grid-modes [data-clock-mode="free"]{
+ text-indent:-4px!important;
+}
