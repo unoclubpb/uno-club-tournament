@@ -1571,3 +1571,6 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
  color:#fff!important;-webkit-text-fill-color:#fff!important;
  font-weight:700!important;opacity:1!important;cursor:default!important;
 }
+
+/* Reorganization v79: highlighted Clock Items remain clickable to remove them. */
+.setup-page #saved-layout-form .designer-item-library [data-design-item].clock-item-present{cursor:pointer!important}
