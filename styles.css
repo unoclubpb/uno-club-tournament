@@ -1430,3 +1430,35 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 .setup-page #saved-layout-form .clock-toolbar-grid .clock-grid-modes .uno-segmented{
  height:48px!important;min-width:220px!important;
 }
+
+
+/* Reorganization v68: compact, single-row footer and one release action. */
+.app-footer,.home-page .app-footer,.fixed-workspace .app-footer{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto!important;
+ grid-template-rows:auto!important;
+ column-gap:14px!important;row-gap:0!important;
+ align-items:center!important;justify-items:stretch!important;
+ padding:7px 10px!important;min-height:48px!important;
+ font-size:10px!important;line-height:1.25!important;letter-spacing:0!important;
+}
+.app-footer>span:first-child{grid-column:1!important;grid-row:1!important;justify-self:start!important}
+.app-footer>.footer-connection{grid-column:2!important;grid-row:1!important;justify-self:center!important}
+.app-footer>span:nth-of-type(2){grid-column:3!important;grid-row:1!important;justify-self:end!important;text-align:right!important}
+.app-footer>.release-checker{
+ grid-column:4!important;grid-row:1!important;justify-self:end!important;
+ display:flex!important;align-items:center!important;flex-wrap:nowrap!important;
+ margin:0!important;gap:0!important;
+}
+.app-footer .release-checker #published-release-status{display:none!important}
+.app-footer .release-checker button{min-height:32px!important;white-space:nowrap!important;margin:0!important}
+@media(max-width:720px){
+ .app-footer,.home-page .app-footer,.fixed-workspace .app-footer{
+  grid-template-columns:minmax(0,1fr) auto auto!important;
+  column-gap:8px!important;padding:6px 8px!important;
+ }
+ .app-footer>span:first-child{display:none!important}
+ .app-footer>.footer-connection{grid-column:1!important;justify-self:start!important}
+ .app-footer>span:nth-of-type(2){grid-column:2!important}
+ .app-footer>.release-checker{grid-column:3!important}
+}
