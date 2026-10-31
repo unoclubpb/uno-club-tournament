@@ -1299,3 +1299,14 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 #saved-layout-form .designer-toolbar-row .clock-layout-segmented{height:48px!important;min-height:48px!important}
 #saved-layout-form .uno-segmented>button{height:100%!important;min-height:0!important;box-sizing:border-box!important}
 #saved-layout-form .designer-toolbar-row label>input[name="layoutName"]{height:48px!important;min-height:48px!important;box-sizing:border-box!important}
+
+/* v63: reserve real layout space for toolbar instead of letting clock cover it */
+.setup-page #saved-layout-form .designer-preview-column{display:flex!important;flex-direction:column!important;justify-content:flex-start!important;min-height:0!important}
+.setup-page #saved-layout-form .clock-edit-tools{position:relative!important;z-index:7!important;flex:0 0 48px!important;height:48px!important;min-height:48px!important;margin:22px 0 8px!important;padding:0!important;align-items:stretch!important;overflow:visible!important}
+.setup-page #saved-layout-form .clock-edit-tools>.uno-segmented,.setup-page #saved-layout-form .clock-edit-tools .uno-segmented{height:48px!important;flex-shrink:0!important}
+.setup-page #saved-layout-form .designer-preview-surface{position:relative!important;z-index:1!important;flex:0 1 auto!important;max-height:calc(100% - 86px)!important;margin:0!important;align-self:flex-start!important}
+.setup-page #saved-layout-form .designer-toolbar-row{height:70px!important;min-height:70px!important;flex-wrap:nowrap!important;align-items:flex-end!important}
+.setup-page #saved-layout-form .designer-toolbar-row .clock-layout-segmented{height:48px!important;min-height:48px!important;align-self:flex-end!important;display:flex!important;gap:0!important}
+.setup-page #saved-layout-form .designer-toolbar-row .clock-layout-segmented>button{height:48px!important;min-height:48px!important;flex:1 1 0!important;border-radius:0!important;background:#fff!important;color:#203330!important}
+.setup-page #saved-layout-form .designer-toolbar-row .clock-layout-segmented>button[aria-pressed="true"]{background:#2563eb!important;color:#fff!important}
+.setup-page #saved-layout-form .designer-toolbar-row .clock-layout-segmented>button[aria-pressed="false"]{background:#fff!important;color:#203330!important}
