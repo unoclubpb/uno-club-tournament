@@ -118,6 +118,7 @@
    controls.querySelector('[data-clock-style]').value=o[(part||'value')+'Style']||(o.kind==='roundClock'?'stripes':'solid');
    controls.querySelector('[data-clock-font]').value=o[(part||'value')+'Font']||'Arial';
    drawPalette();
+   controls.querySelector('[data-palette-toggle]')?.setAttribute('aria-pressed',String(!controls.querySelector('[data-clock-palette]').hidden));
   };
   const syncItemButtons=()=>{
    const present=new Set(state.objects.map(o=>o.kind));
@@ -284,7 +285,7 @@
   controls.addEventListener('click',e=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
    if(e.target.matches('[data-clear-title]')){checkpoint();o.title='';redraw();}
-   if(e.target.closest('[data-palette-toggle]')){const p=controls.querySelector('[data-clock-palette]');const o=currentObject();if(!o)return;const style=o[currentPart()+'Style']||(o.kind==='roundClock'?'stripes':'solid');if(style==='solid'){p.hidden=false;drawPalette();const picker=p.querySelector('input[type=color]');picker?.click();}else{p.hidden=!p.hidden;if(!p.hidden)drawPalette();}}
+   if(e.target.closest('[data-palette-toggle]')){const p=controls.querySelector('[data-clock-palette]');const o=currentObject();if(!o)return;const style=o[currentPart()+'Style']||(o.kind==='roundClock'?'stripes':'solid');p.hidden=!p.hidden;const toggle=controls.querySelector('[data-palette-toggle]');toggle?.setAttribute('aria-pressed',String(!p.hidden));if(!p.hidden){drawPalette();if(style==='solid')p.querySelector('input[type=color]')?.click();}}
    if(e.target.matches('[data-add-color],[data-remove-color]')){checkpoint();const palette=colorsFor(o,currentPart(),o[currentPart()+'Style']||'solid');if(e.target.matches('[data-add-color]')&&palette.length<9)palette.push('#ffffff');if(e.target.matches('[data-remove-color]')&&palette.length>2)palette.pop();redraw();}
    if(e.target.matches('[data-clock-remove]')){checkpoint();const previous=currentObject();if(previous)state.removed[previous.kind]=structuredClone(previous);state.objects=state.objects.filter(v=>v.id!==state.selected);state.selected=null;redraw();}
   });
