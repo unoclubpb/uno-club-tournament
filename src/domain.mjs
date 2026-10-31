@@ -297,7 +297,7 @@ export function execute(state,action,now=Date.now()){
     check(name.length>0&&name.length<=100,'Enter a layout name (up to 100 characters).');
     check(name.toLocaleLowerCase()!=='default layout','Default Layout is reserved.');
     check(!s.clockLayouts.some(v=>v.id!==layout.id&&v.name.trim().toLocaleLowerCase()===name.toLocaleLowerCase()),'A layout with that name already exists.');
-    const record={id:layout.id||id(),name,appearance:clockAppearance(layout.appearance||s.clockAppearanceDefaults)};
+    const record={id:layout.id||id(),name,appearance:clockAppearance(layout.appearance||s.clockAppearanceDefaults),editorData:layout.editorData?clone(layout.editorData):null};
     const index=s.clockLayouts.findIndex(v=>v.id===record.id);
     if(index<0)s.clockLayouts.push(record);else s.clockLayouts[index]=record;
     return s;
