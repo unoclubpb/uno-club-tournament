@@ -23,7 +23,16 @@
   const layer=document.createElement('div');layer.className='clock-edit-layer';surface.append(layer);
   const bar=document.createElement('div');bar.className='clock-edit-tools';
   bar.innerHTML='<div class="uno-segmented clock-history-actions" role="group" aria-label="Edit history"><button type="button" data-clock-undo disabled>Undo</button><button type="button" data-clock-redo disabled>Redo</button></div>';
-  surface.parentElement.insertBefore(bar,surface);
+  // Place both toolbars in the same grid row so they share an exact baseline.
+  const workspace=form.querySelector('.designer-workspace');
+  const previewColumn=form.querySelector('.designer-preview-column');
+  const rightColumn=form.querySelector('.designer-right-column');
+  const rightToolbar=form.querySelector('.designer-toolbar-row');
+  if(workspace&&previewColumn&&rightColumn&&rightToolbar){
+   workspace.insertBefore(bar,previewColumn);
+   workspace.insertBefore(rightToolbar,rightColumn);
+   workspace.classList.add('clock-toolbar-grid');
+  }else surface.parentElement.insertBefore(bar,surface);
   const modes=document.createElement('div');modes.className='clock-grid-modes';
   modes.innerHTML='<div class="uno-segmented" role="group" aria-label="Positioning"><button type="button" data-clock-mode="free">Free Movement</button><button type="button" data-clock-mode="snap">Snap to Grid</button></div>';
   bar.append(modes);
