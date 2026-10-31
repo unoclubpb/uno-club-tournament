@@ -1520,3 +1520,6 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 .setup-page #saved-layout-form .clock-grid-modes .uno-segmented>button[aria-pressed="true"]{
  color:#fff!important;-webkit-text-fill-color:#fff!important;background:#2563eb!important;
 }
+
+/* Reorganization v72: subtle seam between joined Undo and Redo buttons. */
+.setup-page #saved-layout-form .clock-history-actions>button+button{border-left:1px solid #111!important}
