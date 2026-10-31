@@ -3,7 +3,7 @@
   (() => {
     const updateVersion = () => {
       document.querySelectorAll('.app-footer span').forEach(el => {
-        const updated = el.textContent.replace(/v0\.3\.\d+/g, 'v0.4.0-reorg.67');
+        const updated = el.textContent.replace(/v0\.3\.\d+|v0\.4\.0-reorg\.\d+/g, 'v0.4.0-reorg.67');
         if (updated !== el.textContent) el.textContent = updated;
       });
       if (new URLSearchParams(location.search).get('view') === 'remote' &&
