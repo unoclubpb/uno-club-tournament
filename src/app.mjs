@@ -1009,7 +1009,7 @@ document.addEventListener('submit',async event=>{event.preventDefault();const fo
   if(form.id==='layout-base-form'){event.preventDefault();const key=String(fd.get('baseId')||'default');const base=key==='default'?null:(state.clockLayouts||[]).find(l=>l.id===key);dlg.close();openLayout(base?{name:'New Layout',appearance:base.appearance}:null);return;}
   if(form.id==='saved-layout-form'){
     if(!layoutDraft)throw new Error('Open a layout before saving.');
-    const layout={id:layoutDraft.id||id(),name:String(fd.get('layoutName')||'').trim(),appearance:readAppearance(form)};
+    const layout={id:layoutDraft.id||id(),name:String(fd.get('layoutName')||'').trim(),appearance:readAppearance(form),editorData:JSON.parse(form.querySelector('[name="editorData"]')?.value||'null')};
     if(await commit({type:'clock-layout-save',layout})){layoutDraft=null;setupLibraryTab='layouts';render();toast('Layout saved.');}
     return;
   }
