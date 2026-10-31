@@ -115,6 +115,15 @@
    controls.querySelector('[data-clock-font]').value=o[(part||'value')+'Font']||'Arial';
    drawPalette();
   };
+  const syncItemButtons=()=>{
+   const present=new Set(state.objects.map(o=>o.kind));
+   form.querySelectorAll('[data-design-item]').forEach(btn=>{
+    const used=present.has(btn.dataset.designItem);
+    btn.disabled=used;btn.classList.toggle('clock-item-present',used);
+    btn.setAttribute('aria-pressed',String(used));
+    btn.title=used?'Already on the clock':'Add to clock';
+   });
+  };
   const redraw=()=>{
    layer.replaceChildren();
    state.objects.forEach(o=>{
@@ -154,18 +163,17 @@
    }
    const o=state.objects.find(v=>v.id===state.selected);
    if(o)updateControls();
+   syncItemButtons();
    buttons();
   };
   function add(id,x=15,y=35){
-   if(!items[id])return;
+   if(!items[id]||state.objects.some(o=>o.kind===id))return;
    checkpoint();const [title,value]=items[id];const o={id:id+'-'+Date.now()+'-'+Math.floor(Math.random()*9999),kind:id,x:clamp(x,0,75),y:clamp(y,0,75),w:36,h:30,title,value,titleX:5,titleY:7,valueX:5,valueY:38,titleSize:17,valueSize:64,titleVisible:true};
    state.objects.push(o);state.selected=o.id;state.part=null;redraw();
   }
   function undo(redo=false){const source=redo?state.future:state.history,dest=redo?state.history:state.future;if(!source.length)return;dest.push(snap());state.objects=JSON.parse(source.pop());state.selected=null;state.part=null;redraw()}
   bar.addEventListener('click',e=>{if(e.target.closest('[data-clock-undo]'))undo();if(e.target.closest('[data-clock-redo]'))undo(true)});
-  form.querySelectorAll('[data-design-item]').forEach(b=>{b.draggable=true;b.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',b.dataset.designItem));b.addEventListener('click',()=>add(b.dataset.designItem))});
-  surface.addEventListener('dragover',e=>e.preventDefault());
-  surface.addEventListener('drop',e=>{e.preventDefault();const r=surface.getBoundingClientRect();add(e.dataTransfer.getData('text/plain'),(e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100)});
+  form.querySelectorAll('[data-design-item]').forEach(b=>{b.draggable=false;b.addEventListener('click',()=>add(b.dataset.designItem))});
   // Keep DOM nodes stable during pointer gestures. Replacing them mid-drag
   // cancels native double-click targeting and pointer capture in browsers.
   const syncPositions=()=>{
