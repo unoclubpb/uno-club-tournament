@@ -10,12 +10,12 @@
   // The library is click-to-toggle; remove the obsolete drag-and-drop guidance.
   const itemHelp=form.querySelector('[data-layout-panel="items"] > .small-copy');
   if(itemHelp) itemHelp.remove();
-  const state={objects:[],selected:null,part:null,history:[],future:[],drag:null};
+  const state={objects:[],removed:{},selected:null,part:null,history:[],future:[],drag:null};
   const defaults=[['roundClock',4,30,44,49,16,58],['roundNumber',73,5,24,20,12,27],['currentBlinds',51,37,28,29,13,28],['nextBlinds',51,68,28,25,12,24],['playersRemaining',80,40,18,24,11,27],['prizePool',80,70,18,24,11,24]];
   state.objects=defaults.map(([kind,x,y,w,h,titleSize,valueSize])=>{const [title,value]=items[kind];return {id:kind+'-starter',kind,x,y,w,h,title,value,titleX:4,titleY:10,valueX:4,valueY:43,titleSize,valueSize,titleVisible:true};});
   state.selected=state.objects[0].id;
   state.mode='free';
-  try{const saved=JSON.parse(decodeURIComponent(form.dataset.editorState||'null'));if(saved&&Array.isArray(saved.objects)){state.objects=saved.objects;state.mode=saved.mode==='snap'?'snap':'free';state.selected=state.objects[0]?.id||null;}}catch{}
+  try{const saved=JSON.parse(decodeURIComponent(form.dataset.editorState||'null'));if(saved&&Array.isArray(saved.objects)){state.objects=saved.objects;state.removed=saved.removed||{};state.mode=saved.mode==='snap'?'snap':'free';state.selected=state.objects[0]?.id||null;}}catch{}
   session=state;
   const original=surface.querySelector('.designer-tv');
   const clockDigits=original?.querySelector('[data-countdown]');
@@ -68,7 +68,7 @@
    // Remove legacy preview-only fields entirely; retain the working editor controls.
    panel.replaceChildren(controls);
   }
-  const persist=()=>{savedField.value=encodeURIComponent(JSON.stringify({objects:state.objects,mode:state.mode}));};
+  const persist=()=>{savedField.value=encodeURIComponent(JSON.stringify({objects:state.objects,removed:state.removed,mode:state.mode}));};
   const snap=()=>JSON.stringify(state.objects);
   const checkpoint=()=>{state.history.push(snap());if(state.history.length>80)state.history.shift();state.future=[];buttons()};
   const buttons=()=>{bar.querySelector('[data-clock-undo]').disabled=!state.history.length;bar.querySelector('[data-clock-redo]').disabled=!state.future.length;persist()};
@@ -80,10 +80,11 @@
    const el=controls.querySelector('[data-clock-palette]'),o=currentObject();if(!o||el.hidden)return;
    const part=currentPart(),style=o[part+'Style']||(o.kind==='roundClock'?'stripes':'solid'),colors=colorsFor(o,part,style);
    el.replaceChildren();
+   const grid=document.createElement('div');grid.className='clock-palette-grid';el.append(grid);
    colors.forEach((color,i)=>{const row=document.createElement('label');row.textContent=style==='solid'?'Text Color':'Color '+(i+1);
-     const pick=document.createElement('input');pick.type='color';pick.value=/^#[0-9a-f]{6}$/i.test(color)?color:'#ffffff';pick.dataset.colorIndex=i;row.append(pick);el.append(row);});
-   if(style!=='solid'){const add=document.createElement('button');add.type='button';add.textContent='+ Add Color';add.dataset.addColor='';add.disabled=colors.length>=8;el.append(add);
-    const remove=document.createElement('button');remove.type='button';remove.textContent='Remove Last Color';remove.dataset.removeColor='';remove.disabled=colors.length<=2;el.append(remove);}
+     const pick=document.createElement('input');pick.type='color';pick.value=/^#[0-9a-f]{6}$/i.test(color)?color:'#ffffff';pick.dataset.colorIndex=i;row.append(pick);grid.append(row);});
+   if(style!=='solid'){const add=document.createElement('button');add.type='button';add.textContent='+ Add Color';add.dataset.addColor='';add.disabled=colors.length>=9;const actions=document.createElement('div');actions.className='clock-palette-actions';actions.append(add);
+    const remove=document.createElement('button');remove.type='button';remove.textContent='Remove Last Color';remove.dataset.removeColor='';remove.disabled=colors.length<=2;actions.append(remove);el.append(actions);}
   };
   const setTab=(tab)=>{
    for(const panel of form.querySelectorAll('[data-layout-panel]'))panel.hidden=panel.dataset.layoutPanel!==tab;
@@ -171,12 +172,12 @@
   };
   function add(id,x=15,y=35){
    if(!items[id]||state.objects.some(o=>o.kind===id))return;
-   checkpoint();const [title,value]=items[id];const o={id:id+'-'+Date.now()+'-'+Math.floor(Math.random()*9999),kind:id,x:clamp(x,0,75),y:clamp(y,0,75),w:36,h:30,title,value,titleX:5,titleY:7,valueX:5,valueY:38,titleSize:17,valueSize:64,titleVisible:true};
+   checkpoint();if(state.removed[id]){const restored=structuredClone(state.removed[id]);delete state.removed[id];state.objects.push(restored);state.selected=restored.id;state.part=null;redraw();return;}const [title,value]=items[id];const o={id:id+'-'+Date.now()+'-'+Math.floor(Math.random()*9999),kind:id,x:clamp(x,0,75),y:clamp(y,0,75),w:36,h:30,title,value,titleX:5,titleY:7,valueX:5,valueY:38,titleSize:17,valueSize:64,titleVisible:true};
    state.objects.push(o);state.selected=o.id;state.part=null;redraw();
   }
   function undo(redo=false){const source=redo?state.future:state.history,dest=redo?state.history:state.future;if(!source.length)return;dest.push(snap());state.objects=JSON.parse(source.pop());state.selected=null;state.part=null;redraw()}
   bar.addEventListener('click',e=>{if(e.target.closest('[data-clock-undo]'))undo();if(e.target.closest('[data-clock-redo]'))undo(true)});
-  form.querySelectorAll('[data-design-item]').forEach(b=>{b.draggable=false;b.addEventListener('click',event=>{event.stopPropagation();const kind=b.dataset.designItem;if(state.objects.some(o=>o.kind===kind)){checkpoint();state.objects=state.objects.filter(o=>o.kind!==kind);if(!state.objects.some(o=>o.id===state.selected)){state.selected=state.objects[0]?.id||null;state.part=null;}redraw();}else add(kind)})});
+  form.querySelectorAll('[data-design-item]').forEach(b=>{b.draggable=false;b.addEventListener('click',event=>{event.stopPropagation();const kind=b.dataset.designItem;if(state.objects.some(o=>o.kind===kind)){checkpoint();const previous=state.objects.find(o=>o.kind===kind);if(previous)state.removed[kind]=structuredClone(previous);state.objects=state.objects.filter(o=>o.kind!==kind);if(!state.objects.some(o=>o.id===state.selected)){state.selected=state.objects[0]?.id||null;state.part=null;}redraw();}else add(kind)})});
   // Keep DOM nodes stable during pointer gestures. Replacing them mid-drag
   // cancels native double-click targeting and pointer capture in browsers.
   const syncPositions=()=>{
@@ -283,9 +284,9 @@
   controls.addEventListener('click',e=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
    if(e.target.matches('[data-clear-title]')){checkpoint();o.title='';redraw();}
-   if(e.target.closest('[data-palette-toggle]')){const p=controls.querySelector('[data-clock-palette]');p.hidden=!p.hidden;drawPalette();}
-   if(e.target.matches('[data-add-color],[data-remove-color]')){checkpoint();const palette=colorsFor(o,currentPart(),o[currentPart()+'Style']||'solid');if(e.target.matches('[data-add-color]')&&palette.length<8)palette.push('#ffffff');if(e.target.matches('[data-remove-color]')&&palette.length>2)palette.pop();redraw();}
-   if(e.target.matches('[data-clock-remove]')){checkpoint();state.objects=state.objects.filter(v=>v.id!==state.selected);state.selected=null;redraw();}
+   if(e.target.closest('[data-palette-toggle]')){const p=controls.querySelector('[data-clock-palette]');const o=currentObject();if(!o)return;const style=o[currentPart()+'Style']||(o.kind==='roundClock'?'stripes':'solid');if(style==='solid'){p.hidden=false;drawPalette();const picker=p.querySelector('input[type=color]');picker?.click();}else{p.hidden=!p.hidden;if(!p.hidden)drawPalette();}}
+   if(e.target.matches('[data-add-color],[data-remove-color]')){checkpoint();const palette=colorsFor(o,currentPart(),o[currentPart()+'Style']||'solid');if(e.target.matches('[data-add-color]')&&palette.length<9)palette.push('#ffffff');if(e.target.matches('[data-remove-color]')&&palette.length>2)palette.pop();redraw();}
+   if(e.target.matches('[data-clock-remove]')){checkpoint();const previous=currentObject();if(previous)state.removed[previous.kind]=structuredClone(previous);state.objects=state.objects.filter(v=>v.id!==state.selected);state.selected=null;redraw();}
   });
   form.addEventListener('submit',persist,true);
   document.addEventListener('keydown',e=>{if(!form.isConnected||!(e.ctrlKey||e.metaKey)||e.key.toLowerCase()!=='z')return;if(e.target.closest('input,textarea,[contenteditable]'))return;e.preventDefault();undo(e.shiftKey)});
