@@ -72,7 +72,11 @@
    const size=part==='title'?o.titleSize:part==='value'?o.valueSize:(o.groupSize??100);
    const selectedName=part==='title'?(o.title||'Title'):part==='value'?o.value:(o.title||items[o.kind]?.[0]||'Item')+' + '+o.value;
    controls.querySelector('[data-clock-size-label]').textContent='Size ('+selectedName+')';
-   controls.querySelector('[data-clock-size]').value=size;
+   const slider=controls.querySelector('[data-clock-size]');
+   if(part==='title'){slider.min=10;slider.max=160;}
+   else if(part==='value'){slider.min=16;slider.max=220;}
+   else {const factorMin=Math.max(10/Math.max(o.titleSize,0.01),16/Math.max(o.valueSize,0.01));const factorMax=Math.min(160/Math.max(o.titleSize,0.01),220/Math.max(o.valueSize,0.01));const baseline=o.groupSize??100;slider.min=Math.max(1,Math.ceil(baseline*factorMin));slider.max=Math.max(Number(slider.min)+1,Math.floor(baseline*factorMax));}
+   slider.value=clamp(size,Number(slider.min),Number(slider.max));
    controls.querySelector('[data-clock-size-output]').textContent=String(size)+'%';
    controls.querySelector('[data-clock-shadow]').checked=!!o[(part||'value')+'Shadow'];
    controls.querySelector('[data-clock-shadow-depth]').value=o[(part||'value')+'ShadowDepth']??5;
@@ -208,12 +212,21 @@
   });
   controls.addEventListener('input',e=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
-   if(e.target.matches('[data-clock-title]')){o.title=e.target.value;redraw();}
+   if(e.target.matches('[data-clock-title]')){
+    o.title=e.target.value;
+    const group=[...layer.children].find(el=>el.dataset.id===o.id);
+    const title=group?.querySelector('[data-part="title"]');
+    if(title){title.textContent=o.title;title.style.display=o.title?'block':'none';}
+    controls.querySelector('[data-clear-title]').hidden=!o.title;
+    controls.querySelector('[data-clock-size-label]').textContent='Size ('+(state.part==='title'?(o.title||'Title'):state.part==='value'?o.value:(o.title||'Title')+' + '+o.value)+')';
+    persist();
+   }
    if(e.target.matches('[data-clock-size]')){
     const size=Number(e.target.value);
     if(state.part==='title')o.titleSize=size;
     else if(state.part==='value')o.valueSize=size;
     else {const previous=o.groupSize||100;const factor=size/previous;o.titleSize=o.titleSize*factor;o.valueSize=o.valueSize*factor;o.groupSize=size;}
+    controls.querySelector('[data-clock-size-output]').textContent=String(Math.round(size))+'%';
     redraw();
    }
    if(e.target.matches('[data-clock-shadow-depth]')){o[currentPart()+'ShadowDepth']=Number(e.target.value);redraw();}
