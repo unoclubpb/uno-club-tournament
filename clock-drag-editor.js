@@ -91,6 +91,7 @@
    }
   };
   form.querySelectorAll('[data-layout-tab]').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.layoutTab)));
+  setTab('items'); // Initialize the active blue/white tab before any user interaction.
   const selectAppearanceTab=()=>setTab('appearance');
   const updateControls=()=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
