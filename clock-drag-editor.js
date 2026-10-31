@@ -59,11 +59,11 @@
   refreshModes();
   surface.classList.toggle('clock-grid-active',state.mode==='snap');
   const controls=document.createElement('div');controls.className='clock-edit-controls';
-  controls.innerHTML='<label>Selected Item <input data-clock-selection readonly></label><label>Displayed Title <span class="clock-title-entry"><input data-clock-title maxlength="80" placeholder="Optional — no title displayed"><button type="button" data-clear-title aria-label="Clear displayed title">×</button></span></label><label><span data-clock-size-label>Size</span> <input type="range" min="8" max="250" data-clock-size value="100"><output data-clock-size-output>100</output></label><label>Color Style <span class="clock-style-row"><select data-clock-style><option value="solid">Solid Color</option><option value="gradient">Multicolor Gradient</option><option value="stripes">Multicolor Stripes</option></select><button type="button" data-palette-toggle title="Edit colors" aria-label="Edit colors">🎨</button></span></label><div class="clock-palette" data-clock-palette hidden></div><label>Font <select data-clock-font><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Tahoma</option><option>Trebuchet MS</option><option>Courier New</option></select></label><label>Text Shadow <input type="checkbox" data-clock-shadow></label><label>Shadow Depth <input type="range" data-clock-shadow-depth min="0" max="30" value="5"></label><button type="button" data-clock-remove>Remove selected item</button>';
+  controls.innerHTML='<label>Displayed Title <span class="clock-title-entry"><input data-clock-title maxlength="80" placeholder="Optional — no title displayed"><button type="button" data-clear-title aria-label="Clear displayed title">×</button></span></label><label><span data-clock-size-label>Size</span> <input type="range" min="8" max="250" data-clock-size value="100"><output data-clock-size-output>100</output></label><label>Color Style <span class="clock-style-row"><select data-clock-style><option value="solid">Solid Color</option><option value="gradient">Multicolor Gradient</option><option value="stripes">Multicolor Stripes</option></select><button type="button" data-palette-toggle title="Edit colors" aria-label="Edit colors">🎨</button></span></label><div class="clock-palette" data-clock-palette hidden></div><label>Font <select data-clock-font><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Tahoma</option><option>Trebuchet MS</option><option>Courier New</option></select></label><label>Text Shadow <input type="checkbox" data-clock-shadow></label><label>Shadow Depth <input type="range" data-clock-shadow-depth min="0" max="30" value="5"></label><button type="button" data-clock-remove>Remove selected item</button>';
   const panel=form.querySelector('[data-layout-panel="appearance"]');
   if(panel){
-   for(const el of [...panel.children])if(el!==controls&&el.tagName!=='H3')el.hidden=true;
-   panel.append(controls);
+   // Remove legacy preview-only fields entirely; retain the working editor controls.
+   panel.replaceChildren(controls);
   }
   const persist=()=>{savedField.value=encodeURIComponent(JSON.stringify({objects:state.objects,mode:state.mode}));};
   const snap=()=>JSON.stringify(state.objects);
@@ -102,7 +102,7 @@
    controls.querySelector('[data-clear-title]').hidden=!input.value||part==='value';
    const size=part==='title'?o.titleSize:part==='value'?o.valueSize:(o.groupSize??100);
    const selectedName=part==='title'?(o.title||'Title'):part==='value'?o.value:(o.title||items[o.kind]?.[0]||'Item')+' + '+o.value;
-   controls.querySelector('[data-clock-selection]').value=selectedName;
+
    controls.querySelector('[data-clock-size-label]').textContent='Size ('+selectedName+')';
    const slider=controls.querySelector('[data-clock-size]');
    if(part==='title'||part==='value'){slider.min=10;slider.max=120;}
