@@ -307,7 +307,7 @@
   });
   controls.addEventListener('change',e=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
-   if(e.target.matches('[data-clock-style]')){if(e.target.value==='mixed')return;checkpoint();for(const p of targetParts())o[p+'Style']=e.target.value;redraw();}
+   if(e.target.matches('[data-clock-style]')){if(e.target.value==='mixed')return;checkpoint();const parts=targetParts();const sharedColors=[...colorsFor(o,currentPart(),e.target.value)];for(const p of parts){o[p+'Style']=e.target.value;if(parts.length>1)colorsFor(o,p,e.target.value).splice(0,Infinity,...sharedColors);}redraw();}
    if(e.target.matches('[data-clock-font]')){checkpoint();for(const p of targetParts())o[p+'Font']=e.target.value;redraw();}
    if(e.target.matches('[data-clock-shadow]')){checkpoint();for(const p of targetParts())o[p+'Shadow']=e.target.checked;redraw();}
    if(e.target.matches('[data-color-index]')){checkpoint();const style=selectedStyle(o);if(style==='mixed')return;for(const p of targetParts())colorsFor(o,p,style)[Number(e.target.dataset.colorIndex)]=e.target.value;redraw();}
