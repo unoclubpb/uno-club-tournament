@@ -1582,3 +1582,7 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 .setup-page #saved-layout-form .clock-palette-grid input[type=color]{width:100%!important;height:40px!important;min-width:0!important}
 .setup-page #saved-layout-form .clock-palette-actions{display:flex!important;gap:8px!important;width:100%!important}
 .setup-page #saved-layout-form .clock-palette-actions button{flex:1 1 0!important;min-width:0!important;font-size:12px!important;white-space:normal!important}
+
+/* Reorganization v83: palette button active indicator. */
+.setup-page #saved-layout-form [data-palette-toggle][aria-pressed="true"]{background:#2563eb!important;border-color:#2563eb!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
+.setup-page #saved-layout-form [data-palette-toggle][aria-pressed="false"]{background:#fff!important;color:#111!important;-webkit-text-fill-color:#111!important}
