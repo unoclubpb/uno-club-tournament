@@ -1523,3 +1523,28 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 
 /* Reorganization v72: subtle seam between joined Undo and Redo buttons. */
 .setup-page #saved-layout-form .clock-history-actions>button+button{border-left:1px solid #111!important}
+
+
+/* Reorganization v74: stable initial toggle colors and vertical-only editor scrolling. */
+.setup-page #saved-layout-form .designer-toolbar-row .button-row>button[data-layout-tab="items"]:not([aria-pressed]),
+.setup-page #saved-layout-form .designer-toolbar-row .button-row>button[data-layout-tab="items"][aria-pressed="true"]{
+ background:#2563eb!important;color:#fff!important;-webkit-text-fill-color:#fff!important;
+}
+.setup-page #saved-layout-form .designer-toolbar-row .button-row>button[data-layout-tab="appearance"]:not([aria-pressed]){
+ background:#fff!important;color:#111!important;-webkit-text-fill-color:#111!important;
+}
+.setup-page #saved-layout-form .designer-right-column,
+.setup-page #saved-layout-form .designer-controls-scroll,
+.setup-page #saved-layout-form [data-layout-panel="appearance"],
+.setup-page #saved-layout-form .clock-edit-controls{
+ min-width:0!important;max-width:100%!important;overflow-x:hidden!important;
+}
+.setup-page #saved-layout-form .designer-controls-scroll{
+ overflow-y:auto!important;overscroll-behavior-x:none!important;
+ overscroll-behavior-y:contain!important;touch-action:pan-y!important;
+ -webkit-overflow-scrolling:touch;
+}
+.setup-page #saved-layout-form [data-layout-panel="appearance"]>*,
+.setup-page #saved-layout-form .clock-edit-controls>*{
+ max-width:100%!important;box-sizing:border-box!important;
+}
