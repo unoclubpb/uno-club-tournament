@@ -32,7 +32,11 @@
   surface.classList.toggle('clock-grid-active',state.mode==='snap');
   const controls=document.createElement('div');controls.className='clock-edit-controls';
   controls.innerHTML='<label>Selected Element <input data-clock-selection readonly></label><label>Displayed Title <span class="clock-title-entry"><input data-clock-title maxlength="80" placeholder="Optional — no title displayed"><button type="button" data-clear-title aria-label="Clear displayed title">×</button></span></label><label>Size <input type="range" min="8" max="250" data-clock-size value="100"><output data-clock-size-output>100</output></label><label>Color Style <select data-clock-style><option value="solid">Solid Color</option><option value="gradient">Multicolor Gradient</option><option value="stripes">Multicolor Stripes</option></select></label><label>Font <select data-clock-font><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Tahoma</option><option>Trebuchet MS</option><option>Courier New</option></select></label><button type="button" data-clock-remove>Remove selected item</button>';
-  const panel=form.querySelector('[data-layout-panel="appearance"]');panel?.append(controls);
+  const panel=form.querySelector('[data-layout-panel="appearance"]');
+  if(panel){
+   for(const el of [...panel.children])if(el.matches('label,p'))el.hidden=true;
+   panel.append(controls);
+  }
   const persist=()=>{savedField.value=encodeURIComponent(JSON.stringify({objects:state.objects,mode:state.mode}));};
   const snap=()=>JSON.stringify(state.objects);
   const checkpoint=()=>{state.history.push(snap());if(state.history.length>80)state.history.shift();state.future=[];buttons()};
@@ -159,6 +163,9 @@
   };
   layer.addEventListener('pointerup',finish);
   layer.addEventListener('pointercancel',finish);
+  controls.addEventListener('focusin',e=>{
+   if(e.target.matches('[data-clock-title],[data-clock-size]')){checkpoint();}
+  });
   controls.addEventListener('input',e=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
    if(e.target.matches('[data-clock-title]')){o.title=e.target.value;redraw();}
