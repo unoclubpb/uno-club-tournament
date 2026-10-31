@@ -1620,3 +1620,16 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
  background:transparent!important;border:1px solid var(--line)!important;
  border-radius:7px!important;cursor:pointer!important;
 }
+
+
+/* Reorganization v86: full-width solid and background color pickers; compact shadow row. */
+.setup-page #saved-layout-form .clock-palette-grid:has(>label:only-child){grid-template-columns:minmax(0,1fr)!important}
+.setup-page #saved-layout-form .clock-palette-grid:has(>label:only-child)>label{width:100%!important}
+.setup-page #saved-layout-form .clock-palette-grid:has(>label:only-child) input[type=color]{width:100%!important;min-width:0!important}
+.setup-page #saved-layout-form .clock-background-color-row{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:6px!important}
+.setup-page #saved-layout-form .clock-background-color-row input[type=color]{width:100%!important;height:42px!important;min-width:0!important}
+.setup-page #saved-layout-form .clock-shadow-row{display:flex!important;align-items:center!important;gap:16px!important;min-width:0!important;width:100%!important}
+.setup-page #saved-layout-form .clock-shadow-row>label{display:flex!important;flex-direction:row!important;align-items:center!important;gap:8px!important;margin:0!important;min-width:0!important}
+.setup-page #saved-layout-form .clock-shadow-row .clock-shadow-toggle{flex:0 0 auto!important}
+.setup-page #saved-layout-form .clock-shadow-row .clock-shadow-depth{flex:1 1 0!important;justify-content:flex-end!important}
+.setup-page #saved-layout-form .clock-shadow-row [data-clock-shadow-depth]{flex:1 1 auto!important;width:100%!important;min-width:50px!important;max-width:180px!important}
