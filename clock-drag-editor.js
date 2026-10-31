@@ -8,9 +8,12 @@
   if(!form||!surface||form.dataset.dragEditorReady)return;
   form.dataset.dragEditorReady='true';
   const state={objects:[],selected:null,part:null,history:[],future:[],drag:null};
+  const defaults=[['roundClock',4,30,44,49,16,58],['roundNumber',73,5,24,20,12,27],['currentBlinds',51,37,28,29,13,28],['nextBlinds',51,68,28,25,12,24],['playersRemaining',80,40,18,24,11,27],['prizePool',80,70,18,24,11,24]];
+  state.objects=defaults.map(([kind,x,y,w,h,titleSize,valueSize])=>{const [title,value]=items[kind];return {id:kind+'-starter',kind,x,y,w,h,title,value,titleX:4,titleY:10,valueX:4,valueY:43,titleSize,valueSize,titleVisible:true};});
+  state.selected=state.objects[0].id;
   session=state;
   const original=surface.querySelector('.designer-tv');
-  if(original)original.style.pointerEvents='none';
+  if(original){original.style.visibility='hidden';original.style.pointerEvents='none';}
   const layer=document.createElement('div');layer.className='clock-edit-layer';surface.append(layer);
   const bar=document.createElement('div');bar.className='clock-edit-tools';
   bar.innerHTML='<button type="button" data-clock-undo disabled>Undo</button><button type="button" data-clock-redo disabled>Redo</button><span class="muted small-copy">Click to select; double-click to edit title or digits. Drag to move.</span>';
@@ -55,10 +58,10 @@
    const o=state.objects.find(v=>v.id===group.dataset.id);if(!o)return;
    state.selected=o.id;if(!e.target.closest('[data-part]'))state.part=null;
    const r=surface.getBoundingClientRect();state.drag={id:o.id,part:state.part&&e.target.closest('[data-part]')?state.part:null,resize:!!e.target.closest('[data-resize]'),x:e.clientX,y:e.clientY,original:JSON.parse(JSON.stringify(o)),before:snap(),rect:r,moved:false};
-   layer.setPointerCapture(e.pointerId);redraw();
+   layer.setPointerCapture(e.pointerId);if(!group.classList.contains('active'))redraw();
   });
   layer.addEventListener('pointermove',e=>{const d=state.drag;if(!d)return;const o=state.objects.find(v=>v.id===d.id);if(!o)return;const dx=(e.clientX-d.x)/d.rect.width*100,dy=(e.clientY-d.y)/d.rect.height*100;if(Math.abs(dx)+Math.abs(dy)>.2)d.moved=true;
-   if(d.resize){o.w=clamp(d.original.w+dx,12,100-o.x);o.h=clamp(d.original.h+dy,10,100-o.y)}
+   if(d.resize){const scale=clamp((d.original.w+dx)/d.original.w,.4,3);o.w=clamp(d.original.w*scale,12,100-o.x);o.h=clamp(d.original.h*scale,10,100-o.y);o.titleSize=Math.round(d.original.titleSize*scale);o.valueSize=Math.round(d.original.valueSize*scale)}
    else if(d.part){o[d.part+'X']=clamp(d.original[d.part+'X']+dx/d.original.w*100,0,100);o[d.part+'Y']=clamp(d.original[d.part+'Y']+dy/d.original.h*100,0,100)}
    else{o.x=clamp(d.original.x+dx,0,100-o.w);o.y=clamp(d.original.y+dy,0,100-o.h)}redraw();
   });
