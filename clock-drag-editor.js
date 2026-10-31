@@ -13,6 +13,9 @@
   state.selected=state.objects[0].id;
   session=state;
   const original=surface.querySelector('.designer-tv');
+  const clockDigits=original?.querySelector('[data-countdown]');
+  const digitStyle=clockDigits?getComputedStyle(clockDigits):null;
+  const digitsAppearance=digitStyle?{backgroundImage:digitStyle.backgroundImage,color:digitStyle.color,webkitTextFillColor:digitStyle.webkitTextFillColor,webkitBackgroundClip:digitStyle.webkitBackgroundClip,backgroundClip:digitStyle.backgroundClip}:null;
   if(original){original.style.visibility='hidden';original.style.pointerEvents='none';}
   const layer=document.createElement('div');layer.className='clock-edit-layer';surface.append(layer);
   const bar=document.createElement('div');bar.className='clock-edit-tools';
@@ -33,6 +36,11 @@
      const el=document.createElement('div');el.dataset.part=part;el.className='clock-edit-part'+(state.selected===o.id&&state.part===part?' active':'');
      el.textContent=part==='title'?o.title:o.value;
      Object.assign(el.style,{left:o[part+'X']+'%',top:o[part+'Y']+'%',fontSize:o[part+'Size']+'px',display:part==='title'&&!o.titleVisible?'none':'block'});
+     if(part==='value'&&o.kind==='roundClock'&&digitsAppearance){
+      const style=digitsAppearance;
+      if(style.backgroundImage&&style.backgroundImage!=='none'){el.style.backgroundImage=style.backgroundImage;el.style.backgroundClip='text';el.style.webkitBackgroundClip='text';el.style.webkitTextFillColor='transparent';}
+      else {el.style.color=style.color;if(style.webkitTextFillColor&&style.webkitTextFillColor!=='transparent')el.style.webkitTextFillColor=style.webkitTextFillColor;}
+     }
      group.append(el);
     }
     if(state.selected===o.id){const grip=document.createElement('span');grip.className='clock-edit-resize';grip.dataset.resize='true';group.append(grip)}
@@ -56,9 +64,13 @@
   layer.addEventListener('pointerdown',e=>{
    const group=e.target.closest('.clock-edit-group');if(!group)return;
    const o=state.objects.find(v=>v.id===group.dataset.id);if(!o)return;
-   state.selected=o.id;if(!e.target.closest('[data-part]'))state.part=null;
+   const partEl=e.target.closest('[data-part]');const doubleClick=e.detail>=2&&!e.target.closest('[data-resize]');state.selected=o.id;
+   if(doubleClick&&partEl){state.part=partEl.dataset.part;}else if(!partEl){state.part=null;}
+   if(doubleClick){redraw();return;}
    const r=surface.getBoundingClientRect();state.drag={id:o.id,part:state.part&&e.target.closest('[data-part]')?state.part:null,resize:!!e.target.closest('[data-resize]'),x:e.clientX,y:e.clientY,original:JSON.parse(JSON.stringify(o)),before:snap(),rect:r,moved:false};
-   layer.setPointerCapture(e.pointerId);if(!group.classList.contains('active'))redraw();
+   layer.setPointerCapture(e.pointerId);
+   if(!group.classList.contains('active')){group.classList.add('active');}
+   if(!group.querySelector('[data-resize]')){redraw();}
   });
   layer.addEventListener('pointermove',e=>{const d=state.drag;if(!d)return;const o=state.objects.find(v=>v.id===d.id);if(!o)return;const dx=(e.clientX-d.x)/d.rect.width*100,dy=(e.clientY-d.y)/d.rect.height*100;if(Math.abs(dx)+Math.abs(dy)>.2)d.moved=true;
    if(d.resize){const scale=clamp((d.original.w+dx)/d.original.w,.4,3);o.w=clamp(d.original.w*scale,12,100-o.x);o.h=clamp(d.original.h*scale,10,100-o.y);o.titleSize=Math.round(d.original.titleSize*scale);o.valueSize=Math.round(d.original.valueSize*scale)}
