@@ -22,10 +22,10 @@
   const savedField=document.createElement('input');savedField.type='hidden';savedField.name='editorData';form.append(savedField);
   const layer=document.createElement('div');layer.className='clock-edit-layer';surface.append(layer);
   const bar=document.createElement('div');bar.className='clock-edit-tools';
-  bar.innerHTML='<button type="button" data-clock-undo disabled>Undo</button><button type="button" data-clock-redo disabled>Redo</button>';
+  bar.innerHTML='<div class="uno-segmented clock-history-actions" role="group" aria-label="Edit history"><button type="button" data-clock-undo disabled>Undo</button><button type="button" data-clock-redo disabled>Redo</button></div>';
   surface.parentElement.insertBefore(bar,surface);
   const modes=document.createElement('div');modes.className='clock-grid-modes';
-  modes.innerHTML='<span class="clock-mode-label">Positioning</span><div class="uno-segmented" role="group" aria-label="Positioning"><button type="button" data-clock-mode="free">Free Movement</button><button type="button" data-clock-mode="snap">Snap to Grid</button></div>';
+  modes.innerHTML='<div class="uno-segmented" role="group" aria-label="Positioning"><button type="button" data-clock-mode="free">Free Movement</button><button type="button" data-clock-mode="snap">Snap to Grid</button></div>';
   bar.append(modes);
   const refreshModes=()=>{
    modes.querySelectorAll('[data-clock-mode]').forEach(btn=>{const active=btn.dataset.clockMode===state.mode;btn.setAttribute('aria-pressed',String(active));btn.classList.toggle('active',active);});
