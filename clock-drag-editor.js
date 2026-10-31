@@ -84,7 +84,7 @@
    colors.forEach((color,i)=>{const row=document.createElement('label');row.textContent=style==='solid'?'Text Color':'Color '+(i+1);
      const pick=document.createElement('input');pick.type='color';pick.value=/^#[0-9a-f]{6}$/i.test(color)?color:'#ffffff';pick.dataset.colorIndex=i;row.append(pick);grid.append(row);});
    if(style!=='solid'){const add=document.createElement('button');add.type='button';add.textContent='+ Add Color';add.dataset.addColor='';add.disabled=colors.length>=9;const actions=document.createElement('div');actions.className='clock-palette-actions';actions.append(add);
-    const remove=document.createElement('button');remove.type='button';remove.textContent='Remove Last Color';remove.dataset.removeColor='';remove.disabled=colors.length<=2;actions.append(remove);el.append(actions);}
+    const remove=document.createElement('button');remove.type='button';remove.textContent='Remove Last Color';remove.dataset.removeColor='';remove.disabled=colors.length<=2;actions.append(remove);el.insertBefore(actions,grid);}
   };
   const setTab=(tab)=>{
    for(const panel of form.querySelectorAll('[data-layout-panel]'))panel.hidden=panel.dataset.layoutPanel!==tab;
