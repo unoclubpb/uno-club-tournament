@@ -31,7 +31,7 @@
   modes.addEventListener('change',e=>{state.mode=e.target.value==='snap'?'snap':'free';surface.classList.toggle('clock-grid-active',state.mode==='snap');persist()});
   surface.classList.toggle('clock-grid-active',state.mode==='snap');
   const controls=document.createElement('div');controls.className='clock-edit-controls';
-  controls.innerHTML='<label>Displayed Title <span class="clock-title-entry"><input data-clock-title maxlength="80" placeholder="Optional — no title displayed"><button type="button" data-clear-title aria-label="Clear displayed title">×</button></span></label><label>Size <input type="range" min="8" max="250" data-clock-size value="100"><output data-clock-size-output>100</output></label><label>Color Style <span class="clock-style-row"><select data-clock-style><option value="solid">Solid Color</option><option value="gradient">Multicolor Gradient</option><option value="stripes">Multicolor Stripes</option></select><button type="button" data-palette-toggle title="Edit colors" aria-label="Edit colors">🎨</button></span></label><div class="clock-palette" data-clock-palette hidden></div><label>Font <select data-clock-font><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Tahoma</option><option>Trebuchet MS</option><option>Courier New</option></select></label><label>Text Shadow <input type="checkbox" data-clock-shadow></label><label>Shadow Depth <input type="range" data-clock-shadow-depth min="0" max="30" value="5"></label><button type="button" data-clock-remove>Remove selected item</button>';
+  controls.innerHTML='<label>Displayed Title <span class="clock-title-entry"><input data-clock-title maxlength="80" placeholder="Optional — no title displayed"><button type="button" data-clear-title aria-label="Clear displayed title">×</button></span></label><label><span data-clock-size-label>Size</span> <input type="range" min="8" max="250" data-clock-size value="100"><output data-clock-size-output>100</output></label><label>Color Style <span class="clock-style-row"><select data-clock-style><option value="solid">Solid Color</option><option value="gradient">Multicolor Gradient</option><option value="stripes">Multicolor Stripes</option></select><button type="button" data-palette-toggle title="Edit colors" aria-label="Edit colors">🎨</button></span></label><div class="clock-palette" data-clock-palette hidden></div><label>Font <select data-clock-font><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Tahoma</option><option>Trebuchet MS</option><option>Courier New</option></select></label><label>Text Shadow <input type="checkbox" data-clock-shadow></label><label>Shadow Depth <input type="range" data-clock-shadow-depth min="0" max="30" value="5"></label><button type="button" data-clock-remove>Remove selected item</button>';
   const panel=form.querySelector('[data-layout-panel="appearance"]');
   if(panel){
    for(const el of [...panel.children])if(el!==controls&&el.tagName!=='H3')el.hidden=true;
@@ -54,6 +54,14 @@
    if(style!=='solid'){const add=document.createElement('button');add.type='button';add.textContent='+ Add Color';add.dataset.addColor='';add.disabled=colors.length>=8;el.append(add);
     const remove=document.createElement('button');remove.type='button';remove.textContent='Remove Last Color';remove.dataset.removeColor='';remove.disabled=colors.length<=2;el.append(remove);}
   };
+  const selectAppearanceTab=()=>{
+   for(const panel of form.querySelectorAll('[data-layout-panel]'))panel.hidden=panel.dataset.layoutPanel!=='appearance';
+   for(const btn of form.querySelectorAll('[data-layout-tab]')){
+    const active=btn.dataset.layoutTab==='appearance';
+    btn.classList.toggle('primary',active);btn.classList.toggle('secondary',!active);
+    btn.setAttribute('aria-pressed',String(active));
+   }
+  };
   const updateControls=()=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
    const part=state.part;
@@ -61,7 +69,9 @@
    input.value=o.title||'';input.disabled=part==='value';
    input.placeholder='Optional — no title displayed';
    controls.querySelector('[data-clear-title]').hidden=!input.value||part==='value';
-   const size=part==='title'?o.titleSize:part==='value'?o.valueSize:(o.groupSize||100);
+   const size=part==='title'?o.titleSize:part==='value'?o.valueSize:(o.groupSize??100);
+   const selectedName=part==='title'?(o.title||'Title'):part==='value'?o.value:(o.title||items[o.kind]?.[0]||'Item')+' + '+o.value;
+   controls.querySelector('[data-clock-size-label]').textContent='Size ('+selectedName+')';
    controls.querySelector('[data-clock-size]').value=size;
    controls.querySelector('[data-clock-size-output]').textContent=String(size)+'%';
    controls.querySelector('[data-clock-shadow]').checked=!!o[(part||'value')+'Shadow'];
@@ -145,7 +155,7 @@
   layer.addEventListener('dblclick',e=>{
    const el=e.target.closest('[data-part]');if(!el)return;
    state.selected=el.parentElement.dataset.id;state.part=el.dataset.part;
-   redraw();form.querySelector('[data-layout-tab="appearance"]')?.click();
+   redraw();selectAppearanceTab();
   });
   layer.addEventListener('pointerdown',e=>{
    const group=e.target.closest('.clock-edit-group');if(!group)return;
@@ -158,9 +168,9 @@
    const key=part?o.id+':'+part.dataset.part:null;
    const twice=key&&lastTap&&lastTap.key===key&&now-lastTap.when<550;
    lastTap=key?{key,when:now}:null;
-   if(twice){state.part=part.dataset.part;markSelection();state.drag=null;updateControls();form.querySelector('[data-layout-tab="appearance"]')?.click();return;}
+   if(twice){state.part=part.dataset.part;markSelection();state.drag=null;updateControls();selectAppearanceTab();return;}
    if(!wasSelected)state.part=null;
-   if(!wasSelected){group.classList.add('active');updateControls();form.querySelector('[data-layout-tab="appearance"]')?.click();}
+   if(!wasSelected){group.classList.add('active');updateControls();selectAppearanceTab();}
    const rect=surface.getBoundingClientRect();
    state.drag={id:o.id,part:!resize&&state.part&&part?state.part:null,resize,x:e.clientX,y:e.clientY,original:JSON.parse(JSON.stringify(o)),before:snap(),rect,moved:false};
    layer.setPointerCapture(e.pointerId);
@@ -203,7 +213,7 @@
     const size=Number(e.target.value);
     if(state.part==='title')o.titleSize=size;
     else if(state.part==='value')o.valueSize=size;
-    else {const previous=o.groupSize||100;const factor=size/previous;o.titleSize=Math.round(o.titleSize*factor);o.valueSize=Math.round(o.valueSize*factor);o.groupSize=size;}
+    else {const previous=o.groupSize||100;const factor=size/previous;o.titleSize=o.titleSize*factor;o.valueSize=o.valueSize*factor;o.groupSize=size;}
     redraw();
    }
    if(e.target.matches('[data-clock-shadow-depth]')){o[currentPart()+'ShadowDepth']=Number(e.target.value);redraw();}
