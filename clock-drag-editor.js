@@ -22,13 +22,20 @@
   const savedField=document.createElement('input');savedField.type='hidden';savedField.name='editorData';form.append(savedField);
   const layer=document.createElement('div');layer.className='clock-edit-layer';surface.append(layer);
   const bar=document.createElement('div');bar.className='clock-edit-tools';
-  bar.innerHTML='<button type="button" data-clock-undo disabled>Undo</button><button type="button" data-clock-redo disabled>Redo</button><span class="muted small-copy">Click to select; double-click to edit title or digits. Drag to move.</span>';
+  bar.innerHTML='<button type="button" data-clock-undo disabled>Undo</button><button type="button" data-clock-redo disabled>Redo</button>';
   surface.parentElement.insertBefore(bar,surface);
   const modes=document.createElement('div');modes.className='clock-grid-modes';
-  modes.innerHTML='<label>Positioning <select data-clock-grid><option value="free">Free Movement</option><option value="snap">Snap to Grid</option></select></label>';
-  surface.parentElement.insertBefore(modes,surface);
-  modes.querySelector('select').value=state.mode;
-  modes.addEventListener('change',e=>{state.mode=e.target.value==='snap'?'snap':'free';surface.classList.toggle('clock-grid-active',state.mode==='snap');persist()});
+  modes.innerHTML='<span class="clock-mode-label">Positioning</span><div class="uno-segmented" role="group" aria-label="Positioning"><button type="button" data-clock-mode="free">Free Movement</button><button type="button" data-clock-mode="snap">Snap to Grid</button></div>';
+  bar.append(modes);
+  const refreshModes=()=>{
+   modes.querySelectorAll('[data-clock-mode]').forEach(btn=>{const active=btn.dataset.clockMode===state.mode;btn.setAttribute('aria-pressed',String(active));btn.classList.toggle('active',active);});
+  };
+  modes.addEventListener('click',e=>{
+   const btn=e.target.closest('[data-clock-mode]');if(!btn)return;
+   state.mode=btn.dataset.clockMode;surface.classList.toggle('clock-grid-active',state.mode==='snap');
+   refreshModes();persist();
+  });
+  refreshModes();
   surface.classList.toggle('clock-grid-active',state.mode==='snap');
   const controls=document.createElement('div');controls.className='clock-edit-controls';
   controls.innerHTML='<label>Selected Item <input data-clock-selection readonly></label><label>Displayed Title <span class="clock-title-entry"><input data-clock-title maxlength="80" placeholder="Optional — no title displayed"><button type="button" data-clear-title aria-label="Clear displayed title">×</button></span></label><label><span data-clock-size-label>Size</span> <input type="range" min="8" max="250" data-clock-size value="100"><output data-clock-size-output>100</output></label><label>Color Style <span class="clock-style-row"><select data-clock-style><option value="solid">Solid Color</option><option value="gradient">Multicolor Gradient</option><option value="stripes">Multicolor Stripes</option></select><button type="button" data-palette-toggle title="Edit colors" aria-label="Edit colors">🎨</button></span></label><div class="clock-palette" data-clock-palette hidden></div><label>Font <select data-clock-font><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Tahoma</option><option>Trebuchet MS</option><option>Courier New</option></select></label><label>Text Shadow <input type="checkbox" data-clock-shadow></label><label>Shadow Depth <input type="range" data-clock-shadow-depth min="0" max="30" value="5"></label><button type="button" data-clock-remove>Remove selected item</button>';
