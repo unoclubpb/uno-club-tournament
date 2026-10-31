@@ -73,9 +73,8 @@
    const selectedName=part==='title'?(o.title||'Title'):part==='value'?o.value:(o.title||items[o.kind]?.[0]||'Item')+' + '+o.value;
    controls.querySelector('[data-clock-size-label]').textContent='Size ('+selectedName+')';
    const slider=controls.querySelector('[data-clock-size]');
-   if(part==='title'){slider.min=10;slider.max=160;}
-   else if(part==='value'){slider.min=16;slider.max=220;}
-   else {const factorMin=Math.max(10/Math.max(o.titleSize,0.01),16/Math.max(o.valueSize,0.01));const factorMax=Math.min(160/Math.max(o.titleSize,0.01),220/Math.max(o.valueSize,0.01));const baseline=o.groupSize??100;slider.min=Math.max(1,Math.ceil(baseline*factorMin));slider.max=Math.max(Number(slider.min)+1,Math.floor(baseline*factorMax));}
+   if(part==='title'||part==='value'){slider.min=10;slider.max=220;}
+   else {const factorMin=Math.max(10/Math.max(o.titleSize,0.01),10/Math.max(o.valueSize,0.01));const factorMax=Math.min(220/Math.max(o.titleSize,0.01),220/Math.max(o.valueSize,0.01));const baseline=o.groupSize??100;slider.min=Math.max(1,Math.ceil(baseline*factorMin));slider.max=Math.max(Number(slider.min)+1,Math.floor(baseline*factorMax));}
    slider.value=clamp(size,Number(slider.min),Number(slider.max));
    controls.querySelector('[data-clock-size-output]').textContent=String(size)+'%';
    controls.querySelector('[data-clock-shadow]').checked=!!o[(part||'value')+'Shadow'];
