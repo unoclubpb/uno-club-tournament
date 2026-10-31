@@ -22,10 +22,11 @@
   const savedField=document.createElement('input');savedField.type='hidden';savedField.name='editorData';form.append(savedField);
   const layer=document.createElement('div');layer.className='clock-edit-layer';surface.append(layer);
   const bar=document.createElement('div');bar.className='clock-edit-tools';
-  bar.innerHTML='<div class="uno-segmented clock-history-actions" role="group" aria-label="Edit history"><button type="button" data-clock-undo disabled>Undo</button><button type="button" data-clock-redo disabled>Redo</button></div>';
+  bar.innerHTML='<div class="clock-history-stack"><span class="eyebrow clock-preview-caption">CLOCK DESIGNER · 16:9 PREVIEW</span><div class="uno-segmented clock-history-actions" role="group" aria-label="Edit history"><button type="button" data-clock-undo disabled>Undo</button><button type="button" data-clock-redo disabled>Redo</button></div></div>';
   // Place both toolbars in the same grid row so they share an exact baseline.
   const workspace=form.querySelector('.designer-workspace');
   const previewColumn=form.querySelector('.designer-preview-column');
+  previewColumn?.querySelector(':scope > .eyebrow')?.remove();
   const rightColumn=form.querySelector('.designer-right-column');
   const rightToolbar=form.querySelector('.designer-toolbar-row');
   if(workspace&&previewColumn&&rightColumn&&rightToolbar){
