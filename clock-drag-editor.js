@@ -31,7 +31,7 @@
   modes.addEventListener('change',e=>{state.mode=e.target.value==='snap'?'snap':'free';surface.classList.toggle('clock-grid-active',state.mode==='snap');persist()});
   surface.classList.toggle('clock-grid-active',state.mode==='snap');
   const controls=document.createElement('div');controls.className='clock-edit-controls';
-  controls.innerHTML='<label>Displayed Title <span class="clock-title-entry"><input data-clock-title maxlength="80" placeholder="Optional — no title displayed"><button type="button" data-clear-title aria-label="Clear displayed title">×</button></span></label><label><span data-clock-size-label>Size</span> <input type="range" min="8" max="250" data-clock-size value="100"><output data-clock-size-output>100</output></label><label>Color Style <span class="clock-style-row"><select data-clock-style><option value="solid">Solid Color</option><option value="gradient">Multicolor Gradient</option><option value="stripes">Multicolor Stripes</option></select><button type="button" data-palette-toggle title="Edit colors" aria-label="Edit colors">🎨</button></span></label><div class="clock-palette" data-clock-palette hidden></div><label>Font <select data-clock-font><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Tahoma</option><option>Trebuchet MS</option><option>Courier New</option></select></label><label>Text Shadow <input type="checkbox" data-clock-shadow></label><label>Shadow Depth <input type="range" data-clock-shadow-depth min="0" max="30" value="5"></label><button type="button" data-clock-remove>Remove selected item</button>';
+  controls.innerHTML='<label>Selected Item <input data-clock-selection readonly></label><label>Displayed Title <span class="clock-title-entry"><input data-clock-title maxlength="80" placeholder="Optional — no title displayed"><button type="button" data-clear-title aria-label="Clear displayed title">×</button></span></label><label><span data-clock-size-label>Size</span> <input type="range" min="8" max="250" data-clock-size value="100"><output data-clock-size-output>100</output></label><label>Color Style <span class="clock-style-row"><select data-clock-style><option value="solid">Solid Color</option><option value="gradient">Multicolor Gradient</option><option value="stripes">Multicolor Stripes</option></select><button type="button" data-palette-toggle title="Edit colors" aria-label="Edit colors">🎨</button></span></label><div class="clock-palette" data-clock-palette hidden></div><label>Font <select data-clock-font><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Tahoma</option><option>Trebuchet MS</option><option>Courier New</option></select></label><label>Text Shadow <input type="checkbox" data-clock-shadow></label><label>Shadow Depth <input type="range" data-clock-shadow-depth min="0" max="30" value="5"></label><button type="button" data-clock-remove>Remove selected item</button>';
   const panel=form.querySelector('[data-layout-panel="appearance"]');
   if(panel){
    for(const el of [...panel.children])if(el!==controls&&el.tagName!=='H3')el.hidden=true;
@@ -54,14 +54,16 @@
    if(style!=='solid'){const add=document.createElement('button');add.type='button';add.textContent='+ Add Color';add.dataset.addColor='';add.disabled=colors.length>=8;el.append(add);
     const remove=document.createElement('button');remove.type='button';remove.textContent='Remove Last Color';remove.dataset.removeColor='';remove.disabled=colors.length<=2;el.append(remove);}
   };
-  const selectAppearanceTab=()=>{
-   for(const panel of form.querySelectorAll('[data-layout-panel]'))panel.hidden=panel.dataset.layoutPanel!=='appearance';
+  const setTab=(tab)=>{
+   for(const panel of form.querySelectorAll('[data-layout-panel]'))panel.hidden=panel.dataset.layoutPanel!==tab;
    for(const btn of form.querySelectorAll('[data-layout-tab]')){
-    const active=btn.dataset.layoutTab==='appearance';
+    const active=btn.dataset.layoutTab===tab;
     btn.classList.toggle('primary',active);btn.classList.toggle('secondary',!active);
     btn.setAttribute('aria-pressed',String(active));
    }
   };
+  form.querySelectorAll('[data-layout-tab]').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.layoutTab)));
+  const selectAppearanceTab=()=>setTab('appearance');
   const updateControls=()=>{
    const o=state.objects.find(v=>v.id===state.selected);if(!o)return;
    const part=state.part;
@@ -71,10 +73,11 @@
    controls.querySelector('[data-clear-title]').hidden=!input.value||part==='value';
    const size=part==='title'?o.titleSize:part==='value'?o.valueSize:(o.groupSize??100);
    const selectedName=part==='title'?(o.title||'Title'):part==='value'?o.value:(o.title||items[o.kind]?.[0]||'Item')+' + '+o.value;
+   controls.querySelector('[data-clock-selection]').value=selectedName;
    controls.querySelector('[data-clock-size-label]').textContent='Size ('+selectedName+')';
    const slider=controls.querySelector('[data-clock-size]');
-   if(part==='title'||part==='value'){slider.min=10;slider.max=140;}
-   else {const factorMin=Math.max(10/Math.max(o.titleSize,0.01),10/Math.max(o.valueSize,0.01));const factorMax=Math.min(140/Math.max(o.titleSize,0.01),140/Math.max(o.valueSize,0.01));const baseline=o.groupSize??100;slider.min=Math.max(1,Math.ceil(baseline*factorMin));slider.max=Math.max(Number(slider.min)+1,Math.floor(baseline*factorMax));}
+   if(part==='title'||part==='value'){slider.min=10;slider.max=120;}
+   else {const factorMin=Math.max(10/Math.max(o.titleSize,0.01),10/Math.max(o.valueSize,0.01));const factorMax=Math.min(120/Math.max(o.titleSize,0.01),120/Math.max(o.valueSize,0.01));const baseline=o.groupSize??100;slider.min=Math.max(1,Math.ceil(baseline*factorMin));slider.max=Math.max(Number(slider.min)+1,Math.floor(baseline*factorMax));}
    slider.value=clamp(size,Number(slider.min),Number(slider.max));
    controls.querySelector('[data-clock-size-output]').textContent=String(size)+'%';
    controls.querySelector('[data-clock-shadow]').checked=!!o[(part||'value')+'Shadow'];
