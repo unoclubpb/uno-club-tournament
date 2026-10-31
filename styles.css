@@ -1236,3 +1236,15 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 .release-checker{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.release-checker small{font-size:11px;opacity:.85}.release-checker button{min-height:32px;white-space:nowrap}
 
 .release-update-dialog{max-width:min(460px,calc(100vw - 32px));width:100%;border:1px solid var(--line);border-radius:14px;padding:24px;background:var(--paper);color:var(--ink);box-shadow:0 20px 65px #0005}.release-update-dialog::backdrop{background:#07121cb0}.release-update-dialog h2{margin:0 0 15px}.release-update-dialog p{margin:9px 0}.release-update-actions{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap;margin-top:20px}.release-update-actions [hidden]{display:none!important}
+
+/* Context-sensitive Clock Designer controls */
+.clock-grid-modes{display:flex;justify-content:flex-end;margin:6px 0 8px}
+.clock-grid-modes label{display:flex;flex-direction:row;align-items:center;gap:9px}
+.clock-grid-modes select{min-height:34px}
+.designer-preview-surface.clock-grid-active{background-image:linear-gradient(#ffffff16 1px,transparent 1px),linear-gradient(90deg,#ffffff16 1px,transparent 1px)!important;background-size:2.5% 2.5%!important;background-color:#111d32!important}
+.clock-title-entry{position:relative;display:flex}
+.clock-title-entry input{width:100%;padding-right:34px}
+.clock-title-entry button{position:absolute;right:3px;top:50%;transform:translateY(-50%);border:0;background:transparent;font-size:21px;padding:4px 8px;cursor:pointer}
+.clock-title-entry button[hidden]{display:none}
+.clock-edit-controls output{display:block;text-align:right}
+.clock-edit-resize{display:none!important}
