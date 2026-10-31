@@ -1276,3 +1276,10 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 #saved-layout-form .clock-grid-modes .uno-segmented{min-width:220px}
 #saved-layout-form .clock-grid-modes .uno-segmented>button{font-size:13px;padding:7px 9px}
 #saved-layout-form .clock-mode-label{font-size:13px;font-weight:600}
+
+/* All paired Clock Designer controls use the same joined segmented shape */
+#saved-layout-form .designer-toolbar-row .clock-layout-segmented{display:flex!important;gap:0!important;flex:1 1 0!important;align-self:end}
+#saved-layout-form .designer-toolbar-row .clock-layout-segmented>button{flex:1 1 50%!important;width:50%!important;margin:0!important;min-height:39px!important;border-radius:0!important}
+#saved-layout-form .clock-history-actions{min-width:146px}
+#saved-layout-form .clock-history-actions>button{font-size:13px;padding:7px 12px}
+#saved-layout-form .clock-history-actions>button:disabled{opacity:.4;cursor:not-allowed}
