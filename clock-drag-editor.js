@@ -96,6 +96,17 @@
     // Sizing is controlled by the contextual Size slider, not resize handles.
     layer.append(group);
    });
+   // Fit group outlines to the rendered text, including enlarged or repositioned parts.
+   for(const group of layer.querySelectorAll('.clock-edit-group')){
+    const o=state.objects.find(v=>v.id===group.dataset.id);if(!o)continue;
+    const parts=[...group.querySelectorAll('.clock-edit-part')].filter(el=>el.style.display!=='none');
+    if(!parts.length)continue;
+    const gw=group.clientWidth||1,gh=group.clientHeight||1;
+    const right=Math.max(...parts.map(el=>el.offsetLeft+el.scrollWidth+8));
+    const bottom=Math.max(...parts.map(el=>el.offsetTop+el.scrollHeight+8));
+    if(right>gw)group.style.width=Math.min(100-o.x,o.w*right/gw)+'%';
+    if(bottom>gh)group.style.height=Math.min(100-o.y,o.h*bottom/gh)+'%';
+   }
    const o=state.objects.find(v=>v.id===state.selected);
    if(o)updateControls();
    buttons();
