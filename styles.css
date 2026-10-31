@@ -1234,3 +1234,5 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 
 /* Published release indicator */
 .release-checker{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.release-checker small{font-size:11px;opacity:.85}.release-checker button{min-height:32px;white-space:nowrap}
+
+.release-update-dialog{max-width:min(460px,calc(100vw - 32px));width:100%;border:1px solid var(--line);border-radius:14px;padding:24px;background:var(--paper);color:var(--ink);box-shadow:0 20px 65px #0005}.release-update-dialog::backdrop{background:#07121cb0}.release-update-dialog h2{margin:0 0 15px}.release-update-dialog p{margin:9px 0}.release-update-actions{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap;margin-top:20px}.release-update-actions [hidden]{display:none!important}
