@@ -60,25 +60,64 @@
   form.querySelectorAll('[data-design-item]').forEach(b=>{b.draggable=true;b.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',b.dataset.designItem));b.addEventListener('click',()=>add(b.dataset.designItem))});
   surface.addEventListener('dragover',e=>e.preventDefault());
   surface.addEventListener('drop',e=>{e.preventDefault();const r=surface.getBoundingClientRect();add(e.dataTransfer.getData('text/plain'),(e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100)});
-  layer.addEventListener('dblclick',e=>{const part=e.target.closest('[data-part]');if(part){state.selected=part.parentElement.dataset.id;state.part=part.dataset.part;redraw()}});
+  // Keep DOM nodes stable during pointer gestures. Replacing them mid-drag
+  // cancels native double-click targeting and pointer capture in browsers.
+  const syncPositions=()=>{
+   state.objects.forEach(o=>{
+    const g=[...layer.children].find(el=>el.dataset.id===o.id);
+    if(!g)return;
+    Object.assign(g.style,{left:o.x+'%',top:o.y+'%',width:o.w+'%',height:o.h+'%'});
+    for(const part of ['title','value']){
+     const el=g.querySelector('[data-part="'+part+'"]');if(!el)continue;
+     Object.assign(el.style,{left:o[part+'X']+'%',top:o[part+'Y']+'%',fontSize:o[part+'Size']+'px'});
+    }
+   });
+  };
+  layer.addEventListener('dblclick',e=>{
+   const el=e.target.closest('[data-part]');if(!el)return;
+   state.selected=el.parentElement.dataset.id;state.part=el.dataset.part;
+   redraw();
+  });
   layer.addEventListener('pointerdown',e=>{
    const group=e.target.closest('.clock-edit-group');if(!group)return;
    const o=state.objects.find(v=>v.id===group.dataset.id);if(!o)return;
-   const partEl=e.target.closest('[data-part]');const doubleClick=e.detail>=2&&!e.target.closest('[data-resize]');state.selected=o.id;
-   if(doubleClick&&partEl){state.part=partEl.dataset.part;}else if(!partEl){state.part=null;}
-   if(doubleClick){redraw();return;}
-   const r=surface.getBoundingClientRect();state.drag={id:o.id,part:state.part&&e.target.closest('[data-part]')?state.part:null,resize:!!e.target.closest('[data-resize]'),x:e.clientX,y:e.clientY,original:JSON.parse(JSON.stringify(o)),before:snap(),rect:r,moved:false};
+   const resize=!!e.target.closest('[data-resize]');
+   const part=e.target.closest('[data-part]');
+   const wasSelected=state.selected===o.id;
+   state.selected=o.id;
+   if(!wasSelected)state.part=null;
+   if(!wasSelected){group.classList.add('active');}
+   const rect=surface.getBoundingClientRect();
+   state.drag={id:o.id,part:!resize&&state.part&&part?state.part:null,resize,x:e.clientX,y:e.clientY,original:JSON.parse(JSON.stringify(o)),before:snap(),rect,moved:false};
    layer.setPointerCapture(e.pointerId);
-   if(!group.classList.contains('active')){group.classList.add('active');}
-   if(!group.querySelector('[data-resize]')){redraw();}
   });
-  layer.addEventListener('pointermove',e=>{const d=state.drag;if(!d)return;const o=state.objects.find(v=>v.id===d.id);if(!o)return;const dx=(e.clientX-d.x)/d.rect.width*100,dy=(e.clientY-d.y)/d.rect.height*100;if(Math.abs(dx)+Math.abs(dy)>.2)d.moved=true;
-   if(d.resize){const scale=clamp((d.original.w+dx)/d.original.w,.4,3);o.w=clamp(d.original.w*scale,12,100-o.x);o.h=clamp(d.original.h*scale,10,100-o.y);o.titleSize=Math.round(d.original.titleSize*scale);o.valueSize=Math.round(d.original.valueSize*scale)}
-   else if(d.part){o[d.part+'X']=clamp(d.original[d.part+'X']+dx/d.original.w*100,0,100);o[d.part+'Y']=clamp(d.original[d.part+'Y']+dy/d.original.h*100,0,100)}
-   else{o.x=clamp(d.original.x+dx,0,100-o.w);o.y=clamp(d.original.y+dy,0,100-o.h)}redraw();
+  layer.addEventListener('pointermove',e=>{
+   const d=state.drag;if(!d)return;
+   const o=state.objects.find(v=>v.id===d.id);if(!o)return;
+   const dx=(e.clientX-d.x)/d.rect.width*100,dy=(e.clientY-d.y)/d.rect.height*100;
+   if(Math.abs(dx)+Math.abs(dy)>.2)d.moved=true;
+   if(d.resize){
+    const scale=clamp((d.original.w+dx)/d.original.w,.4,3);
+    o.w=clamp(d.original.w*scale,12,100-o.x);
+    o.h=clamp(d.original.h*scale,10,100-o.y);
+    o.titleSize=Math.round(d.original.titleSize*scale);
+    o.valueSize=Math.round(d.original.valueSize*scale);
+   }else if(d.part){
+    o[d.part+'X']=clamp(d.original[d.part+'X']+dx/d.original.w*100,0,100);
+    o[d.part+'Y']=clamp(d.original[d.part+'Y']+dy/d.original.h*100,0,100);
+   }else{
+    o.x=clamp(d.original.x+dx,0,100-o.w);
+    o.y=clamp(d.original.y+dy,0,100-o.h);
+   }
+   syncPositions();
   });
-  const finish=()=>{const d=state.drag;if(!d)return;state.drag=null;if(d.moved&&snap()!==d.before){state.history.push(d.before);state.future=[]}buttons()};
-  layer.addEventListener('pointerup',finish);layer.addEventListener('pointercancel',finish);
+  const finish=()=>{
+   const d=state.drag;if(!d)return;state.drag=null;
+   if(d.moved&&snap()!==d.before){state.history.push(d.before);state.future=[];}
+   redraw();
+  };
+  layer.addEventListener('pointerup',finish);
+  layer.addEventListener('pointercancel',finish);
   controls.addEventListener('change',e=>{const o=state.objects.find(v=>v.id===state.selected);if(!o)return;checkpoint();if(e.target.matches('[data-clock-title-size]'))o.titleSize=Number(e.target.value);if(e.target.matches('[data-clock-value-size]'))o.valueSize=Number(e.target.value);if(e.target.matches('[data-clock-title-visible]'))o.titleVisible=e.target.checked;redraw()});
   controls.addEventListener('click',e=>{if(!e.target.matches('[data-clock-remove]'))return;checkpoint();state.objects=state.objects.filter(o=>o.id!==state.selected);state.selected=null;redraw()});
   document.addEventListener('keydown',e=>{if(!form.isConnected||!(e.ctrlKey||e.metaKey)||e.key.toLowerCase()!=='z')return;if(e.target.closest('input,textarea,[contenteditable]'))return;e.preventDefault();undo(e.shiftKey)});
