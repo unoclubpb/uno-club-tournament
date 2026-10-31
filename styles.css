@@ -1290,3 +1290,12 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 #saved-layout-form .clock-edit-tools{min-height:64px;align-items:end!important;padding-bottom:0!important}
 #saved-layout-form .clock-edit-tools>.clock-grid-modes{align-self:end}
 body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,11px)!important;font-weight:700!important;line-height:1.3!important;color:inherit!important;letter-spacing:1.2px!important;text-transform:uppercase}
+
+/* v.62: align left editing actions with the Layout Name input, not its label */
+#saved-layout-form .clock-edit-tools{min-height:0!important;height:48px!important;margin-top:22px!important;align-items:stretch!important}
+#saved-layout-form .clock-edit-tools>.clock-grid-modes{align-self:stretch!important}
+#saved-layout-form .clock-edit-tools .uno-segmented{height:48px!important;min-height:48px!important}
+#saved-layout-form .designer-toolbar-row{min-height:70px!important;align-items:flex-end!important}
+#saved-layout-form .designer-toolbar-row .clock-layout-segmented{height:48px!important;min-height:48px!important}
+#saved-layout-form .uno-segmented>button{height:100%!important;min-height:0!important;box-sizing:border-box!important}
+#saved-layout-form .designer-toolbar-row label>input[name="layoutName"]{height:48px!important;min-height:48px!important;box-sizing:border-box!important}
