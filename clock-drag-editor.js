@@ -27,6 +27,17 @@
   const workspace=form.querySelector('.designer-workspace');
   const previewColumn=form.querySelector('.designer-preview-column');
   previewColumn?.querySelector(':scope > .eyebrow')?.remove();
+  // Keep the Background action beside the preview instructions, outside the 16:9 screen.
+  const backgroundButton=surface.querySelector('.designer-background-button');
+  const previewHelp=previewColumn?.querySelector(':scope > .small-copy');
+  if(backgroundButton&&previewHelp){
+   const helpRow=document.createElement('div');
+   helpRow.className='designer-preview-help-row';
+   previewHelp.parentNode.insertBefore(helpRow,previewHelp);
+   helpRow.append(previewHelp,backgroundButton);
+   backgroundButton.style.position='static';
+   backgroundButton.style.inset='auto';
+  }
   const rightColumn=form.querySelector('.designer-right-column');
   const rightToolbar=form.querySelector('.designer-toolbar-row');
   if(workspace&&previewColumn&&rightColumn&&rightToolbar){
