@@ -30,18 +30,16 @@
   const workspace=form.querySelector('.designer-workspace');
   const previewColumn=form.querySelector('.designer-preview-column');
   previewColumn?.querySelector(':scope > .eyebrow')?.remove();
-  // Keep the Background action beside the preview instructions, outside the 16:9 screen.
+  // Background is a peer of Undo/Redo and positioning controls.
   const backgroundButton=surface.querySelector('.designer-background-button');
-  const previewHelp=previewColumn?.querySelector(':scope > .small-copy');
-  if(backgroundButton&&previewHelp){
-   const helpRow=document.createElement('div');
-   helpRow.className='designer-preview-help-row';
-   previewHelp.parentNode.insertBefore(helpRow,previewHelp);
-   helpRow.append(backgroundButton);
-   previewHelp.remove();
+  if(backgroundButton){
    backgroundButton.style.position='static';
    backgroundButton.style.inset='auto';
+   backgroundButton.classList.add('clock-toolbar-background');
   }
+  previewColumn?.querySelector('.designer-preview-help-row')?.remove();
+  const previewHelp=previewColumn?.querySelector(':scope > .small-copy');
+  previewHelp?.remove();
   const rightColumn=form.querySelector('.designer-right-column');
   const rightToolbar=form.querySelector('.designer-toolbar-row');
   if(workspace&&previewColumn&&rightColumn&&rightToolbar){
@@ -51,6 +49,7 @@
   }else surface.parentElement.insertBefore(bar,surface);
   const modes=document.createElement('div');modes.className='clock-grid-modes';
   modes.innerHTML='<div class="uno-segmented" role="group" aria-label="Positioning"><button type="button" data-clock-mode="free">Free Movement</button><button type="button" data-clock-mode="snap">Snap to Grid</button></div>';
+  if(backgroundButton)bar.append(backgroundButton);
   bar.append(modes);
   const refreshModes=()=>{
    modes.querySelectorAll('[data-clock-mode]').forEach(btn=>{const active=btn.dataset.clockMode===state.mode;btn.setAttribute('aria-pressed',String(active));btn.classList.toggle('active',active);});
