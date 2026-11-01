@@ -751,3 +751,5 @@ body:has(.nav){overscroll-behavior:none}
 /* Registration uses its full height for the player lists. */
 .registration-page .signup-layout>.registration-enrolled{grid-row:1}
 .registration-page .signup-layout[data-panel=registered]{grid-template-rows:minmax(0,1fr)}
+/* Align the guarantee amount row with the left edge of the prize format options. */
+.guarantee-settings .guarantee-fields{margin-left:-28px}
