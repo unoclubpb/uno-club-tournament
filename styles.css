@@ -1745,3 +1745,25 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
  transform:none!important;flex:0 0 auto!important;
  white-space:nowrap!important;line-height:1.2!important;
 }
+
+/* reorg.101: single centered horizontal seats-per-table value and caption. */
+.management-panel .seating-header .button-row>.seating-settings-form label.seat-count-entry{
+ display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+ align-items:center!important;justify-content:center!important;
+ gap:5px!important;line-height:1!important;
+ overflow:hidden!important;white-space:nowrap!important;
+}
+.management-panel .seating-header .button-row>.seating-settings-form label.seat-count-entry>input[name="seatsPerTable"]{
+ position:static!important;display:block!important;float:none!important;
+ flex:0 0 29px!important;width:29px!important;max-width:29px!important;
+ height:30px!important;min-height:30px!important;
+ margin:0!important;padding:0!important;line-height:30px!important;
+ text-align:right!important;vertical-align:middle!important;
+ border:0!important;outline-offset:0!important;
+}
+.management-panel .seating-header .button-row>.seating-settings-form label.seat-count-entry>span{
+ position:static!important;display:block!important;float:none!important;
+ flex:0 0 auto!important;order:0!important;width:auto!important;
+ margin:0!important;padding:0!important;transform:none!important;
+ line-height:30px!important;vertical-align:middle!important;
+}
