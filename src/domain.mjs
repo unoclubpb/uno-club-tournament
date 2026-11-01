@@ -127,7 +127,7 @@ export function financials(t){
   const entryTotal=payments.filter(p=>p.kind==='entry').reduce((n,p)=>n+paymentTotal(p),0);
   const dealerTokes=payments.filter(p=>p.kind==='entry').reduce((n,p)=>n+(p.dealerToke||0),0);
   const tournamentEntries=Math.max(0,entryTotal-dealerTokes),addonTotal=payments.filter(p=>p.kind==='addon').reduce((n,p)=>n+paymentTotal(p),0);
-  const collected=entryTotal+rebuyTotal+addonTotal,houseBase=tournamentEntries;
+  const collected=entryTotal+rebuyTotal+addonTotal,houseBase=tournamentEntries+rebuyTotal+addonTotal;
   const houseFee=Math.round(houseBase*t.settings.housePercent/10000)*100;
   const manualHouseContribution=t.settings.houseContribution||0;
   const basePool=Math.max(0,tournamentEntries+rebuyTotal+addonTotal-houseFee+manualHouseContribution);
