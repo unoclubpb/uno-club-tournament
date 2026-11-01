@@ -7,8 +7,8 @@ function existingEntrySettingsChanged(t,a){
 function updateExistingEntryTerms(t,next){
  const old=t.settings;
  for(const entry of t.entries)for(const payment of entry.payments||[]){
-  if(payment.kind==='entry'){if(next.buyIn!==old.buyIn)payment.total=next.buyIn;if(next.dealerToke!==old.dealerToke)payment.dealerToke=next.dealerToke;if(next.startingStack!==old.startingStack)payment.chips=next.startingStack;}
-  else if(payment.kind==='rebuy'||payment.kind==='addon'){const key=payment.kind;if(next[key+'Amount']!==old[key+'Amount'])payment.total=next[key+'Amount'];if(next[key+'Chips']!==old[key+'Chips'])payment.chips=next[key+'Chips'];}
+  if(payment.kind==='entry'){if(next.buyIn!==old.buyIn)payment.total=next.buyIn;payment.dealerToke=(next.entryFeeType||'toke')==='toke'?next.dealerToke:0;payment.adminFee=(next.entryFeeType||'toke')==='admin'?next.dealerToke:0;payment.feeType=next.entryFeeType||'toke';if(next.startingStack!==old.startingStack)payment.chips=next.startingStack;}
+  else if(payment.kind==='addon'){if(next.addonAmount!==old.addonAmount)payment.total=next.addonAmount;if(next.addonChips!==old.addonChips)payment.chips=next.addonChips;payment.dealerToke=(next.addonFeeType||'toke')==='toke'?next.addonFeeAmount:0;payment.adminFee=(next.addonFeeType||'toke')==='admin'?next.addonFeeAmount:0;payment.feeType=next.addonFeeType||'toke';}
  }
 }
 function assertFutureLevelEdits(t,levels,now){if(!tournamentStarted(t))return;const current=clockAt(t,now).index;check(levels.length>current,'Keep the current level and all completed levels.');const key=l=>JSON.stringify([l.kind,l.minutes,l.sb,l.bb,l.ante,l.game||'',l.layoutId||'',!!l.chipUp]);for(let i=0;i<=current;i++)check(key(t.levels[i])===key(levels[i]),'The clock advanced or a protected level changed. Current and completed levels cannot be changed.');}
@@ -26,7 +26,7 @@ export function sampleTemplate() {
     levels.push({kind:'play',minutes:15,sb,bb,ante:i>=6?bb:0,game:"No Limit Hold’em",chipUp:false});
     if([7,15,23].includes(i)) levels.push({kind:'break',minutes:({7:5,15:10,23:15})[i],sb:0,bb:0,ante:0,game:'',chipUp:[7,15].includes(i)});
   });
-  return {id:id(),name:'Uno Club — 15-minute levels',levels,settings:{financeVersion:2,startingStack:5000,buyIn:5000,dealerToke:1000,housePercent:20,rebuyEnabled:true,rebuyAmount:2500,rebuyChips:5000,rebuyLastRound:8,rebuyMax:0,addonEnabled:false,addonAmount:9000,addonChips:20000,addonLastRound:4,anteMode:'off',pauseBreaks:true,seatsPerTable:10,houseContribution:0,guaranteeAmount:100000,guaranteePlayers:10,payoutMode:'percent',payouts:[65,35]}};
+  return {id:id(),name:'Uno Club — 15-minute levels',levels,settings:{financeVersion:2,startingStack:5000,buyIn:5000,dealerToke:1000,entryFeeType:'toke',housePercent:20,rebuyEnabled:true,rebuyAmount:2500,rebuyFeeAmount:0,rebuyFeeType:'toke',rebuyChips:5000,rebuyLastRound:8,rebuyMax:0,addonEnabled:false,addonAmount:9000,addonFeeAmount:0,addonFeeType:'toke',addonChips:20000,addonLastRound:4,anteMode:'off',pauseBreaks:true,seatsPerTable:10,houseContribution:0,guaranteeAmount:100000,guaranteePlayers:10,payoutMode:'percent',payouts:[65,35]}};
 }
 export const playerNumberLabel=p=>String(p.playerNumber).padStart(3,'0');
 function assignPlayerNumbers(players){
@@ -74,10 +74,10 @@ export const tablesInUse=t=>Math.max(tablesRequired(t),...t.entries.filter(e=>!e
 export const tournamentStarted=t=>t.startedAt!=null||t.clock.status!=='ready';
 export const tvDisplayMode=t=>tournamentStarted(t)&&t.tvDisplayMode==='full-clock'?'full-clock':'clock-seating';
 function upgradeSettings(old){
-  if(old.financeVersion===2)return old;
+  if(old.financeVersion===2)return {...old,entryFeeType:old.entryFeeType||'toke',rebuyFeeAmount:old.rebuyFeeAmount??0,rebuyFeeType:old.rebuyFeeType||'toke',addonFeeAmount:old.addonFeeAmount??0,addonFeeType:old.addonFeeType||'toke'};
   const s={...old,financeVersion:2,buyIn:(old.entryPrize||0)+(old.entryHouse||0),dealerToke:old.entryHouse||0,housePercent:20,rebuyAmount:(old.rebuyPrize||0)+(old.rebuyHouse||0),addonAmount:(old.addonPrize||0)+(old.addonHouse||0)};
   for(const k of ['entryPrize','entryHouse','rebuyPrize','rebuyHouse','addonPrize','addonHouse','tableCount','fixedExpense'])delete s[k];
-  return s;
+  return {...s,entryFeeType:'toke',rebuyFeeAmount:0,rebuyFeeType:'toke',addonFeeAmount:0,addonFeeType:'toke'};
 }
 export function upgradeState(value){
   const s=clone(value);
@@ -123,23 +123,25 @@ export function defaultPayouts(count){return ({1:[100],2:[65,35],3:[50,30,20],4:
 export function tableBalanceNeeded(t){if(t.status==='completed')return false;const counts=[...new Set(t.entries.filter(e=>!e.eliminatedAt&&e.table).map(e=>e.table))].map(table=>t.entries.filter(e=>!e.eliminatedAt&&e.table===table).length);return counts.length>1&&Math.max(...counts)-Math.min(...counts)>=2;}
 export function financials(t){
   const payments=t.entries.flatMap(e=>e.payments||[]).filter(p=>p.kind!=='rebuy');
-  const rebuyCount=tournamentRebuyCount(t),rebuyTotal=rebuyCount*t.settings.rebuyAmount;
+  const rebuyCount=tournamentRebuyCount(t),rebuyGross=rebuyCount*t.settings.rebuyAmount,rebuyFee=rebuyCount*(t.settings.rebuyFeeAmount||0),rebuyTokes=(t.settings.rebuyFeeType||'toke')==='toke'?rebuyFee:0,rebuyAdminFees=(t.settings.rebuyFeeType||'toke')==='admin'?rebuyFee:0,rebuyTotal=Math.max(0,rebuyGross-rebuyFee);
   const entryTotal=payments.filter(p=>p.kind==='entry').reduce((n,p)=>n+paymentTotal(p),0);
-  const dealerTokes=payments.filter(p=>p.kind==='entry').reduce((n,p)=>n+(p.dealerToke||0),0);
-  const tournamentEntries=Math.max(0,entryTotal-dealerTokes),addonTotal=payments.filter(p=>p.kind==='addon').reduce((n,p)=>n+paymentTotal(p),0);
-  const collected=entryTotal+rebuyTotal+addonTotal,houseBase=tournamentEntries+rebuyTotal+addonTotal;
+  const entryPayments=payments.filter(p=>p.kind==='entry'),addonPayments=payments.filter(p=>p.kind==='addon');
+  const entryTokes=entryPayments.reduce((n,p)=>n+(p.dealerToke||0),0),entryAdminFees=entryPayments.reduce((n,p)=>n+(p.adminFee||0),0);
+  const addonGross=addonPayments.reduce((n,p)=>n+paymentTotal(p),0),addonTokes=addonPayments.reduce((n,p)=>n+(p.dealerToke||0),0),addonAdminFees=addonPayments.reduce((n,p)=>n+(p.adminFee||0),0);
+  const tournamentEntries=Math.max(0,entryTotal-entryTokes-entryAdminFees),addonTotal=Math.max(0,addonGross-addonTokes-addonAdminFees),dealerTokes=entryTokes+rebuyTokes+addonTokes,adminFees=entryAdminFees+rebuyAdminFees+addonAdminFees;
+  const collected=entryTotal+rebuyGross+addonGross,houseBase=tournamentEntries+rebuyTotal+addonTotal+adminFees;
   const houseFeeMode=t.settings.houseFeeMode||'percent',houseFee=houseFeeMode==='flat'?(t.settings.houseFlatFee||0):Math.round(houseBase*t.settings.housePercent/10000)*100;
   const manualHouseContribution=t.settings.houseContribution||0;
   const basePool=Math.max(0,tournamentEntries+rebuyTotal+addonTotal-houseFee+manualHouseContribution);
   const guaranteeActive=t.settings.payoutMode==='guaranteed'&&guaranteeEligible(t);
   const guaranteeContribution=guaranteeActive?Math.max(0,guaranteeSettings(t.settings).guaranteeAmount-basePool):0;
-  let amounts={collected,owed:0,entryTotal,tournamentEntries,dealerTokes,dealerTokesPaidOut:dealerTokes,houseBase,houseFee,manualHouseContribution,guaranteeContribution,houseContribution:manualHouseContribution+guaranteeContribution,basePool,pool:basePool+guaranteeContribution,houseFeeMode,houseFlatFee:t.settings.houseFlatFee||0,housePercent:t.settings.housePercent,guaranteeActive,addonTotal};
+  let amounts={collected,owed:0,entryTotal,tournamentEntries,dealerTokes,adminFees,dealerTokesPaidOut:dealerTokes,houseBase,houseFee,manualHouseContribution,guaranteeContribution,houseContribution:manualHouseContribution+guaranteeContribution,basePool,pool:basePool+guaranteeContribution,houseFeeMode,houseFlatFee:t.settings.houseFlatFee||0,housePercent:t.settings.housePercent,guaranteeActive,addonTotal};
   // Completed settlements are immutable, including historical accounting rules.
   if(t.status==='completed'&&t.settlement){
     const saved=t.settlement,entries=saved.tournamentEntries??(saved.collected-saved.dealerTokes-rebuyTotal-addonTotal);
     amounts={...amounts,...saved,houseFeeMode:saved.houseFeeMode||'percent',houseFlatFee:saved.houseFlatFee||0,tournamentEntries:entries,dealerTokesPaidOut:saved.dealerTokesPaidOut??saved.dealerTokes,houseContribution:saved.houseContribution??(saved.pool-entries-rebuyTotal-addonTotal+saved.houseFee),guaranteeContribution:saved.guaranteeContribution||0};
   }
-  return {...amounts,rebuyCount,rebuyTotal,addonCount:payments.filter(p=>p.kind==='addon').length,chips:payments.reduce((n,p)=>n+p.chips,0)+rebuyCount*t.settings.rebuyChips};
+  return {...amounts,rebuyCount,rebuyTotal,rebuyGross,addonCount:addonPayments.length,adminFees, chips:payments.reduce((n,p)=>n+p.chips,0)+rebuyCount*t.settings.rebuyChips};
 }
 export function prizes(t){
   if(t.status==='completed'&&t.finalPayouts)return clone(t.finalPayouts);
@@ -184,10 +186,11 @@ export function validateTemplate(template,{requireRebuyBreak=true}={}){
   const s=template.settings,{guaranteeAmount,guaranteePlayers}=guaranteeSettings(s);
   check(Number.isSafeInteger(guaranteeAmount)&&guaranteeAmount>0&&guaranteeAmount%100===0,'Enter a positive whole-dollar first-place guarantee.');
   check(Number.isSafeInteger(guaranteePlayers)&&guaranteePlayers>=1&&guaranteePlayers<=999,'Enter a whole number from 1 to 999 for the guarantee.');
-  ['startingStack','buyIn','dealerToke','rebuyAmount','rebuyChips','rebuyLastRound','rebuyMax','addonAmount','addonChips','addonLastRound','seatsPerTable','houseContribution'].forEach(k=>check(Number.isSafeInteger(s[k])&&s[k]>=0,`Invalid ${k} setting.`));
-  for(const key of ['buyIn','dealerToke','rebuyAmount','addonAmount','houseContribution'])check(s[key]%100===0,'Enter monetary amounts as whole dollars.');
+  ['startingStack','buyIn','dealerToke','rebuyAmount','rebuyFeeAmount','rebuyChips','rebuyLastRound','rebuyMax','addonAmount','addonFeeAmount','addonChips','addonLastRound','seatsPerTable','houseContribution'].forEach(k=>check(Number.isSafeInteger(s[k]??0)&&(s[k]??0)>=0,`Invalid ${k} setting.`));
+  for(const key of ['buyIn','dealerToke','rebuyAmount','rebuyFeeAmount','addonAmount','addonFeeAmount','houseContribution'])check((s[key]||0)%100===0,'Enter monetary amounts as whole dollars.');
   check(s.payoutMode!=='fixed'||s.payouts.every(n=>Number.isSafeInteger(n)&&n%100===0),'Fixed payouts must be whole dollars.');
-  check(s.dealerToke<=s.buyIn,'Dealer toke cannot exceed the full buy-in.');
+  check(['toke','admin'].includes(s.entryFeeType||'toke')&&['toke','admin'].includes(s.rebuyFeeType||'toke')&&['toke','admin'].includes(s.addonFeeType||'toke'),'Choose Dealer Toke or Admin Fee.');
+  check(s.dealerToke<=s.buyIn,'Fee cannot exceed the full buy-in.');check((s.rebuyFeeAmount||0)<=s.rebuyAmount,'Fee cannot exceed the full rebuy amount.');check((s.addonFeeAmount||0)<=s.addonAmount,'Fee cannot exceed the full add-on amount.');
   check(['percent','flat'].includes(s.houseFeeMode||'percent'),'Choose a tournament fee type.');
   check(Number.isSafeInteger(s.houseFlatFee??0)&&(s.houseFlatFee??0)>=0&&(s.houseFlatFee??0)%100===0,'Enter the flat tournament fee as nonnegative whole dollars.');
   check(Number.isFinite(s.housePercent)&&s.housePercent>=0&&s.housePercent<=100,'House percentage must be between 0 and 100.');
@@ -385,7 +388,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
     requireRegistration(t,a,now);
     if(!registrationOpen(t,c))recordCutoffOverride(t,a,now,'registration');
     check(s.players.some(p=>p.id===a.playerId&&!p.archived),'Choose an active player.');check(!t.entries.some(e=>e.playerId===a.playerId),'Player is already registered.');
-    t.entries.push({id:a.id||id(),playerId:a.playerId,registeredAt:now,eliminatedAt:null,place:null,table:null,seat:null,payments:[{id:id(),kind:'entry',total:t.settings.buyIn,dealerToke:t.settings.dealerToke,chips:t.settings.startingStack,paid:true,at:now}]});t.eliminationUndo=[];return s;
+    const entryTokeType=(t.settings.entryFeeType||'toke')==='toke';t.entries.push({id:a.id||id(),playerId:a.playerId,registeredAt:now,eliminatedAt:null,place:null,table:null,seat:null,payments:[{id:id(),kind:'entry',total:t.settings.buyIn,dealerToke:entryTokeType?t.settings.dealerToke:0,adminFee:entryTokeType?0:t.settings.dealerToke,feeType:t.settings.entryFeeType||'toke',chips:t.settings.startingStack,paid:true,at:now}]});t.eliminationUndo=[];return s;
   }
   if(a.type==='rebuy-count'){
     check(canEditRebuys(t,c),'Enter the rebuy total during the break after the final rebuy round, or afterward with an override.');
@@ -425,7 +428,7 @@ t.settings.seatsPerTable=capacity;
     check(t.settings[k+'Enabled'],`${k==='rebuy'?'Rebuys':'Add-ons'} are turned off.`);
     check(roundAt(t,c.index)<=t.settings[k+'LastRound'],`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
     if(k==='addon')check(!e.payments.some(p=>p.kind==='addon'),'Add-on already recorded.');
-    e.payments.push({id:id(),kind:k,total:t.settings[k+'Amount'],dealerToke:0,chips:t.settings[k+'Chips'],paid:true,at:now});return s;
+    const feeType=t.settings[k+'FeeType']||'toke',fee=t.settings[k+'FeeAmount']||0;e.payments.push({id:id(),kind:k,total:t.settings[k+'Amount'],dealerToke:feeType==='toke'?fee:0,adminFee:feeType==='admin'?fee:0,feeType,chips:t.settings[k+'Chips'],paid:true,at:now});return s;
   }
   if(a.type==='eliminate'){
     check(!e.eliminatedAt,'Player already eliminated.');check(!e.pendingElimination,'That player has a pending elimination.');
