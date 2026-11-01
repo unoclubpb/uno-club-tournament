@@ -1716,3 +1716,13 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 .management-panel .seating-header .management-table-actions>.button-row{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
 .management-panel .seating-header .management-table-actions>.button-row>.button{height:48px!important;min-height:48px!important;width:100%!important;white-space:normal!important}
 .management-panel .seating-header .management-table-actions>.seating-combine-button{width:100%!important;min-height:40px!important}
+
+/* v98: consistent 2 x 3 seating action grid. */
+.management-panel .seating-header .management-table-actions>.button-row{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:48px!important;gap:8px!important;align-items:stretch!important}
+.management-panel .seating-header .management-table-actions>.button-row>.button,
+.management-panel .seating-header .management-table-actions>.button-row>.seating-settings-form{height:48px!important;min-height:48px!important;width:100%!important;margin:0!important;min-width:0!important;box-sizing:border-box!important}
+.management-panel .seating-header .button-row>.seating-settings-form{display:flex!important;align-items:stretch!important;gap:6px!important}
+.management-panel .seating-header .button-row>.seating-settings-form .seat-count-entry{position:relative!important;display:block!important;flex:1 1 auto!important;min-width:0!important;max-width:none!important;margin:0!important}
+.management-panel .seating-header .button-row>.seating-settings-form .seat-count-entry input{height:48px!important;width:100%!important;padding:0 6px!important;box-sizing:border-box!important}
+.management-panel .seating-header .button-row>.seating-settings-form .seat-count-entry span{position:absolute!important;left:37px!important;top:50%!important;transform:translateY(-50%)!important;white-space:nowrap!important;font-size:11px!important;color:var(--muted)!important;pointer-events:none!important}
+.management-panel .seating-header .button-row>.seating-settings-form>.button{height:48px!important;min-height:48px!important;flex:0 0 58px!important;margin:0!important}
