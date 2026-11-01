@@ -62,7 +62,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.142e · Reorganization';
+const APP_VERSION='0.4.0-reorg.143 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -638,7 +638,7 @@ function tick(){updateLayoutDesignerClock();const t=current();if(!t)return;const
   setText('#hero-time',formatTime(c.remainingMs));setText('#hero-blinds',level+' · '+blinds);setText('#mini-level',level);setText('#mini-time',formatTime(c.remainingMs));setText('#mini-blinds',blinds);setText('#mini-note',status);setText('#status-metric',statusLabel(t));
   const notice=$('.tv-compact-rebuys');if(notice&&notice.dataset.rebuyPhase!==rebuyPhase(t,c)){notice.dataset.rebuyPhase=rebuyPhase(t,c);notice.textContent=compactRebuyNotice(t,c);notice.classList.toggle('final-rebuy',rebuyPhase(t,c)==='final-round');}
   const side=$('.tv-side');if(side&&side.dataset.rebuyPhase!==rebuyPhase(t,c)){side.dataset.rebuyPhase=rebuyPhase(t,c);side.className='tv-side '+(rebuyOpen(t,c)?'pre-rebuys':'post-rebuys');side.innerHTML=clockSidebar(t,c);}
-  setText('#tv-level',level);setText('#tv-status',c.status==='running'?'':status);setCountdown($('#tv-time'),formatTime(c.remainingMs));if($('#tv-time')?.hasAttribute('data-tv-fit'))fitTvSeating(document,[$('#tv-time')]);setText('#tv-game',l.kind==='break'?(l.chipUp?'BREAK · CHIP UP':'BREAK'):'CURRENT BLINDS');setText('#tv-blinds',blinds);setText('#tv-ante',l.kind==='play'&&t.settings.anteMode!=='off'&&l.ante?'Ante '+num(l.ante)+' · '+(t.settings.anteMode==='big_blind'?'Big blind':'Each player'):'Antes off');setText('#tv-break',nextBreak(t,c));
+  setText('#tv-level',level);setText('#tv-status',c.status==='running'?'':status);setCountdown($('#tv-time'),formatTime(c.remainingMs));if($('#tv-time')?.hasAttribute('data-tv-fit'))fitTvSeating(document,[$('#tv-time')]);setText('#tv-game',l.kind==='break'?(l.chipUp?'BREAK · CHIP UP':'BREAK'):'CURRENT BLINDS');setText('#tv-blinds',blinds);setText('#tv-ante',l.kind==='play'&&t.settings.anteEnabled!==false&&t.settings.anteMode!=='off'&&l.ante?'Ante '+num(l.ante)+' · '+(t.settings.anteMode==='big_blind'?'Big blind':'Each player'):'Antes off');setText('#tv-break',nextBreak(t,c));
   const next=t.levels[c.index+1];setText('#tv-next-label',next?.kind==='break'?'NEXT BREAK':'NEXT BLINDS');setText('#tv-next',next?(next.kind==='break'?`${next.minutes} minutes${next.chipUp?' · Chip up':''}`:`${num(next.sb)} / ${num(next.bb)}`):'Final level');
   $('#tv-time')?.classList.toggle('urgent',c.remainingMs<=60000&&c.status==='running');if($('#tv-progress'))$('#tv-progress').style.width=(100*Math.min(1,c.remainingMs/(l.minutes*60000)))+'%';
   setCountdown($('#remote-time'),formatTime(c.remainingMs));setText('#remote-level',level);setText('#remote-blinds',l.kind==='break'?'Take a break':num(l.sb)+' / '+num(l.bb));setText('#remote-next-label',next?.kind==='break'?'NEXT BREAK':'NEXT BLINDS');setText('#remote-next',next?(next.kind==='break'?next.minutes+' minutes':num(next.sb)+' / '+num(next.bb)):'Final level');

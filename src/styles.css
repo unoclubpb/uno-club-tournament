@@ -778,3 +778,12 @@ body:has(.nav){overscroll-behavior:none}
 .guarantee-settings .guarantee-fields{margin-left:-28px}
 
 #structure-form .form-section>.split-note{margin-top:9px}
+
+/* Keep the ante toggle beside its table heading; inactive amounts stay editable but subdued. */
+.ante-heading{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.ante-heading input{width:16px;height:16px;margin:0}
+#structure-form:not(:has(input[name="anteEnabled"]:checked)) .level-table td:nth-child(5){opacity:.4}
+.pause-breaks-banner{display:inline-flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap}
+.pause-breaks-banner input{width:16px;height:16px}
+.tournament-settings-page .form-section:has(.tournament-fee-options){grid-column:1}
+.tournament-settings-page .form-section:has(.payout-editor-grid){grid-column:1/-1}
