@@ -771,7 +771,7 @@ body:has(.nav){overscroll-behavior:none}
 .transaction-fee-radios{display:flex;align-items:center;gap:16px;flex-wrap:nowrap;transform:translateY(-10px)}
 #structure-form .transaction-fee-radios label{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:5px;width:auto;min-width:max-content;margin:0;white-space:nowrap;font-size:12px}
 #structure-form .transaction-fee-radios input[type=radio]{display:inline-block;width:14px!important;height:14px!important;min-width:14px;min-height:14px;padding:0;margin:0;flex:0 0 14px}
-.transaction-fee-control .input-wrap{width:100%;max-width:none;margin:0;min-width:0;transform:translateY(-4px)}
+.transaction-fee-control .input-wrap{width:100%;max-width:none;margin:0;min-width:0;transform:translateY(-8px)}
 .transaction-fee-control .input-wrap input{width:100%;min-width:0}
 @media(max-width:520px){.transaction-fee-radios{gap:12px}#structure-form .transaction-fee-radios label{font-size:11px}}
 /* Align the guarantee amount row with the left edge of the prize format options. */
