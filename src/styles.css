@@ -703,7 +703,7 @@ body:has(.nav){overscroll-behavior:none}
 /* Compact event settings while keeping the original structure informational. */
 .tournament-name-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .tournament-name-row input[readonly]{background:var(--bg);color:var(--muted);cursor:default}
-.tournament-settings-page .structure-editor-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-content:start;align-items:start}
+.tournament-settings-page .structure-editor-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-content:start;align-items:stretch}
 .tournament-settings-page .tournament-name-row{grid-column:1/-1}
 .tournament-settings-page .structure-editor-body>.form-section{margin:0;padding:12px;border:1px solid var(--line);border-radius:8px;min-width:0}
 .tournament-settings-page .form-section:has(.level-table),.tournament-settings-page .structure-editor-body>.form-section:last-child{grid-column:1/-1}
