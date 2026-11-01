@@ -4,6 +4,13 @@ function configureTournamentSettingsUI(){
  document.body.classList.toggle('tournament-settings-page',!!editing);
  if(state.tournaments.some(t=>!t.archivedAt))document.querySelectorAll('[data-edit-template],[data-delete-template],[data-copy-template],[data-action="new-structure"]').forEach(el=>{el.disabled=true;el.title='Saved structures are locked until the current tournament is archived. Edit This Tournament to change its copy.';});
  if(view==='signup')document.querySelectorAll('[data-go="manage"]').forEach(el=>{el.classList.remove('secondary');el.classList.add('gold');});
+
+ const locked=state.tournaments.some(t=>!t.archivedAt),library=document.querySelector('#saved-structures');
+ if(locked&&library){library.classList.add('structures-locked');library.setAttribute('aria-label','Saved structures — locked during play');library.inert=true;library.querySelectorAll('button').forEach(el=>el.disabled=true);if(!library.parentElement.querySelector('.structures-lock-notice')){const notice=document.createElement('div');notice.className='structures-lock-notice';notice.textContent='Locked During Play';notice.setAttribute('role','status');library.parentElement.classList.add('structures-lock-container');library.before(notice);}}
+ if(editing&&form){
+  if(!form.querySelector('[data-action="save-as-structure"]')){const button=document.createElement('button');button.type='button';button.className='button secondary';button.dataset.action='save-as-structure';button.textContent='Save as New Structure';form.querySelector('.sticky-save').append(button);}
+  const t=current();if(tournamentStarted(t)){const at=clockAt(t,timeNow()).index;form.querySelectorAll('[data-level]').forEach((row,index)=>{if(index<=at){row.classList.add('protected-level');row.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);}else{const up=row.querySelector('[data-level-up]');if(up&&index===at+1)up.disabled=true;}});}
+ }
  if(!editing||!form)return;
  const title=document.querySelector('#page-title');if(title)title.textContent='Tournament Management';
  const subtitle=document.querySelector('.page-banner-title>small');if(subtitle)subtitle.textContent='Tournament Settings';
@@ -42,7 +49,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.119 · Reorganization';
+const APP_VERSION='0.4.0-reorg.120 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -1101,3 +1108,12 @@ document.addEventListener('change',async event=>{
  if(editor!==ed||version!==versionAtPrompt||!select.isConnected||select.value!==chosen)return;
  for(const row of following){const next=row.querySelector('[data-layout-selector]');if(next)next.value=chosen;}
 });
+
+document.addEventListener('click',event=>{if(!event.target.closest?.('[data-action="save-as-structure"]'))return;try{
+ const form=document.querySelector('#structure-form');if(!editor?.event||!form||!form.reportValidity())return;captureEditor();editor.structureExportDraft=clone(editor.value);
+ modal('Save as New Structure',`<form id="tournament-structure-copy-form"><input type="hidden" name="version" value="${version}"><label>New structure name<input name="name" required maxlength="120" value="${esc((current().templateName||'Tournament')+' — Copy')}"></label><p class="muted">Saves the setup only. Your original structure and current tournament remain unchanged.</p><button class="button primary full">Save New Structure</button></form>`);
+ }catch(error){toast(error.message,true);}});
+document.addEventListener('submit',async event=>{if(event.target.id!=='tournament-structure-copy-form')return;event.preventDefault();try{
+ const form=event.target;if(!form.reportValidity())return;const draft=editor?.structureExportDraft;if(!draft||Number(form.elements.version.value)!==version||editor.version!==version)throw new Error('Tournament changed. Close this dialog and review the settings before trying again.');
+ if(await commit({type:'tournament-save-structure',tournamentId:current().id,id:id(),name:form.elements.name.value,settings:draft.settings,levels:draft.levels})){editor.version=version;delete editor.structureExportDraft;dlg.close();toast('New structure saved. Tournament settings remain unsaved until Save Tournament Settings.');}
+ }catch(error){toast(error.message,true);}});

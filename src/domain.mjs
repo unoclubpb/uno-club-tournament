@@ -1,3 +1,4 @@
+function assertFutureLevelEdits(t,levels,now){if(!tournamentStarted(t))return;const current=clockAt(t,now).index;check(levels.length>current,'Keep the current level and all completed levels.');const key=l=>JSON.stringify([l.kind,l.minutes,l.sb,l.bb,l.ante,l.game||'',l.layoutId||'',!!l.chipUp]);for(let i=0;i<=current;i++)check(key(t.levels[i])===key(levels[i]),'The clock advanced or a protected level changed. Current and completed levels cannot be changed.');}
 import {icmEquities,roundLowerFirst} from './icm.mjs';
 import {pointPreview,recordTournamentPoints,startPointsSeason,editPlayerPoints} from './points.mjs';
 import {clockAppearance} from './clock-appearance.mjs';
@@ -278,7 +279,13 @@ export function applyRemoteElimination(state,{tournamentId,entryId,requestId,com
 }
 export function execute(state,action,now=Date.now()){
   const s=upgradeState(state), a=action;let t=s.tournaments.find(t=>t.id===a.tournamentId);
-  if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
+  if(a.type==='tournament-save-structure'){
+ check(t&&!t.archivedAt&&t.status!=='completed','Choose the current unarchived tournament.');
+ const name=String(a.name||'').trim(),template={id:a.id||id(),name,levels:clone(a.levels||t.levels),settings:clone(a.settings||t.settings),clockAppearance:clone(t.clockAppearance||s.clockAppearanceDefaults)};
+ check(name&&name.length<=120,'Enter a new structure name (up to 120 characters).');check(!s.templates.some(v=>v.id===template.id||v.name.trim().toLowerCase()===name.toLowerCase()),'That structure name already exists. Choose a different name.');
+ assertFutureLevelEdits(t,template.levels,now);validateTemplate(template);s.templates.push(template);return s;
+}
+if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
   if(a.type==='points-edit'){editPlayerPoints(s,a,now);return s;}
   if(a.type==='tournament-delete'){check(t&&!t.archivedAt,'Archived tournaments cannot be deleted.');if(s.points)s.points.awards=s.points.awards.filter(v=>v.tournamentId!==t.id);s.tournaments=s.tournaments.filter(v=>v.id!==t.id);return s;}
   if(a.type==='tournament-archive'){check(t&&t.status==='completed','Complete the tournament before archiving it.');t.archivedAt??=now;return s;}
@@ -326,8 +333,7 @@ export function execute(state,action,now=Date.now()){
     check(t.status!=='completed','Completed tournament is locked.');
     if(a.type==='tournament-settings'&&tournamentStarted(t))check(a.settings.payoutMode===t.settings.payoutMode&&JSON.stringify(a.settings.payouts)===JSON.stringify(t.settings.payouts)&&JSON.stringify(a.settings.payoutRules)===JSON.stringify(t.settings.payoutRules)&&JSON.stringify(guaranteeSettings(a.settings))===JSON.stringify(guaranteeSettings(t.settings)),'Use Save Payouts in Tournament Management to change an active payout agreement.');
     const template={id:'event',name:t.name,levels:clone(a.levels||t.levels),settings:clone(a.settings)};validateTemplate(template,{requireRebuyBreak:a.type!=='payout-settings'&&(!tournamentStarted(t)||!!a.levels||a.settings.rebuyLastRound!==t.settings.rebuyLastRound||a.settings.rebuyEnabled!==t.settings.rebuyEnabled)});
-    check(t.clock.status==='ready'||!a.levels,'Level structure can be changed before the clock starts.');
-    if(a.levels){t.levels=template.levels;t.clock.remainingMs=t.levels[0].minutes*60000;}
+    if(a.levels){assertFutureLevelEdits(t,template.levels,now);const started=tournamentStarted(t);t.levels=template.levels;if(!started)t.clock.remainingMs=t.levels[0].minutes*60000;}
     check(!t.entries.some(e=>!e.eliminatedAt&&e.seat>template.settings.seatsPerTable),'Move players before reducing seats per table.');
     if(template.settings.payoutMode==='guaranteed')template.settings.payouts=[65,35];
     if(a.type==='payout-settings'){
