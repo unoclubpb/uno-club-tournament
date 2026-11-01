@@ -1,3 +1,16 @@
+function existingEntrySettingsChanged(t,a){
+ if(!t?.entries?.length)return false;
+ const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
+ const levels=rows=>rows.map(l=>[l.kind,l.minutes,l.sb,l.bb,l.ante,l.game||'',l.layoutId||'',!!l.chipUp]);
+ return a.name!==undefined&&String(a.name).trim()!==t.name||a.settings&&canonical(a.settings)!==canonical(t.settings)||a.levels&&canonical(levels(a.levels))!==canonical(levels(t.levels))||a.clockAppearance&&canonical(a.clockAppearance)!==canonical(t.clockAppearance);
+}
+function updateExistingEntryTerms(t,next){
+ const old=t.settings;
+ for(const entry of t.entries)for(const payment of entry.payments||[]){
+  if(payment.kind==='entry'){if(next.buyIn!==old.buyIn)payment.total=next.buyIn;if(next.dealerToke!==old.dealerToke)payment.dealerToke=next.dealerToke;if(next.startingStack!==old.startingStack)payment.chips=next.startingStack;}
+  else if(payment.kind==='rebuy'||payment.kind==='addon'){const key=payment.kind;if(next[key+'Amount']!==old[key+'Amount'])payment.total=next[key+'Amount'];if(next[key+'Chips']!==old[key+'Chips'])payment.chips=next[key+'Chips'];}
+ }
+}
 function settingsDraftSnapshot(form,ed){return JSON.stringify({fields:[...new FormData(form).entries()],levels:ed.value.levels});}
 function configureTournamentSettingsUI(){
  const ed=editor,editing=view==='setup'&&ed?.event,form=document.querySelector('#structure-form');
@@ -49,7 +62,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.120 · Reorganization';
+const APP_VERSION='0.4.0-reorg.121 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -1038,6 +1051,7 @@ document.addEventListener('submit',async event=>{event.preventDefault();const fo
   if(form.id==='structure-form'){
     if(editor.version!==version)throw new Error('Data changed on another device. Reopen this editor before saving.');captureEditor();const check=rebuyBreakCheck(editor.value.settings,editor.value.levels);if(check?.missing){rebuyBreakNotice();throw new Error('Break required immediately after Round '+check.round+'. Use Add Break before saving.');}const saved=clone(editor);
     const action=saved.event?{type:'tournament-settings',tournamentId:saved.value.id,name:saved.value.name,settings:saved.value.settings,clockAppearance:saved.value.clockAppearance,...(form.querySelector('[data-level]')?{levels:saved.value.levels}:{})}:{type:'template-save',template:saved.value};
+    if(saved.event&&existingEntrySettingsChanged(current(),action)){if(!await confirmApp('Players have already bought in. Save these changes and update their existing buy-in amounts, dealer tokes, and chips wherever the terms have changed? Selecting Cancel returns to Tournament Settings without saving.','Update Existing Players?','Yes, Update Players'))return;action.updateExistingEntries=true;}
     if(await commit(action)){editor=null;if(saved.event)go('manage');else render();toast(saved.event?'Tournament settings saved.':'Structure saved.');}return;
   }
   if(form.id==='clock-appearance-form'){

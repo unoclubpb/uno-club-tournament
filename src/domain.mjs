@@ -1,3 +1,16 @@
+function existingEntrySettingsChanged(t,a){
+ if(!t?.entries?.length)return false;
+ const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
+ const levels=rows=>rows.map(l=>[l.kind,l.minutes,l.sb,l.bb,l.ante,l.game||'',l.layoutId||'',!!l.chipUp]);
+ return a.name!==undefined&&String(a.name).trim()!==t.name||a.settings&&canonical(a.settings)!==canonical(t.settings)||a.levels&&canonical(levels(a.levels))!==canonical(levels(t.levels))||a.clockAppearance&&canonical(a.clockAppearance)!==canonical(t.clockAppearance);
+}
+function updateExistingEntryTerms(t,next){
+ const old=t.settings;
+ for(const entry of t.entries)for(const payment of entry.payments||[]){
+  if(payment.kind==='entry'){if(next.buyIn!==old.buyIn)payment.total=next.buyIn;if(next.dealerToke!==old.dealerToke)payment.dealerToke=next.dealerToke;if(next.startingStack!==old.startingStack)payment.chips=next.startingStack;}
+  else if(payment.kind==='rebuy'||payment.kind==='addon'){const key=payment.kind;if(next[key+'Amount']!==old[key+'Amount'])payment.total=next[key+'Amount'];if(next[key+'Chips']!==old[key+'Chips'])payment.chips=next[key+'Chips'];}
+ }
+}
 function assertFutureLevelEdits(t,levels,now){if(!tournamentStarted(t))return;const current=clockAt(t,now).index;check(levels.length>current,'Keep the current level and all completed levels.');const key=l=>JSON.stringify([l.kind,l.minutes,l.sb,l.bb,l.ante,l.game||'',l.layoutId||'',!!l.chipUp]);for(let i=0;i<=current;i++)check(key(t.levels[i])===key(levels[i]),'The clock advanced or a protected level changed. Current and completed levels cannot be changed.');}
 import {icmEquities,roundLowerFirst} from './icm.mjs';
 import {pointPreview,recordTournamentPoints,startPointsSeason,editPlayerPoints} from './points.mjs';
@@ -329,7 +342,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
     check(tournamentStarted(t)||a.mode==='clock-seating','Full Clock becomes available when the tournament starts.');
     t.tvDisplayMode=a.mode;return s;
   }
-  if(a.type==='tournament-settings'||a.type==='payout-settings'){if(a.type==='tournament-settings'&&a.name!==undefined){check(String(a.name).trim()&&String(a.name).trim().length<=120,'Enter a tournament name (up to 120 characters).');t.name=String(a.name).trim();}
+  if(a.type==='tournament-settings'||a.type==='payout-settings'){if(a.type==='tournament-settings'&&existingEntrySettingsChanged(t,a))check(a.updateExistingEntries===true,'Players have already bought in. Confirm updating their existing amounts and chips before saving.');if(a.type==='tournament-settings'&&a.name!==undefined){check(String(a.name).trim()&&String(a.name).trim().length<=120,'Enter a tournament name (up to 120 characters).');t.name=String(a.name).trim();}
     check(t.status!=='completed','Completed tournament is locked.');
     if(a.type==='tournament-settings'&&tournamentStarted(t))check(a.settings.payoutMode===t.settings.payoutMode&&JSON.stringify(a.settings.payouts)===JSON.stringify(t.settings.payouts)&&JSON.stringify(a.settings.payoutRules)===JSON.stringify(t.settings.payoutRules)&&JSON.stringify(guaranteeSettings(a.settings))===JSON.stringify(guaranteeSettings(t.settings)),'Use Save Payouts in Tournament Management to change an active payout agreement.');
     const template={id:'event',name:t.name,levels:clone(a.levels||t.levels),settings:clone(a.settings)};validateTemplate(template,{requireRebuyBreak:a.type!=='payout-settings'&&(!tournamentStarted(t)||!!a.levels||a.settings.rebuyLastRound!==t.settings.rebuyLastRound||a.settings.rebuyEnabled!==t.settings.rebuyEnabled)});
@@ -345,6 +358,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
       t.payoutCustom=!!a.custom;
     }
     if(a.type==='tournament-settings'&&a.clockAppearance!=null)t.clockAppearance=clockAppearance(a.clockAppearance);
+    if(a.type==='tournament-settings'&&a.updateExistingEntries)updateExistingEntryTerms(t,template.settings);
     t.settings=template.settings;return s;
   }
   check(t.status!=='completed','Completed tournament is locked.');
