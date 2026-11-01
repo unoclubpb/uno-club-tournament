@@ -1690,3 +1690,17 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
  background:rgba(215,168,63,.25)!important;outline:2px solid #d7a83f!important;
  border-radius:5px!important;
 }
+
+/* Reorganization v96: compact aligned seating settings and two-column tables. */
+.management-panel .management-table-actions .seating-second-row{display:flex;align-items:stretch;gap:8px;min-width:0;width:100%}
+.management-panel .management-table-actions .seating-second-row>.unseat-all-button{height:48px;min-height:48px;flex:0 0 auto;white-space:nowrap}
+.management-panel .seating-second-row .seating-settings-form{display:flex;flex:1 1 auto;align-items:stretch;gap:8px;margin:0;min-width:0;height:48px}
+.management-panel .seating-second-row .seat-count-entry{position:relative;display:flex;flex:1 1 auto;max-width:none;min-width:0;height:48px;margin:0}
+.management-panel .seating-second-row .seat-count-entry input{height:48px;min-height:48px;width:100%;box-sizing:border-box;padding:0 8px;text-align:left;font-size:15px;appearance:textfield;-moz-appearance:textfield}
+.management-panel .seating-second-row .seat-count-entry input::-webkit-inner-spin-button,.management-panel .seating-second-row .seat-count-entry input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.management-panel .seating-second-row .seat-count-entry span{position:absolute;left:43px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:12px;white-space:nowrap}
+.management-panel .seating-second-row .seating-settings-form>.button{height:48px;min-height:48px;flex:0 0 70px;margin:0}
+.management-panel .seat-tables{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important;margin:12px 0!important;align-items:start!important}
+.management-panel .seat-tables>.seat-table{min-width:0!important;width:100%!important}
+.management-panel .seat-move-help{margin-top:8px!important;margin-bottom:8px!important}
+@media(max-width:650px){.management-panel .management-table-actions .seating-second-row{flex-wrap:wrap}.management-panel .seat-tables{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.management-panel .seat-table>.seat-row{padding:5px!important;gap:4px!important}.management-panel .seat-row .seat-number{width:30px;height:30px;flex-basis:30px;font-size:16px}}
