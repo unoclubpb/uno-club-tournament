@@ -374,6 +374,13 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
       const delta=a.command==='next'?1:-1;check(c.index+delta>=0&&c.index+delta<t.levels.length,'No level in that direction.');c.index+=delta;c.remainingMs=t.levels[c.index].minutes*60000;c.deadline=c.status==='running'?now+c.remainingMs:null;if(c.status==='ended')c.status='paused';
     } else throw new Error('Unknown clock command.');return s;
   }
+  if(a.type==='unregister'){
+    check(t&&!t.archivedAt&&t.status!=='completed','Choose an active tournament.');
+    const entry=t.entries.find(e=>e.id===a.entryId);check(entry,'Player is no longer registered.');
+    check(!entry.eliminatedAt&&!entry.pendingElimination,'Only a player who has not been eliminated can be unregistered.');
+    t.entries=t.entries.filter(e=>e.id!==entry.id);for(const e of t.entries)if(e.eliminatedAt&&e.place)e.place--;
+    t.eliminationUndo=[];t.remoteEliminationRequests=(t.remoteEliminationRequests||[]).filter(r=>r.entryId!==entry.id);return s;
+  }
   if(a.type==='register'){
     requireRegistration(t,a,now);
     if(!registrationOpen(t,c))recordCutoffOverride(t,a,now,'registration');

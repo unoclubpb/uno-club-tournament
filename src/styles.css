@@ -747,3 +747,7 @@ body:has(.nav){overscroll-behavior:none}
 .guarantee-fields input[name=guaranteeAmount]{width:82px;min-width:0}
 .guarantee-fields input[name=guaranteePlayers]{width:54px;min-width:44px}
 #paid-places-note:empty{display:none}
+
+/* Registration uses its full height for the player lists. */
+.registration-page .signup-layout>.registration-enrolled{grid-row:1}
+.registration-page .signup-layout[data-panel=registered]{grid-template-rows:minmax(0,1fr)}
