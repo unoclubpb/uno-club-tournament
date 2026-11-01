@@ -62,7 +62,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.145a · Reorganization';
+const APP_VERSION='0.4.0-reorg.145b · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -243,7 +243,7 @@ function setupGuaranteeFunding(s,t){
  const f=financials({...t,settings:s});
  return f.guaranteeActive?`<p class="guarantee-note">${f.guaranteeContribution?`${money(f.guaranteeContribution)} is automatically added to meet the First Place guarantee.`:'The first-place guarantee is fully funded; no additional House Contribution is needed.'}</p>`:'';
 }
-function payoutFields(s,t=null){if(s.payoutRules)return '<p class="muted">Custom payouts are managed in Tournament Management or Tournament Remote.</p>'+setupHouseContribution(s,t);return `<div class="payout-editor-grid" data-setup-payouts><div class="payout-format-column">${paidPlacesControl(s,t)}${payoutFormats(s,t)}${setupHouseContribution(s,t)}</div><section class="payout-places-column"><h3>Payouts</h3><div id="payout-place-list" data-mode="${s.payoutMode}">${payoutPlaceRows(t,s.payoutMode,s.payouts.map(n=>s.payoutMode==='fixed'?n/100:n),true,s)}</div></section></div><div id="setup-guarantee-funding">${setupGuaranteeFunding(s,t)}</div><p id="setup-payout-feedback" class="muted" role="status"></p>`;}
+function payoutFields(s,t=null){if(s.payoutRules)return '<p class="muted">Custom payouts are managed in Tournament Management or Tournament Remote.</p>'+setupHouseContribution(s,t);return `<div class="payout-editor-grid" data-setup-payouts><div class="payout-format-column">${paidPlacesControl(s,t)}${payoutFormats(s,t)}${setupHouseContribution(s,t)}<div id="setup-guarantee-funding">${setupGuaranteeFunding(s,t)}</div><p id="setup-payout-feedback" class="muted" role="status"></p></div><section class="payout-places-column"><h3>Payouts</h3><div id="payout-place-list" data-mode="${s.payoutMode}">${payoutPlaceRows(t,s.payoutMode,s.payouts.map(n=>s.payoutMode==='fixed'?n/100:n),true,s)}</div></section></div>`;}
 function readPayout(form,s){
   if(form.dataset.ruleEditor)return readRuleSettings(form,{...current(),settings:s});
   const fd=new FormData(form),mode=fd.get('payoutMode');if(!mode)return s;readGuarantee(form,s);s.payoutMode=mode;delete s.payoutRules;
