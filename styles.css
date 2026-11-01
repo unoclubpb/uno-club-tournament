@@ -1851,3 +1851,14 @@ body:has(.nav){overscroll-behavior:none}
  .financial-summary>div>.summary-name{font-size:16px}
  .financial-summary>div>.summary-calculation{font-size:12px}
 }
+
+/* Compact guarantee: title, then a single unbroken row of fields. */
+.payout-formats .guarantee-choice{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px}
+.payout-formats .guarantee-choice>input[type=radio]{margin-top:3px}
+.guarantee-choice .guarantee-settings{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.guarantee-settings .guarantee-title{white-space:nowrap}
+.guarantee-settings .guarantee-fields{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;white-space:nowrap;max-width:100%;font-size:13px}
+.guarantee-fields .guarantee-amount{width:100px;flex:0 1 100px}
+.guarantee-fields input[name=guaranteeAmount]{width:82px;min-width:0}
+.guarantee-fields input[name=guaranteePlayers]{width:54px;min-width:44px}
+#paid-places-note:empty{display:none}
