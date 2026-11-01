@@ -1704,3 +1704,15 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 .management-panel .seat-tables>.seat-table{min-width:0!important;width:100%!important}
 .management-panel .seat-move-help{margin-top:8px!important;margin-bottom:8px!important}
 @media(max-width:650px){.management-panel .management-table-actions .seating-second-row{flex-wrap:wrap}.management-panel .seat-tables{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.management-panel .seat-table>.seat-row{padding:5px!important;gap:4px!important}.management-panel .seat-row .seat-number{width:30px;height:30px;flex-basis:30px;font-size:16px}}
+
+.management-panel .section-label.seating-header{display:grid!important;grid-template-columns:minmax(0,2fr) minmax(0,3fr)!important;gap:12px!important;align-items:start!important}
+.management-panel .seating-heading-settings{display:flex!important;flex-direction:column!important;gap:12px!important;min-width:0!important}
+.management-panel .seating-heading-settings>h2{margin:0!important}
+.management-panel .seating-heading-settings .seating-settings-form{display:flex!important;align-items:stretch!important;gap:8px!important;margin:0!important;height:48px!important;min-width:0!important;width:100%!important}
+.management-panel .seating-heading-settings .seat-count-entry{position:relative!important;display:flex!important;flex:1 1 auto!important;min-width:0!important;max-width:none!important;height:48px!important;margin:0!important}
+.management-panel .seating-heading-settings .seat-count-entry input{height:48px!important;min-height:48px!important;width:100%!important;box-sizing:border-box!important;padding:0 8px!important}
+.management-panel .seating-heading-settings .seat-count-entry span{position:absolute!important;left:43px!important;top:50%!important;transform:translateY(-50%)!important;pointer-events:none!important;font-size:12px!important;color:var(--muted)!important;white-space:nowrap!important}
+.management-panel .seating-heading-settings .seating-settings-form>.button{height:48px!important;min-height:48px!important;flex:0 0 64px!important;margin:0!important}
+.management-panel .seating-header .management-table-actions>.button-row{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+.management-panel .seating-header .management-table-actions>.button-row>.button{height:48px!important;min-height:48px!important;width:100%!important;white-space:normal!important}
+.management-panel .seating-header .management-table-actions>.seating-combine-button{width:100%!important;min-height:40px!important}
