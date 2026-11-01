@@ -9,7 +9,7 @@ test('buy-in settings remove the helper note and center the fee breakdown at the
   const html=renderDesignSettings(settings,{num:value=>String(value),money:cents=>`$${(cents/100).toFixed(2)}`});
   assert.doesNotMatch(html,/The selected Dealer Toke or Admin Fee is included/);
   assert.ok(html.indexOf('class="split-note"')>html.indexOf('class="form-grid transaction-settings"'));
-  assert.match(html,/\$50\.00 total − \$10\.00 admin fee = \$40\.00 before the tournament fee/);
-  const css=await readFile(new URL('../src/styles.css',import.meta.url),'utf8');
-  assert.match(css,/\.split-note\{[^}]*text-align:center[^}]*font-weight:700/);
+  assert.match(html,/\$50\.00 total − \$10\.00 admin fee = \$40\.00 before the tournament fee<\/p>/);
+  const css=await readFile(new URL('../styles.css',import.meta.url),'utf8');
+  assert.match(css,/\.split-note\{[^}]*text-align:center[^}]*font-weight:700[^}]*font-size:18px/);
 });

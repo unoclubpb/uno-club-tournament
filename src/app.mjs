@@ -62,7 +62,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.142a · Reorganization';
+const APP_VERSION='0.4.0-reorg.142b · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -1005,7 +1005,7 @@ function formatDollarInput(input){
   const formatted=num(amount),digitsBefore=value.slice(0,start).replace(/,/g,'').length;let seen=0,position=formatted.length;for(let i=0;i<formatted.length;i++)if(/\d/.test(formatted[i])&&++seen===digitsBefore){position=i+1;break;}
   input.value=formatted;if(input.type==='text')input.setSelectionRange(position,position);
 }
-function refreshEntrySplit(form){if(!form?.elements.buyIn||!form.elements.dealerToke)return;const buyIn=dollarNumber(form.elements.buyIn.value),fee=dollarNumber(form.elements.dealerToke.value),type=form.elements.entryFeeType.value;setText('#entry-split',`${money(buyIn*100)} total − ${money(fee*100)} ${type==='admin'?'admin fee':'dealer toke'} = ${money(Math.max(0,buyIn-fee)*100)} before the tournament fee.`);}
+function refreshEntrySplit(form){if(!form?.elements.buyIn||!form.elements.dealerToke)return;const buyIn=dollarNumber(form.elements.buyIn.value),fee=dollarNumber(form.elements.dealerToke.value),type=form.elements.entryFeeType.value;setText('#entry-split',`${money(buyIn*100)} total − ${money(fee*100)} ${type==='admin'?'admin fee':'dealer toke'} = ${money(Math.max(0,buyIn-fee)*100)} before the tournament fee`);}
 function formatChipInput(input){
   const value=input.value,start=input.selectionStart??value.length,end=input.selectionEnd??start;
   if(/[^0-9,]/.test(value)){input.setCustomValidity('Enter a whole number of chips.');return;}
