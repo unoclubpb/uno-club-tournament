@@ -796,3 +796,4 @@ body:has(.nav){overscroll-behavior:none}
 .tournament-settings-page .payout-format-column:before{content:'Default payouts';display:block;font:700 17px/1.3 'Manrope',system-ui,sans-serif;letter-spacing:-.3px;margin-bottom:8px}
 
 #new-tournament-form input[name="name"],#new-tournament-form input[name="date"]{width:100%;box-sizing:border-box}
+#new-tournament-form label{width:100%;min-width:0}#new-tournament-form input[name="name"],#new-tournament-form input[name="date"]{display:block;width:100%;min-width:0;max-width:100%;align-self:stretch;box-sizing:border-box}
