@@ -395,7 +395,7 @@ body.saving .seat-lock-button{pointer-events:none;opacity:.6}
 .payout-formats legend{padding:0 6px;font-weight:700}.payout-formats .check{margin:8px 0;font-size:14px;align-items:flex-start}
 .payout-formats .check input[type=radio]{flex-shrink:0;width:18px;height:18px;margin-top:1px}
 #payout-values-field[hidden]{display:none}
-.guarantee-note{margin:16px 0;padding:12px 15px;border:1px solid var(--gold);border-radius:8px;color:var(--gold);font-size:13px}
+.guarantee-note{margin:16px 0;padding:12px 15px;border:1px solid var(--gold);border-radius:8px;color:var(--gold);font-size:13px;text-align:center}
 #payout-feedback{margin:12px 0}.icm-player-list{max-height:45dvh;overflow:auto;overscroll-behavior:contain;margin:16px 0}
 .icm-player{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
 .icm-player>strong{grid-column:1/-1}.icm-player label{min-width:0;margin:0}.icm-player input{width:100%}
