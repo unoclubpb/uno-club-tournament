@@ -776,3 +776,5 @@ body:has(.nav){overscroll-behavior:none}
 @media(max-width:520px){.transaction-fee-radios{gap:12px}#structure-form .transaction-fee-radios label{font-size:11px}}
 /* Align the guarantee amount row with the left edge of the prize format options. */
 .guarantee-settings .guarantee-fields{margin-left:-28px}
+
+#structure-form .form-section>.split-note{margin-top:1px}
