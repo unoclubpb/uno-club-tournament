@@ -404,8 +404,8 @@ body.saving .seat-lock-button{pointer-events:none;opacity:.6}
 
 /* Payout format and finishing places share one row on tablet and desktop. */
 .paid-places-label{margin:18px 0 7px}
-.paid-places-control{display:flex;align-items:center;gap:8px;max-width:220px;margin-bottom:5px}
-.paid-places-control input{width:80px;text-align:center;font-variant-numeric:tabular-nums}
+.paid-places-control{display:flex;align-items:center;gap:8px;width:100%;max-width:none;margin-bottom:5px}
+.paid-places-control input{flex:1;min-width:0;width:auto;text-align:center;font-variant-numeric:tabular-nums}
 .paid-places-control>.button{width:44px;padding:7px;font-size:20px;flex-shrink:0}
 .payout-editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start;margin:18px 0}
 .payout-format-column,.payout-places-column{min-width:0}
@@ -743,8 +743,9 @@ body:has(.nav){overscroll-behavior:none}
 .guarantee-choice .guarantee-settings{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 .guarantee-settings .guarantee-title{white-space:nowrap}
 .guarantee-settings .guarantee-fields{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;white-space:nowrap;width:100%;max-width:100%;min-width:0;box-sizing:border-box;font-size:13px}
-.guarantee-fields .guarantee-amount{width:84px;flex:0 1 84px;min-width:0}
+.guarantee-fields .guarantee-amount{width:84px;flex:0 0 84px;min-width:0}
 .guarantee-fields input[name=guaranteeAmount]{width:66px;min-width:0;box-sizing:border-box}
+.guarantee-fields>span{flex:0 0 auto}
 .guarantee-fields input[name=guaranteePlayers]{width:46px;min-width:0;flex:0 0 46px;box-sizing:border-box}
 #paid-places-note:empty{display:none}
 
