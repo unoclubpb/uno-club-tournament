@@ -42,7 +42,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.116 · Reorganization';
+const APP_VERSION='0.4.0-reorg.117 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -456,7 +456,7 @@ function summaryPrizes(t){
   return `<section class="summary-prizes"><h3>Prizes Paid Out</h3>${rows.map(({e,amount})=>`<div class="result-row" data-summary-prize="${e.playerId}"><span>${esc(pName(e))}${e.place?`<small>${placeName(e.place-1)}</small>`:''}</span><strong>${money(amount)}</strong></div>`).join('')}</section>`;
 }
 function summaryPanel(t){
-  const f=financials(t),rows=[['Tournament Entries',f.tournamentEntries,'credit'],['Dealer Tokes (Buy-Ins Only)',f.dealerTokes,'credit'],['Rebuys',f.rebuyTotal,'credit'],...(f.addonTotal?[['Add-ons',f.addonTotal,'credit']]:[]),[`Tournament Fee${f.housePercent==null?'':` (${f.housePercent}%)`}`,-f.houseFee,'debit'],['Dealer Tokes Paid Out',-f.dealerTokesPaidOut,'debit'],['House Contribution',f.houseContribution,f.houseContribution>0?'credit':'neutral'],['Total Prize Pool',f.pool,'total']];
+  const f=financials(t),rows=[['Tournament Entries',f.tournamentEntries,'credit'],['Dealer Tokes (Buy-Ins Only)',f.dealerTokes,'credit'],...(t.settings.rebuyEnabled?[['Rebuys',f.rebuyTotal,'credit']]:[]),...(t.settings.addonEnabled?[['Add-ons',f.addonTotal,'credit']]:[]),[`Tournament Fee${f.housePercent==null?'':` (${f.housePercent}%)`}`,-f.houseFee,'debit'],['Dealer Tokes Paid Out',-f.dealerTokesPaidOut,'debit'],['House Contribution',f.houseContribution,f.houseContribution>0?'credit':'neutral'],['Total Prize Pool',f.pool,'total']];
   return `<div class="section-label summary-heading"><h2>Tournament Summary</h2>${t.status==='completed'&&!t.archivedAt?'<button type="button" class="button secondary small" data-action="archive-tournament">Archive Tournament</button>':t.archivedAt?'<span class="pill light">Archived</span>':''}</div><div class="summary-grid financial-summary">${rows.map(([label,value,kind])=>`<div class="financial-${kind}"><span>${label}</span><strong>${value<0?'−':kind==='credit'&&value>0?'+':''}${money(Math.abs(value))}</strong>${label==='House Contribution'&&f.guaranteeContribution?`<small>Includes ${money(f.guaranteeContribution)} additional funding for the guarantee.</small>`:''}</div>`).join('')}</div>${summaryPrizes(t)}${tournamentPoints(t)}`;
 }
 function players(){if(!playerScreenModule)return screenPlaceholder('players');return playerScreenModule.renderPlayerDatabase({state,playerSearch,showArchived,playerDetail,profilePanel,esc,dateLabel,playerHistoryContents,empty,onMissingProfile:()=>{playerDetail=null;return players();}});}
