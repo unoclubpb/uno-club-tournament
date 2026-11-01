@@ -1665,3 +1665,15 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
 /* Reorganization v91: selected Move Players is highlighted gold. */
 .move-players-toggle.is-active,.move-players-toggle[aria-pressed="true"]{background:#d7a83f!important;border-color:#d7a83f!important;color:#17283d!important;-webkit-text-fill-color:#17283d!important;font-weight:700!important}
 .move-players-toggle.is-active:hover,.move-players-toggle[aria-pressed="true"]:hover{background:#e6ba67!important;border-color:#e6ba67!important}
+
+/* Reorganization v93: clear drop destination and active undo. */
+.management-layout .unseated-drop-zone,.remote-seating .unseated-drop-zone{
+ display:flex;align-items:center;justify-content:center;
+ border:2px dashed var(--line);border-radius:9px;
+ padding:14px;min-height:54px;margin:8px 0 12px;
+ background:transparent;font-weight:700;cursor:pointer;
+}
+.management-layout .unseated-drop-zone.seat-drop-target,.remote-seating .unseated-drop-zone.seat-drop-target{
+ border-color:#d7a83f;background:rgba(215,168,63,.18);
+}
+.management-layout .unseated-drop-zone:focus-visible{outline:2px solid #d7a83f;outline-offset:2px}
