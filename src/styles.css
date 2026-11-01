@@ -777,4 +777,4 @@ body:has(.nav){overscroll-behavior:none}
 /* Align the guarantee amount row with the left edge of the prize format options. */
 .guarantee-settings .guarantee-fields{margin-left:-28px}
 
-#structure-form .form-section>.split-note{margin-top:1px}
+#structure-form .form-section>.split-note{margin-top:9px}

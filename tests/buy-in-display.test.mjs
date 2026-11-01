@@ -12,5 +12,5 @@ test('buy-in settings remove the helper note and center the fee breakdown at the
   assert.match(html,/\$50\.00 total − \$10\.00 admin fee = \$40\.00 before the tournament fee<\/p>/);
   const css=await readFile(new URL('../styles.css',import.meta.url),'utf8');
   assert.match(css,/\.split-note\{[^}]*text-align:center[^}]*font-weight:700[^}]*font-size:18px/);
-  assert.match(css,/#structure-form \.form-section>\.split-note\{margin-top:1px\}/);
+  assert.match(css,/#structure-form \.form-section>\.split-note\{margin-top:9px\}/);
 });
