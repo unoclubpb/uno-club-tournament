@@ -62,7 +62,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.140a · Reorganization';
+const APP_VERSION='0.4.0-reorg.141 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -1125,6 +1125,18 @@ window.addEventListener('resize',()=>fitTvSeating());
 document.addEventListener('fullscreenchange',()=>fitTvSeating());
 clockToolbar=installClockToolbar();
 seatDragging=installSeatDragging({getScrollBounds:()=>({top:Math.min(innerHeight,Math.max(0,$('.management-chrome')?.getBoundingClientRect().bottom||$('.remote-header')?.getBoundingClientRect().bottom||0)),bottom:innerHeight}),getSource:entryId=>view!=='manage'||!movePlayersEnabled||dlg.open?null:seatSource(entryId),getLabel:source=>`Seat ${source.fromSeat} · ${pName(current().entries.find(e=>e.id===source.entryId))}`,onStart:clearSeatPick,onDrop:(source,target)=>requestSeatMove(source,target.table,target.seat),onError:error=>toast(error.message,true)});
+document.addEventListener('keydown',event=>{
+  if(event.key!=='Tab')return;
+  const table=event.target.closest?.('#structure-form .level-table');
+  if(!table)return;
+  const fields=[...table.querySelectorAll('input:not([type="hidden"]):not(:disabled),select:not(:disabled),button:not(:disabled)')].filter(el=>el.tabIndex>=0);
+  const index=fields.indexOf(event.target);
+  if(index<0)return;
+  const next=index+(event.shiftKey?-1:1);
+  if(next<0||next>=fields.length)return;
+  event.preventDefault();
+  fields[next].focus();
+});
 document.addEventListener('keydown',event=>{
   const button=event.target.closest?.('.management-sidebar [data-tab]');if(!button)return;
   const tabs=[...document.querySelectorAll('.management-sidebar [data-tab]')],index=tabs.indexOf(button);
