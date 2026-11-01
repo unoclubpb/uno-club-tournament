@@ -1,4 +1,255 @@
-remaining players can be moved.');
+function existingEntrySettingsChanged(t,a){
+ if(!t?.entries?.length)return false;
+ const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
+ const levels=rows=>rows.map(l=>[l.kind,l.minutes,l.sb,l.bb,l.ante,l.game||'',l.layoutId||'',!!l.chipUp]);
+ return a.name!==undefined&&String(a.name).trim()!==t.name||a.settings&&canonical(a.settings)!==canonical(t.settings)||a.levels&&canonical(levels(a.levels))!==canonical(levels(t.levels))||a.clockAppearance&&canonical(a.clockAppearance)!==canonical(t.clockAppearance);
+}
+function updateExistingEntryTerms(t,next){
+ const old=t.settings;
+ for(const entry of t.entries)for(const payment of entry.payments||[]){
+  if(payment.kind==='entry'){if(next.buyIn!==old.buyIn)payment.total=next.buyIn;if(next.dealerToke!==old.dealerToke)payment.dealerToke=next.dealerToke;if(next.startingStack!==old.startingStack)payment.chips=next.startingStack;}
+  else if(payment.kind==='rebuy'||payment.kind==='addon'){const key=payment.kind;if(next[key+'Amount']!==old[key+'Amount'])payment.total=next[key+'Amount'];if(next[key+'Chips']!==old[key+'Chips'])payment.chips=next[key+'Chips'];}
+ }
+}
+function assertFutureLevelEdits(t,levels,now){if(!tournamentStarted(t))return;const current=clockAt(t,now).index;check(levels.length>current,'Keep the current level and all completed levels.');const key=l=>JSON.stringify([l.kind,l.minutes,l.sb,l.bb,l.ante,l.game||'',l.layoutId||'',!!l.chipUp]);for(let i=0;i<=current;i++)check(key(t.levels[i])===key(levels[i]),'The clock advanced or a protected level changed. Current and completed levels cannot be changed.');}
+import {icmEquities,roundLowerFirst} from './icm.mjs';
+import {pointPreview,recordTournamentPoints,startPointsSeason,editPlayerPoints} from './points.mjs';
+import {clockAppearance} from './clock-appearance.mjs';
+import {calculatePayoutRules,validatePayoutRules,validatePayoutOrder} from './payout-rules.mjs';
+export const id = () => crypto.randomUUID();
+export const clone = value => structuredClone(value);
+const check = (ok, message) => { if (!ok) throw new Error(message); };
+export function sampleTemplate() {
+  const blinds = [[25,50],[50,100],[75,150],[100,200],[150,300],[200,400],[300,600],[400,800],[500,1000],[600,1200],[800,1600],[1000,2000],[1500,3000],[2000,4000],[2500,5000],[3000,6000],[4000,8000],[5000,10000],[6000,12000],[8000,16000],[10000,20000],[15000,30000],[20000,40000],[30000,60000],[40000,80000],[50000,100000],[60000,120000],[80000,160000]];
+  const levels=[];
+  blinds.forEach(([sb,bb],i)=>{
+    levels.push({kind:'play',minutes:15,sb,bb,ante:i>=6?bb:0,game:"No Limit Hold’em",chipUp:false});
+    if([7,15,23].includes(i)) levels.push({kind:'break',minutes:({7:5,15:10,23:15})[i],sb:0,bb:0,ante:0,game:'',chipUp:[7,15].includes(i)});
+  });
+  return {id:id(),name:'Uno Club — 15-minute levels',levels,settings:{financeVersion:2,startingStack:5000,buyIn:5000,dealerToke:1000,housePercent:20,rebuyEnabled:true,rebuyAmount:2500,rebuyChips:5000,rebuyLastRound:8,rebuyMax:0,addonEnabled:false,addonAmount:9000,addonChips:20000,addonLastRound:4,anteMode:'off',pauseBreaks:true,seatsPerTable:10,houseContribution:0,guaranteeAmount:100000,guaranteePlayers:10,payoutMode:'percent',payouts:[65,35]}};
+}
+export const playerNumberLabel=p=>String(p.playerNumber).padStart(3,'0');
+function assignPlayerNumbers(players){
+  let highest=players.reduce((n,p)=>Number.isSafeInteger(p.playerNumber)&&p.playerNumber>0?Math.max(n,p.playerNumber):n,0);
+  for(const p of players)if(!Number.isSafeInteger(p.playerNumber)||p.playerNumber<1)p.playerNumber=++highest;
+}
+export function normalizePhone(value){
+  const phone=String(value??'').trim();
+  check(phone===''||/^(?:[0-9]{10}|[0-9]{3}-[0-9]{3}-[0-9]{4})$/.test(phone),'Enter exactly 10 digits for the phone number (###-###-####).');
+  const digits=phone.replace(/-/g,'');return digits?`${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`:'';
+}
+export const normalizePlayerName=name=>String(name??'').trim().replace(/\s+/gu,' ').toLowerCase();
+// The cutoff includes one break immediately following the last allowed playing round.
+export function purchaseOpen(t,c,kind){
+  if(t.status==='completed'||c.status==='ended'||!t.settings[kind+'Enabled'])return false;
+  const round=roundAt(t,c.index),last=t.settings[kind+'LastRound'];
+  if(round!==last)return round<last;
+  return t.levels[c.index].kind==='play'||t.levels[c.index-1]?.kind==='play';
+}
+export const rebuyOpen=(t,c)=>purchaseOpen(t,c,'rebuy');
+export const canRecordRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&rebuyPhase(t,c)==='final-break';
+export const canEditRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&(canRecordRebuys(t,c)||!rebuyOpen(t,c));
+export const registrationOpen=(t,c)=>t.status!=='completed'&&!t.archivedAt&&c.status!=='ended'&&(c.status==='ready'||!t.settings.rebuyEnabled||rebuyOpen(t,c));
+function requireRegistration(t,action,now){
+  check(t&&t.status!=='completed'&&!t.archivedAt,'This tournament is finished.');
+  check(registrationOpen(t,clockAt(t,now))||action.overrideCutoff===true,'Registration is closed. Override is required.');
+}
+function recordCutoffOverride(t,a,now,kind){t.cutoffOverrides||=[];t.cutoffOverrides.push({kind,at:now,...(a.playerId?{playerId:a.playerId}:{}),...(a.count!=null?{count:a.count}:{})});}
+export const tournamentRebuyCount=t=>(Number.isSafeInteger(t.rebuyCount)&&t.rebuyCount>=0?t.rebuyCount:0)+t.entries.flatMap(e=>e.payments||[]).filter(p=>p.kind==='rebuy').length;
+export function cutoffHasBreak(t,kind='rebuy'){
+  let round=0;const index=t.levels.findIndex(l=>l.kind==='play'&&++round===t.settings[kind+'LastRound']);
+  return index>=0&&t.levels[index+1]?.kind==='break';
+}
+export function rebuyPhase(t,c){
+  if(!rebuyOpen(t,c))return 'closed';
+  if(roundAt(t,c.index)!==t.settings.rebuyLastRound)return 'open';
+  return t.levels[c.index].kind==='break'?'final-break':'final-round';
+}
+
+export const initialState=()=>({schemaVersion:1,players:[],templates:[sampleTemplate()],clockLayouts:[],tournaments:[]});
+export const paymentTotal=p=>p.total??((p.prize||0)+(p.house||0));
+export const tablesRequired=t=>Math.ceil(t.entries.filter(e=>!e.eliminatedAt).length/t.settings.seatsPerTable);
+// Keep occupied tables available until the organizer moves those players.
+export const tablesInUse=t=>Math.max(tablesRequired(t),...t.entries.filter(e=>!e.eliminatedAt).map(e=>e.table||0),0);
+export const tournamentStarted=t=>t.startedAt!=null||t.clock.status!=='ready';
+export const tvDisplayMode=t=>tournamentStarted(t)&&t.tvDisplayMode==='full-clock'?'full-clock':'clock-seating';
+function upgradeSettings(old){
+  if(old.financeVersion===2)return old;
+  const s={...old,financeVersion:2,buyIn:(old.entryPrize||0)+(old.entryHouse||0),dealerToke:old.entryHouse||0,housePercent:20,rebuyAmount:(old.rebuyPrize||0)+(old.rebuyHouse||0),addonAmount:(old.addonPrize||0)+(old.addonHouse||0)};
+  for(const k of ['entryPrize','entryHouse','rebuyPrize','rebuyHouse','addonPrize','addonHouse','tableCount','fixedExpense'])delete s[k];
+  return s;
+}
+export function upgradeState(value){
+  const s=clone(value);
+  s.clockLayouts??=[];
+  assignPlayerNumbers(s.players);
+  for(const template of s.templates){
+    const starter=template.name==='Uno Club — 15-minute levels'&&template.settings.financeVersion!==2&&template.settings.entryPrize===1000&&template.settings.entryHouse===1000;
+    template.settings=upgradeSettings(template.settings);
+    if(starter)template.settings.buyIn=5000;
+  }
+  for(const t of s.tournaments){
+    if(t.settings.financeVersion!==2){
+      if(t.status==='completed'&&!t.settlement){
+        const paid=t.entries.flatMap(e=>e.payments).filter(p=>p.paid),collected=paid.reduce((n,p)=>n+paymentTotal(p),0),fees=paid.reduce((n,p)=>n+(p.house||0),0)+(t.settings.fixedExpense||0);
+        t.settlement={collected,owed:t.entries.flatMap(e=>e.payments).filter(p=>!p.paid).reduce((n,p)=>n+paymentTotal(p),0),dealerTokes:0,houseBase:collected,houseFee:fees,housePercent:null,pool:Math.max(0,collected-fees+(t.settings.houseContribution||0)),legacy:true};
+      }
+      t.settings=upgradeSettings(t.settings);
+      for(const e of t.entries)for(const p of e.payments){p.total=paymentTotal(p);p.dealerToke=p.kind==='entry'?(p.house||0):0;delete p.prize;delete p.house;}
+    }
+    // Rebuys belong to the tournament. Move old records into its total exactly once.
+    t.rebuyCount=tournamentRebuyCount(t);
+    for(const e of t.entries){e.payments=(e.payments||[]).filter(p=>p.kind!=='rebuy');if(t.status!=='completed')for(const p of e.payments)p.paid=true;}
+  }
+  return s;
+}
+export const roundAt=(t,index)=>t.levels.slice(0,index+1).filter(l=>l.kind==='play').length;
+export function clockAt(t,now) {
+  const c=clone(t.clock); if(c.status!=='running') return c;
+  while(now>=c.deadline){
+    if(c.index===t.levels.length-1){c.status='ended';c.remainingMs=0;c.deadline=null;return c;}
+    const prev=t.levels[c.index]; c.index++;
+    const next=t.levels[c.index];
+    if(t.settings.pauseBreaks&&(next.kind==='break'||prev.kind==='break')){
+      c.status='paused';c.remainingMs=next.minutes*60000;c.deadline=null;return c;
+    }
+    c.deadline+=next.minutes*60000;
+  }
+  c.remainingMs=Math.max(0,c.deadline-now); return c;
+}
+export const guaranteeSettings=s=>({guaranteeAmount:s.guaranteeAmount??100000,guaranteePlayers:s.guaranteePlayers??10});
+export const guaranteeEligible=t=>t.entries.length>=guaranteeSettings(t.settings).guaranteePlayers;
+export function defaultPayouts(count){return ({1:[100],2:[65,35],3:[50,30,20],4:[45,30,15,10]})[count]||Array.from({length:count},(_,i)=>i===0?100:0);}
+export function tableBalanceNeeded(t){if(t.status==='completed')return false;const counts=[...new Set(t.entries.filter(e=>!e.eliminatedAt&&e.table).map(e=>e.table))].map(table=>t.entries.filter(e=>!e.eliminatedAt&&e.table===table).length);return counts.length>1&&Math.max(...counts)-Math.min(...counts)>=2;}
+export function financials(t){
+  const payments=t.entries.flatMap(e=>e.payments||[]).filter(p=>p.kind!=='rebuy');
+  const rebuyCount=tournamentRebuyCount(t),rebuyTotal=rebuyCount*t.settings.rebuyAmount;
+  const entryTotal=payments.filter(p=>p.kind==='entry').reduce((n,p)=>n+paymentTotal(p),0);
+  const dealerTokes=payments.filter(p=>p.kind==='entry').reduce((n,p)=>n+(p.dealerToke||0),0);
+  const tournamentEntries=Math.max(0,entryTotal-dealerTokes),addonTotal=payments.filter(p=>p.kind==='addon').reduce((n,p)=>n+paymentTotal(p),0);
+  const collected=entryTotal+rebuyTotal+addonTotal,houseBase=tournamentEntries+rebuyTotal+addonTotal;
+  const houseFeeMode=t.settings.houseFeeMode||'percent',houseFee=houseFeeMode==='flat'?(t.settings.houseFlatFee||0):Math.round(houseBase*t.settings.housePercent/10000)*100;
+  const manualHouseContribution=t.settings.houseContribution||0;
+  const basePool=Math.max(0,tournamentEntries+rebuyTotal+addonTotal-houseFee+manualHouseContribution);
+  const guaranteeActive=t.settings.payoutMode==='guaranteed'&&guaranteeEligible(t);
+  const guaranteeContribution=guaranteeActive?Math.max(0,guaranteeSettings(t.settings).guaranteeAmount-basePool):0;
+  let amounts={collected,owed:0,entryTotal,tournamentEntries,dealerTokes,dealerTokesPaidOut:dealerTokes,houseBase,houseFee,manualHouseContribution,guaranteeContribution,houseContribution:manualHouseContribution+guaranteeContribution,basePool,pool:basePool+guaranteeContribution,houseFeeMode,houseFlatFee:t.settings.houseFlatFee||0,housePercent:t.settings.housePercent,guaranteeActive,addonTotal};
+  // Completed settlements are immutable, including historical accounting rules.
+  if(t.status==='completed'&&t.settlement){
+    const saved=t.settlement,entries=saved.tournamentEntries??(saved.collected-saved.dealerTokes-rebuyTotal-addonTotal);
+    amounts={...amounts,...saved,houseFeeMode:saved.houseFeeMode||'percent',houseFlatFee:saved.houseFlatFee||0,tournamentEntries:entries,dealerTokesPaidOut:saved.dealerTokesPaidOut??saved.dealerTokes,houseContribution:saved.houseContribution??(saved.pool-entries-rebuyTotal-addonTotal+saved.houseFee),guaranteeContribution:saved.guaranteeContribution||0};
+  }
+  return {...amounts,rebuyCount,rebuyTotal,addonCount:payments.filter(p=>p.kind==='addon').length,chips:payments.reduce((n,p)=>n+p.chips,0)+rebuyCount*t.settings.rebuyChips};
+}
+export function prizes(t){
+  if(t.status==='completed'&&t.finalPayouts)return clone(t.finalPayouts);
+  if(t.settings.payoutMode==='mixed')return calculatePayoutRules(financials(t).pool,t.settings.payoutRules);
+  if(t.settings.payoutMode==='fixed')return clone(t.settings.payouts);
+  if(t.status==='completed'&&t.settlement){const pool=t.settlement.pool,old=t.settings.payouts.map(p=>Math.floor(pool*p/100));if(old.length)old[0]+=pool-old.reduce((a,b)=>a+b,0);return old;}
+  const f=financials(t),pool=f.pool;
+  if(t.settings.payoutMode==='guaranteed'&&f.guaranteeActive){
+    const first=Math.max(guaranteeSettings(t.settings).guaranteeAmount,Math.floor(pool*65/10000)*100);return [first,pool-first];
+  }
+  const percentages=t.settings.payoutMode==='guaranteed'?[65,35]:t.settings.payouts;
+  return roundLowerFirst(percentages.map(p=>pool*p/100),pool);
+}
+export function payoutBalance(t){return financials(t).pool-prizes(t).reduce((a,b)=>a+b,0);}
+export function icmProposal(t,chipCounts){
+  check(t.status!=='completed','Completed tournament is locked.');
+  check(!hasPendingEliminations(t),'Wait for pending eliminations to finish before calculating an ICM chop.');
+  const remaining=t.entries.filter(e=>!e.eliminatedAt);
+  check(remaining.length>=2&&remaining.length<=20,'Calculate an ICM chop with 2–20 remaining players.');
+  check(payoutBalance(t)===0,'Update payouts to exactly match the prize pool before calculating an ICM chop.');
+  check(Array.isArray(chipCounts)&&chipCounts.length===remaining.length&&new Set(chipCounts.map(v=>v.entryId)).size===remaining.length,'Enter chip counts for every remaining player exactly once.');
+  const participants=chipCounts.map(v=>{const e=remaining.find(e=>e.id===v.entryId);check(e,'Only remaining players can take part in an ICM chop.');check(Number.isSafeInteger(v.chips)&&v.chips>0,'Enter a positive whole chip count for every remaining player.');return {entryId:e.id,playerId:e.playerId,chips:v.chips};}).sort((a,b)=>b.chips-a.chips||remaining.findIndex(e=>e.id===a.entryId)-remaining.findIndex(e=>e.id===b.entryId));
+  const schedule=validatePayoutOrder(prizes(t));check(schedule.length<=t.entries.length,'Use no more payout places than registered players before calculating ICM.');const chopPool=schedule.slice(0,remaining.length).reduce((a,b)=>a+b,0),reservedPayouts=schedule.slice(remaining.length);
+  const exact=icmEquities(participants.map(v=>v.chips),schedule.slice(0,remaining.length)),rounded=roundLowerFirst(exact,chopPool);
+  return {participants:participants.map((v,i)=>({...v,chipRank:i+1,payout:rounded[i]})),chopPool,reservedPayouts,originalPayouts:schedule};
+}
+export function manualChopProposal(t,participants){
+  check(t.status!=='completed','Completed tournament is locked.');check(!hasPendingEliminations(t),'Wait for pending eliminations before accepting a chop.');
+  const remaining=t.entries.filter(e=>!e.eliminatedAt);check(remaining.length>=2,'A manual chop requires at least two remaining players.');
+  check(payoutBalance(t)===0,'Update payouts to exactly match the prize pool before accepting a chop.');
+  check(Array.isArray(participants)&&participants.length===remaining.length&&new Set(participants.map(p=>p.entryId)).size===remaining.length,'Enter one agreed payout for every remaining player.');
+  const rows=participants.map(p=>{const entry=remaining.find(e=>e.id===p.entryId);check(entry,'Only remaining players can participate in a chop.');check(Number.isSafeInteger(p.payout)&&p.payout>=0&&p.payout%100===0,'Agreed payouts must be whole dollars.');return {entryId:entry.id,playerId:entry.playerId,payout:p.payout};});
+  const schedule=validatePayoutOrder(prizes(t)),chopPool=schedule.slice(0,remaining.length).reduce((a,b)=>a+b,0);check(rows.reduce((a,p)=>a+p.payout,0)===chopPool,'Agreed payouts must exactly match the amount available for the chop.');
+  return {participants:rows,chopPool,reservedPayouts:schedule.slice(remaining.length),originalPayouts:schedule};
+}
+export function validateTemplate(template,{requireRebuyBreak=true}={}){
+  if(template.clockAppearance!=null)clockAppearance(template.clockAppearance);
+  check(template.name.trim(),'Give the structure a name.');check(template.levels.length>0,'Add at least one level.');
+  check(template.levels[0].kind==='play','Start the structure with a playing level.');
+  check(template.levels.some(l=>l.kind==='play'),'Add a playing level.');
+  template.levels.forEach(l=>{check(['play','break'].includes(l.kind),'Invalid level type.');check(Number.isFinite(l.minutes)&&l.minutes>=0.1&&l.minutes<=180,'Level length must be between 0.1 and 180 minutes.');check(l.kind!=='break'||Number.isInteger(l.minutes),'Break length must be a whole number of minutes (1–180).');check([l.sb,l.bb,l.ante].every(v=>Number.isSafeInteger(v)&&v>=0),'Blinds and antes must be nonnegative whole numbers.');check(l.kind==='break'||l.bb>=l.sb,'Big blind must be at least the small blind.');});
+  const s=template.settings,{guaranteeAmount,guaranteePlayers}=guaranteeSettings(s);
+  check(Number.isSafeInteger(guaranteeAmount)&&guaranteeAmount>0&&guaranteeAmount%100===0,'Enter a positive whole-dollar first-place guarantee.');
+  check(Number.isSafeInteger(guaranteePlayers)&&guaranteePlayers>=1&&guaranteePlayers<=999,'Enter a whole number from 1 to 999 for the guarantee.');
+  ['startingStack','buyIn','dealerToke','rebuyAmount','rebuyChips','rebuyLastRound','rebuyMax','addonAmount','addonChips','addonLastRound','seatsPerTable','houseContribution'].forEach(k=>check(Number.isSafeInteger(s[k])&&s[k]>=0,`Invalid ${k} setting.`));
+  for(const key of ['buyIn','dealerToke','rebuyAmount','addonAmount','houseContribution'])check(s[key]%100===0,'Enter monetary amounts as whole dollars.');
+  check(s.payoutMode!=='fixed'||s.payouts.every(n=>Number.isSafeInteger(n)&&n%100===0),'Fixed payouts must be whole dollars.');
+  check(s.dealerToke<=s.buyIn,'Dealer toke cannot exceed the full buy-in.');
+  check(['percent','flat'].includes(s.houseFeeMode||'percent'),'Choose a tournament fee type.');
+  check(Number.isSafeInteger(s.houseFlatFee??0)&&(s.houseFlatFee??0)>=0&&(s.houseFlatFee??0)%100===0,'Enter the flat tournament fee as nonnegative whole dollars.');
+  check(Number.isFinite(s.housePercent)&&s.housePercent>=0&&s.housePercent<=100,'House percentage must be between 0 and 100.');
+  check(s.startingStack>0,'Starting chips must be greater than zero.');check(s.seatsPerTable>=2&&s.seatsPerTable<=10,'Use 2–10 seats per table.');
+  check(['off','big_blind','per_player'].includes(s.anteMode),'Choose the ante setting.');
+  check(['percent','fixed','guaranteed','mixed'].includes(s.payoutMode),'Choose a payout mode.');
+  if(s.payoutRules!=null){
+    validatePayoutRules(s.payoutRules);
+    check(s.payoutRules.length===s.payouts.length,'Use one payout rule for each paid place.');
+    if(s.payoutMode==='percent'||s.payoutMode==='fixed')check(s.payoutRules.every((rule,i)=>rule.mode===s.payoutMode&&rule.value===s.payouts[i]),'Payout rules must match the selected format and amounts.');
+  }
+  check(s.payoutMode!=='mixed'||Array.isArray(s.payoutRules),'Enter the mixed payout rules.');
+  check(s.payouts.length>0&&s.payouts.length<=20&&s.payouts.every(v=>Number.isFinite(v)&&v>=0),'Enter valid payouts.');
+  if(s.payoutMode==='percent'||s.payoutMode==='fixed')validatePayoutOrder(s.payouts,s.payoutMode==='percent'?'percent':'dollars');
+  check(s.payoutMode!=='percent'||Math.abs(s.payouts.reduce((a,b)=>a+b,0)-100)<0.000001,'Payout percentages must total 100%.');
+  if(requireRebuyBreak&&s.rebuyEnabled)check(cutoffHasBreak({settings:s,levels:template.levels}),`Add a break immediately after Round ${s.rebuyLastRound}, the last round before rebuys end.`);
+}
+// Locks belong to this tournament entry and protect the exact table and seat.
+function requireUnlocked(entry){check(!entry.pendingElimination,'Pending elimination: that player and seat are reserved until Undo expires.');check(!entry.seatLocked,`Unlock the player at Table ${entry.table}, Seat ${entry.seat} first.`);}
+export function canCombineTables(t){const remaining=t.entries.filter(e=>!e.eliminatedAt),count=tablesRequired(t);return count>0&&remaining.some(e=>e.table)&&(remaining.some(e=>!e.table||e.table>count)||Array.from({length:count},(_,i)=>remaining.filter(e=>e.table===i+1).length!==Math.floor(remaining.length/count)+(i<remaining.length%count?1:0)).some(Boolean));}
+export function planTableSeating(t,{mode='remaining',order=[]}={}){
+  check(t&&t.status!=='completed','Completed tournament is locked.');
+  check(['remaining','combine','redraw','legacy-redraw'].includes(mode),'Choose a valid seating action.');
+  const active=t.entries.filter(e=>!e.eliminatedAt),capacity=t.settings.seatsPerTable;
+  const count=mode==='remaining'?tablesInUse(t):tablesRequired(t);
+  if(mode==='combine'||mode==='redraw')check(canCombineTables(t),'No tables need to be combined.');
+  if(mode==='redraw')check(count===1,'Redraw is only available when forming the final table.');
+  const redraw=mode==='redraw'||mode==='legacy-redraw';
+  const moving=active.filter(e=>redraw?!e.seatLocked:!e.table||(mode==='combine'&&e.table>count));
+  const targets=Array.from({length:count},(_,i)=>Math.floor(active.length/count)+(i<active.length%count?1:0));
+  // Refuse to close a locked player's table before planning any changes.
+  for(const entry of active.filter(e=>e.seatLocked)){
+    check(entry.table>=1&&entry.table<=count&&entry.seat>=1&&entry.seat<=capacity,`Unlock the player at Table ${entry.table}, Seat ${entry.seat} before combining tables.`);
+  }
+  const rank=new Map(order.map((entryId,i)=>[entryId,i]));
+  if(mode==='combine')for(let table=1;table<=count;table++){
+    const occupants=active.filter(e=>e.table===table),excess=occupants.length-targets[table-1];
+    const candidates=occupants.filter(e=>!e.seatLocked&&!e.pendingElimination).sort((a,b)=>order.length?(rank.get(a.id)??order.length)-(rank.get(b.id)??order.length):b.seat-a.seat);
+    check(excess<=candidates.length,occupants.some(e=>e.pendingElimination)?'Wait for pending eliminations before balancing this table.':`Unlock a player at Table ${table} before balancing tables.`);
+    if(excess>0)moving.push(...candidates.slice(0,excess));
+  }
+  const movingIds=new Set(moving.map(e=>e.id)),occupied=new Set(),loads=Array(count).fill(0);
+  for(const entry of active.filter(e=>!movingIds.has(e.id))){occupied.add(`${entry.table}/${entry.seat}`);loads[entry.table-1]++;}
+  if(mode==='remaining'||redraw||mode==='combine'&&order.length)moving.sort((a,b)=>(rank.get(a.id)??order.length)-(rank.get(b.id)??order.length));
+  const updates=[];
+  for(const entry of moving){
+    requireUnlocked(entry);
+    let table=0;
+    for(let i=0;i<count;i++)if(loads[i]<(mode==='combine'?targets[i]:capacity)&&(!table||loads[i]<loads[table-1]))table=i+1;
+    check(table,'No open seat is available.');
+    let seat=1;while(occupied.has(`${table}/${seat}`))seat++;
+    check(seat<=capacity,'No open seat is available.');
+    updates.push({entryId:entry.id,table,seat});occupied.add(`${table}/${seat}`);loads[table-1]++;
+  }
+  return updates;
+}
+function applySeats(t,updates){for(const update of updates){const entry=t.entries.find(e=>e.id===update.entryId);entry.table=update.table;entry.seat=update.seat;}}
+// A complete, validated seating change; no records are mutated while planning.
+export function planSeatMove(t,{entryId,table,seat,mode='move'}){
+  check(t&&t.status!=='completed','Completed tournament is locked.');
+  const remaining=t.entries.filter(e=>!e.eliminatedAt),source=remaining.find(e=>e.id===entryId);
+  check(source,'Only remaining players can be moved.');
   check(Number.isInteger(table)&&table>=1&&table<=tablesInUse(t)&&Number.isInteger(seat)&&seat>=1&&seat<=t.settings.seatsPerTable,'Invalid table or seat.');
   check(['move','swap','slide'].includes(mode),'Choose a valid seat move.');
   if(source.table===table&&source.seat===seat)return [];
