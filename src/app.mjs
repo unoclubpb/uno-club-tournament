@@ -62,7 +62,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.132 · Reorganization';
+const APP_VERSION='0.4.0-reorg.133 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -229,7 +229,7 @@ function readGuarantee(form,s){
 }
 function payoutFormats(s,t=null){
   const {guaranteeAmount,guaranteePlayers}=guaranteeSettings(s);
-  return `<fieldset class="payout-formats" ${t?.status==='completed'?'disabled':''}><legend>Prize Format</legend>${[['percent','Percentage of Prize Pool'],['fixed','Fixed Dollar Amounts']].map(([value,label])=>`<label class="check"><input type="radio" name="payoutMode" value="${value}" ${s.payoutMode===value?'checked':''}><span>${label}</span></label>`).join('')}<div class="check guarantee-choice"><input id="guaranteed-format" type="radio" name="payoutMode" value="guaranteed" aria-label="Guaranteed to First Place" ${s.payoutMode==='guaranteed'?'checked':''}><div class="guarantee-settings"><label for="guaranteed-format" class="guarantee-title">Guaranteed to First Place</label><div class="guarantee-fields"><div class="guarantee-amount"><span>$</span><input type="text" inputmode="numeric" data-money="true" name="guaranteeAmount" aria-label="First-place guarantee amount" value="${num(guaranteeAmount/100)}" required></div><span>with</span><input type="text" inputmode="numeric" name="guaranteePlayers" aria-label="Players required for guarantee" minlength="1" maxlength="3" pattern="[0-9]{1,3}" value="${guaranteePlayers}" required><span>players</span></div></div></div></fieldset><p class="muted small-copy" id="guarantee-eligibility">${guaranteeEligibility(s,t)}</p>`;
+  return `<fieldset class="payout-formats" ${t?.status==='completed'?'disabled':''}><legend>Prize Format</legend>${[['percent','Percentage of Prize Pool'],['fixed','Fixed Dollar Amounts']].map(([value,label])=>`<label class="check"><input type="radio" name="payoutMode" value="${value}" ${s.payoutMode===value?'checked':''}><span>${label}</span></label>`).join('')}<div class="check guarantee-choice"><input id="guaranteed-format" type="radio" name="payoutMode" value="guaranteed" aria-label="Guaranteed to First Place" ${s.payoutMode==='guaranteed'?'checked':''}><div class="guarantee-settings"><label for="guaranteed-format" class="guarantee-title">Guaranteed to First Place</label><div class="guarantee-fields"><div class="guarantee-amount"><span>$</span><input type="text" inputmode="numeric" data-money="true" name="guaranteeAmount" aria-label="First-place guarantee amount" value="${num(guaranteeAmount/100)}" required></div><span>with</span><input type="text" inputmode="numeric" name="guaranteePlayers" aria-label="Players required for guarantee" minlength="1" maxlength="3" pattern="[0-9]{1,3}" value="${guaranteePlayers}" required><span>players</span></div></div></div></fieldset>${t?`<p class="muted small-copy" id="guarantee-eligibility">${guaranteeEligibility(s,t)}</p>`:''}`;
 }
 function paidPlacesControl(s,t=null,live=false){
   const count=t?.icmChop?t.finalPayouts.length:s.payoutMode==='guaranteed'?2:s.payouts.length,locked=t?.status==='completed'||s.payoutMode==='guaranteed'&&!live;
@@ -241,7 +241,7 @@ function syncSetupHouseContribution(form,settings,t){const input=form.elements.h
 function setupGuaranteeFunding(s,t){
  if(!t||s.payoutMode!=='guaranteed')return '';
  const f=financials({...t,settings:s});
- return f.guaranteeActive?`<p class="guarantee-note">${f.guaranteeContribution?`${money(f.guaranteeContribution)} is automatically added to House Contribution to meet the first-place guarantee. Total House Contribution: ${money(f.houseContribution)}.`:'The first-place guarantee is fully funded; no additional House Contribution is needed.'}</p>`:'';
+ return f.guaranteeActive?`<p class="guarantee-note">${f.guaranteeContribution?`${money(f.guaranteeContribution)} is automatically added to meet the First Place guarantee.`:'The first-place guarantee is fully funded; no additional House Contribution is needed.'}</p>`:'';
 }
 function payoutFields(s,t=null){if(s.payoutRules)return '<p class="muted">Custom payouts are managed in Tournament Management or Tournament Remote.</p>'+setupHouseContribution(s,t);return `<div class="payout-editor-grid" data-setup-payouts><div class="payout-format-column">${paidPlacesControl(s,t)}${payoutFormats(s,t)}${setupHouseContribution(s,t)}</div><section class="payout-places-column"><h3>Payouts</h3><div id="payout-place-list" data-mode="${s.payoutMode}">${payoutPlaceRows(t,s.payoutMode,s.payouts.map(n=>s.payoutMode==='fixed'?n/100:n),true,s)}</div></section></div><div id="setup-guarantee-funding">${setupGuaranteeFunding(s,t)}</div><p id="setup-payout-feedback" class="muted" role="status"></p>`;}
 function readPayout(form,s){
@@ -981,7 +981,6 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
     case 'new-structure':{const value=sampleTemplate();value.name='New tournament structure';value.clockAppearance=clockAppearance(state.clockAppearanceDefaults);editor={value,isNew:true,event:false,version};view='setup';render();break;}
     case 'event-settings':{const t=current();editor={event:true,version,value:{id:t.id,name:t.name,settings:clone(t.settings),levels:clone(t.levels),clockAppearance:clockAppearance(t.clockAppearance)}};view='setup';render();break;}
     case 'close-editor':if(editor?.event){const form=$('#structure-form');if(form&&editor.initialFormSnapshot!==settingsDraftSnapshot(form,editor)&&!await confirmApp('Changes have been made. Do you want to return to Tournament Management without saving changes?','Unsaved Tournament Settings','Return Without Saving'))break;editor=null;go('manage');}else{editor=null;render();}break;
-    case 'copy-game':{const game=$('#all-levels-game').value.trim();if(!game){toast('Enter a game name to copy.',true);break;}for(const row of $('#structure-form').querySelectorAll('[data-level]')){if(row.querySelector('[name=kind]').value==='play')row.querySelector('[name=game]').value=game;}captureEditor();toast('Game copied to all playing levels. Save the structure to keep it.');break;}
     case 'add-level':case 'add-break':captureEditor();editor.value.levels.push({kind:el.dataset.action==='add-break'?'break':'play',minutes:el.dataset.action==='add-break'?10:15,sb:0,bb:0,ante:0,game:el.dataset.action==='add-break'?'':(editor.value.levels.slice().reverse().find(l=>l.kind==='play')?.game||''),chipUp:false});render();break;
     case 'recalculate-payouts':await recalculatePayouts();break;case 'clock-appearance':appearanceDialog();break;case 'structure-clock-appearance':appearanceDialog();break;case 'restore-clock-appearance':fillAppearance(el.closest('form'),ORIGINAL_CLOCK_APPEARANCE);break;case 'use-clock-defaults':fillAppearance(el.closest('form'),state.clockAppearanceDefaults);break;
     case 'seat-remaining':{const context=seatingContext();await commit({type:'seat-remaining',tournamentId:context.tournamentId,order:randomSeatOrder(current())});break;}
@@ -1133,6 +1132,14 @@ db.auth.onAuthStateChange((event,newSession)=>{authEventSeen=true;setTimeout(()=
 db.auth.getSession().then(({data,error})=>{if(authEventSeen)return;if(error){authReady=true;authError='Could not restore your sign-in. Please sign in again.';render();return;}void acceptSession(data.session);}).catch(()=>{authReady=true;authError='Could not connect to sign-in. Please try again.';render();});
 
 document.addEventListener('change',async event=>{
+ const gameInput=event.target;if(gameInput.matches?.('#structure-form [data-level] input[name=game]')){
+  const form=gameInput.form,rows=[...form.querySelectorAll('[data-level]')],index=rows.indexOf(gameInput.closest('[data-level]')),following=rows.slice(index+1).filter(row=>row.querySelector('[name=kind]').value==='play'),ed=editor,versionAtPrompt=version,chosen=gameInput.value.trim();
+  if(index<0||!following.length||!chosen)return;
+  if(!await confirmApp(`Change all subsequent playing levels to ${chosen}? Choose Cancel to change only this level.`,'Apply Game to Subsequent Levels','Apply to All Subsequent'))return;
+  if(editor!==ed||version!==versionAtPrompt||!gameInput.isConnected||gameInput.value.trim()!==chosen)return;
+  for(const row of following)row.querySelector('[name=game]').value=chosen;
+  return;
+ }
  const select=event.target;if(!select.matches?.('#structure-form [data-layout-selector]'))return;
  const form=select.form,rows=[...form.querySelectorAll('[data-level]')],index=rows.indexOf(select.closest('[data-level]')),following=rows.slice(index+1),ed=editor,versionAtPrompt=version,chosen=select.value;
  if(index<0||!following.length)return;

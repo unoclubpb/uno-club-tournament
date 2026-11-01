@@ -1867,5 +1867,18 @@ body:has(.nav){overscroll-behavior:none}
 /* Registration uses its full height for the player lists. */
 .registration-page .signup-layout>.registration-enrolled{grid-row:1}
 .registration-page .signup-layout[data-panel=registered]{grid-template-rows:minmax(0,1fr)}
+
+/* Show both settlement fee choices and keep each amount aligned on the right. */
+.tournament-fee-options{display:grid;gap:14px}
+.tournament-fee-choice{display:grid;gap:6px;margin:0}
+.tournament-fee-choice-main{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tournament-fee-name{display:flex;align-items:center;gap:9px;font-weight:600}
+.tournament-fee-name input[type=radio]{width:18px;height:18px;margin:0}
+.tournament-fee-choice .input-wrap{width:140px;max-width:48%;margin:0;flex:0 0 140px}
+.tournament-fee-choice .input-wrap input{width:100%;min-width:0}
+.tournament-fee-choice .fee-percent-input>span{left:auto;right:12px}
+.tournament-fee-choice .fee-percent-input input{padding-right:34px;text-align:right}
+.tournament-fee-choice>.muted{font-size:12px;line-height:1.4}
+@media(max-width:420px){.tournament-fee-choice .input-wrap{flex-basis:120px;width:120px}}
 /* Align the guarantee amount row with the left edge of the prize format options. */
 .guarantee-settings .guarantee-fields{margin-left:-28px}
