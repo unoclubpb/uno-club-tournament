@@ -405,7 +405,7 @@ body.saving .seat-lock-button{pointer-events:none;opacity:.6}
 /* Payout format and finishing places share one row on tablet and desktop. */
 .paid-places-label{margin:18px 0 7px}
 .paid-places-control{display:flex;align-items:center;gap:8px;width:100%;max-width:none;margin-bottom:5px}
-.paid-places-control input{flex:1;min-width:0;width:auto;text-align:center;font-variant-numeric:tabular-nums}
+.paid-places-control input{flex:0 0 106px;min-width:106px;width:106px;max-width:106px;text-align:center;font-variant-numeric:tabular-nums}
 .paid-places-control>.button{width:44px;padding:7px;font-size:20px;flex-shrink:0}
 .payout-editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start;margin:18px 0}
 .payout-format-column,.payout-places-column{min-width:0}
