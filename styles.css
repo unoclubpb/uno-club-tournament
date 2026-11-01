@@ -1781,3 +1781,5 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{
  overflow-y:auto!important;overscroll-behavior:contain!important;
 }
 body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%!important}
+
+.tournament-danger-zone{display:flex;justify-content:flex-end;margin-top:24px;padding:0}

@@ -666,3 +666,5 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .history-tournament{width:100%;background:transparent;color:var(--ink);border:0;border-bottom:1px solid var(--line);text-align:left;font:inherit;cursor:pointer}
 #confirmation-dialog{max-width:520px}#confirmation-dialog .button-row{justify-content:flex-end;flex-wrap:wrap}#confirmation-dialog .button{min-height:44px}
 .summary-heading>.button{margin-left:auto}
+
+.tournament-danger-zone{display:flex;justify-content:flex-end;margin-top:24px;padding:0}

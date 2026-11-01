@@ -280,7 +280,7 @@ export function execute(state,action,now=Date.now()){
   const s=upgradeState(state), a=action;let t=s.tournaments.find(t=>t.id===a.tournamentId);
   if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
   if(a.type==='points-edit'){editPlayerPoints(s,a,now);return s;}
-  if(a.type==='tournament-delete'){check(t&&t.status==='open'&&!tournamentStarted(t),'Only a tournament that has never started can be deleted.');check(!(s.points?.awards||[]).some(v=>v.tournamentId===t.id),'Cannot delete a tournament with recorded points.');s.tournaments=s.tournaments.filter(v=>v.id!==t.id);return s;}
+  if(a.type==='tournament-delete'){check(t&&!t.archivedAt,'Archived tournaments cannot be deleted.');if(s.points)s.points.awards=s.points.awards.filter(v=>v.tournamentId!==t.id);s.tournaments=s.tournaments.filter(v=>v.id!==t.id);return s;}
   if(a.type==='tournament-archive'){check(t&&t.status==='completed','Complete the tournament before archiving it.');t.archivedAt??=now;return s;}
   if(a.type==='player-save'){
     if(a.registrationTournamentId)requireRegistration(s.tournaments.find(t=>t.id===a.registrationTournamentId),a,now);
@@ -310,6 +310,7 @@ export function execute(state,action,now=Date.now()){
   if(a.type==='template-save'){const template=clone(a.template);template.clockAppearance=clockAppearance(template.clockAppearance||s.clockAppearanceDefaults);if(template.settings.payoutMode==='guaranteed')template.settings.payouts=[65,35];validateTemplate(template);const ix=s.templates.findIndex(v=>v.id===template.id);if(ix<0)s.templates.push(template);else s.templates[ix]=template;return s;}
   if(a.type==='template-delete'){check(s.templates.length>1,'Keep at least one saved structure.');s.templates=s.templates.filter(v=>v.id!==a.id);return s;}
   if(a.type==='tournament-create'){
+    check(!s.tournaments.some(t=>!t.archivedAt),'You must archive the current tournament before creating a new one.');
     const template=s.templates.find(v=>v.id===a.templateId);check(template,'Choose a saved structure.');validateTemplate(template);check(String(a.name||'').trim(),'Give the tournament a name.');
     s.tournaments.push({id:a.id||id(),name:String(a.name).trim().slice(0,120),date:a.date||new Date(now).toISOString().slice(0,10),templateName:template.name,levels:clone(template.levels),settings:clone(template.settings),clockAppearance:clockAppearance(a.clockAppearance||template.clockAppearance||s.clockAppearanceDefaults),entries:[],rebuyCount:0,eliminationUndo:[],status:'open',clock:{index:0,status:'ready',remainingMs:template.levels[0].minutes*60000,deadline:null},createdAt:now});return s;
   }

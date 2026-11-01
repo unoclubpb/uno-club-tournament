@@ -24,7 +24,8 @@ async function boot(base,seed,view='home',selected='',options={}){
    channel:()=>({on(event,filter,cb){f.notify=cb;if(f.cloud)f.cloud.listeners.add(cb);return this;},subscribe(){return this;}}),removeChannel:async()=>{}
   };
  };`;
- const out=await build({entryPoints:['src/app.mjs'],bundle:true,write:false,format:'iife',plugins:[{name:'local-auth-fixture',setup(b){b.onResolve({filter:/^@supabase\/supabase-js$/},()=>({path:'auth-fixture',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:stub,loader:'js'}));}}]});
+ if(options.published)w.eval(stub.replace('export const createClient=', 'window.__createClientFixture='));
+ const out=await build({entryPoints:[options.published?'app.js':'src/app.mjs'],bundle:true,write:false,format:'iife',plugins:[{name:'local-auth-fixture',setup(b){if(options.published)b.onLoad({filter:/\/app\.js$/},async args=>({contents:(await readFile(args.path,'utf8')).replace('var pe=Ho(Xo,Zo)','var pe=window.__createClientFixture()'),loader:'js'}));b.onResolve({filter:/^@supabase\/supabase-js$/},()=>({path:'auth-fixture',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:stub,loader:'js'}));}}]});
  const errors=[];w.addEventListener('error',e=>errors.push(e.error));w.eval(out.outputFiles[0].text);await flush();
  const q=s=>w.document.querySelector(s),click=s=>{assert.ok(q(s),'Missing '+s);q(s).click();};
  const submit=async (f,action)=>{f.dispatchEvent(new w.SubmitEvent('submit',{bubbles:true,cancelable:true,submitter:action?f.querySelector(`[value=${action}]`):null}));await flush();};
@@ -1018,7 +1019,7 @@ test('Summary shows final named prizes above descending tournament points, with 
  try{ui.click('[data-tab=summary]');assert.equal(ui.q('.summary-prizes').previousElementSibling.classList.contains('financial-summary'),true);assert.equal(ui.q('.summary-prizes').nextElementSibling.classList.contains('tournament-points'),true);assert.equal(ui.q('[data-summary-prize=p1] strong').textContent,'$384');const rows=[...ui.w.document.querySelectorAll('[data-summary-points]')];assert.ok(rows.slice(0,9).every(r=>r.querySelector('strong').textContent.includes('= 7.00 pts')));assert.deepEqual(rows.slice(-3).map(r=>r.dataset.summaryPoints),['p10','p11','p12']);assert.ok(rows.slice(-3).every(r=>r.querySelector('strong').textContent.includes('= 1.00 pts')));assert.equal(ui.q('[data-action=archive-tournament]').textContent,'Archive Tournament');assert.deepEqual(ui.stored(),seed);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
 test('Archive uses an app confirmation, preserves failed saves and history, and clears Management, Registration and Setup only on success',async()=>{
- const seed=completedPointsFixture(),ui=await boot('https://example.test/',seed,'manage','t1',{manualConfirm:true});
+ const seed=completedPointsFixture(),ui=await boot('https://example.test/',seed,'manage','t1',{manualConfirm:true,published});
  try{ui.click('[data-tab=summary]');ui.click('[data-action=archive-tournament]');assert.match(ui.q('#confirmation-message').textContent,/Archive Manual seating/);assert.deepEqual(ui.stored(),seed);ui.click('[data-confirm-answer=no]');await flush();assert.deepEqual(ui.stored(),seed);ui.w.__fixture.saveError={message:'Save interrupted'};ui.click('[data-action=archive-tournament]');ui.click('[data-confirm-answer=yes]');await flush();assert.deepEqual(ui.stored(),seed);assert.ok(ui.q('[data-action=archive-tournament]'));ui.w.__fixture.saveError=null;ui.click('[data-action=archive-tournament]');ui.click('[data-confirm-answer=yes]');await flush();const archived=ui.stored();assert.ok(archived.tournaments[0].archivedAt);assert.deepEqual({...archived.tournaments[0],archivedAt:undefined},{...seed.tournaments[0],archivedAt:undefined});assert.deepEqual(archived.points,seed.points);assert.equal(ui.q('.empty h2').textContent,'No active tournament');assert.equal(ui.q('.management-registration-entry'),null);ui.click('[data-go=setup]');assert.equal(ui.q('.current-panel'),null);ui.click('[data-go=players]');await flush();ui.click('[data-player=p1]');ui.click('[data-review-tournament=t1]');assert.equal(ui.q('#page-title').textContent.includes('Manual seating'),true);assert.equal(ui.q('.management-panel'),null);assert.equal(ui.q('[data-action=archive-tournament]'),null);assert.ok(ui.q('.summary-prizes'));assert.deepEqual(ui.stored(),archived);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
 function lateRegistrationFixture(){let s=manualSeatingFixture(2);s=execute(s,{type:'player-save',id:'p3',name:'Late Player'});s.tournaments[0].clock={index:9,status:'paused',remainingMs:900000,deadline:null};return s;}
@@ -1027,15 +1028,15 @@ test('registration asks for an individual override after cutoff, including Add P
  try{ui.click('[data-register=p3]');await flush();assert.match(ui.q('#confirmation-message').textContent,/Registration is closed.*Override/);ui.click('[data-confirm-answer=no]');await flush();assert.deepEqual(ui.stored(),seed);ui.click('[data-register=p3]');await flush();ui.click('[data-confirm-answer=yes]');await flush();assert.equal(ui.stored().tournaments[0].entries.length,3);ui.click('[data-action=add-player]');await flush();assert.equal(ui.q('#player-form'),null);ui.click('[data-confirm-answer=no]');await flush();assert.equal(ui.stored().players.length,3);ui.click('[data-action=add-player]');await flush();ui.click('[data-confirm-answer=yes]');await flush();ui.input(ui.q('#player-form [name=name]'),'Another Late Player');await ui.submit(ui.q('#player-form'));assert.equal(ui.stored().players.length,4);assert.equal(ui.stored().tournaments[0].entries.length,3);assert.ok(ui.q('[data-register]'));ui.click('[data-register]');await flush();assert.equal(ui.q('#confirmation-dialog').open,true);ui.click('[data-confirm-answer=no]');await flush();assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
 test('rebuy button shows the saved count, accepts corrections during the break, and asks for a late override',async()=>{
- const seed=manualSeatingFixture(3);seed.tournaments[0].clock={index:8,status:'paused',remainingMs:300000,deadline:null};const ui=await boot('https://example.test/',seed,'manage','t1',{manualConfirm:true});
+ const seed=manualSeatingFixture(3);seed.tournaments[0].clock={index:8,status:'paused',remainingMs:300000,deadline:null};const ui=await boot('https://example.test/',seed,'manage','t1',{manualConfirm:true,published});
  try{assert.equal(ui.q('#record-rebuys').textContent,'Rebuy (0)');ui.click('#record-rebuys');ui.input(ui.q('#rebuy-count'),'5');await ui.submit(ui.q('#rebuy-count-form'));assert.equal(ui.q('#record-rebuys').textContent,'Rebuy (5)');ui.click('#record-rebuys');ui.input(ui.q('#rebuy-count'),'2');await ui.submit(ui.q('#rebuy-count-form'));assert.equal(ui.q('#record-rebuys').textContent,'Rebuy (2)');const late=ui.stored();late.tournaments[0].clock.index=9;await ui.storage(late);ui.click('#record-rebuys');await flush();assert.match(ui.q('#confirmation-message').textContent,/Rebuys are closed.*Override/);ui.click('[data-confirm-answer=no]');await flush();assert.equal(ui.q('#dialog').open,false);assert.equal(ui.stored().tournaments[0].rebuyCount,2);ui.click('#record-rebuys');await flush();ui.click('[data-confirm-answer=yes]');await flush();ui.input(ui.q('#rebuy-count'),'4');await ui.submit(ui.q('#rebuy-count-form'));assert.equal(ui.q('#record-rebuys').textContent,'Rebuy (4)');ui.click('#record-rebuys');await flush();assert.equal(ui.q('#confirmation-dialog').open,true);ui.click('[data-confirm-answer=no]');await flush();assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
 test('Next Level uses an app dialog and rejects a confirmed action after another device changes the tournament',async()=>{
- const seed=manualSeatingFixture(3),ui=await boot('https://example.test/',seed,'manage','t1',{manualConfirm:true});
+ const seed=manualSeatingFixture(3),ui=await boot('https://example.test/',seed,'manage','t1',{manualConfirm:true,published});
  try{ui.click('[data-clock=next]');assert.equal(ui.q('#confirmation-dialog').open,true);ui.click('[data-confirm-answer=no]');await flush();assert.deepEqual(ui.stored(),seed);ui.click('[data-clock=next]');ui.click('[data-confirm-answer=yes]');await flush();assert.equal(ui.stored().tournaments[0].clock.index,1);ui.click('[data-clock=next]');const newer=ui.stored();newer.tournaments[0].rebuyCount=2;await ui.storage(newer);ui.click('[data-confirm-answer=yes]');await flush();assert.equal(ui.stored().tournaments[0].clock.index,1);assert.match(ui.q('#toast').textContent,/Tournament changed/);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
 test('rebuy form crossing the natural break boundary requires an override at Save and retains canceled edits',async()=>{
- const seed=manualSeatingFixture(2);seed.tournaments[0].settings.pauseBreaks=false;seed.tournaments[0].clock={index:8,status:'running',remainingMs:700,deadline:Date.now()+700};const ui=await boot('https://example.test/',seed,'manage','t1',{manualConfirm:true});
+ const seed=manualSeatingFixture(2);seed.tournaments[0].settings.pauseBreaks=false;seed.tournaments[0].clock={index:8,status:'running',remainingMs:700,deadline:Date.now()+700};const ui=await boot('https://example.test/',seed,'manage','t1',{manualConfirm:true,published});
  try{ui.click('#record-rebuys');ui.input(ui.q('#rebuy-count'),'3');await new Promise(r=>setTimeout(r,750));await ui.submit(ui.q('#rebuy-count-form'));assert.equal(ui.q('#confirmation-dialog').open,true);assert.equal(ui.stored().tournaments[0].rebuyCount,0);ui.click('[data-confirm-answer=no]');await flush();assert.equal(ui.q('#rebuy-count').value,'3');await ui.submit(ui.q('#rebuy-count-form'));ui.click('[data-confirm-answer=yes]');await flush();assert.equal(ui.stored().tournaments[0].rebuyCount,3);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
 test('stale rebuy totals cannot overwrite a newer count from another device',async()=>{
@@ -1073,3 +1074,25 @@ test('Tournament Design saved layout library creates, edits, duplicates and dele
   assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
+
+for(const published of [false,true]){
+test('deleting a running tournament shows the current level, can cancel, and removes only after confirmation',async()=>{
+ let s=manualSeatingFixture(3);s=execute(s,{type:'clock',tournamentId:'t1',command:'start'});s.tournaments[0].clock.index=4;s.tournaments[0].levels.splice(2,0,{kind:'break',minutes:5});
+ const ui=await boot('https://example.test/',s,'manage','t1',{manualConfirm:true,published});
+ try{
+  assert.ok(ui.q('[data-action="delete-tournament"]'));assert.equal(ui.q('.tournament-danger-zone p'),null);
+  ui.click('[data-action="delete-tournament"]');await flush();assert.match(ui.q('#confirmation-message').textContent,/Level 4/);assert.match(ui.q('#confirmation-message').textContent,/remove all results and points/);
+  ui.click('[data-confirm-answer=no]');await flush();assert.equal(ui.stored().tournaments.length,1);
+  ui.click('[data-action="delete-tournament"]');await flush();ui.click('[data-confirm-answer=yes]');await flush();assert.equal(ui.stored().tournaments.length,0);assert.equal(ui.w.localStorage.getItem('uno-tournament-selected'),null);assert.match(ui.w.location.search,/view=home/);
+ }finally{ui.close();}
+});
+test('completed unarchived tournament keeps New Tournament visible but blocks its creation',async()=>{
+ const s=completedPointsFixture(),ui=await boot('https://example.test/',s,'setup','t1',{published});
+ try{assert.ok(ui.q('[data-action="new-tournament"]'));ui.click('[data-action="new-tournament"]');await flush();assert.equal(ui.q('#new-tournament-form'),null);assert.match(ui.q('#toast').textContent,/must archive/);assert.equal(ui.stored().tournaments.length,1);}finally{ui.close();}
+});
+test('completed tournament deletion rolls back awarded points and keeps player records',async()=>{
+ const s=completedPointsFixture(),ui=await boot('https://example.test/',s,'manage','t1',{published});
+ try{let prompt='';ui.w.__confirmResponse=text=>(prompt=text,true);ui.click('[data-action="delete-tournament"]');await flush();await flush();assert.match(prompt,/completed/);assert.equal(ui.stored().tournaments.length,0);assert.equal(ui.stored().points.awards.length,0);assert.equal(ui.stored().players.length,s.players.length);}finally{ui.close();}
+});
+
+}
