@@ -1677,3 +1677,16 @@ body:has(#saved-layout-form) .page-banner-title>small{font-size:clamp(7px,.85vw,
  border-color:#d7a83f;background:rgba(215,168,63,.18);
 }
 .management-layout .unseated-drop-zone:focus-visible{outline:2px solid #d7a83f;outline-offset:2px}
+
+/* Reorganization v94: click-to-select seating, drag only when enabled. */
+.management-layout .unseated-player-select{
+ border:0!important;background:transparent!important;color:inherit!important;
+ font:inherit!important;font-weight:600!important;text-align:left!important;
+ padding:8px 6px!important;cursor:pointer!important;flex:1 1 auto!important;
+}
+.management-layout .unseated-player-select:focus-visible{outline:2px solid #d7a83f!important;border-radius:5px}
+.management-layout .seat-player-grip[aria-pressed="true"],
+.management-layout .unseated-player-select[aria-pressed="true"]{
+ background:rgba(215,168,63,.25)!important;outline:2px solid #d7a83f!important;
+ border-radius:5px!important;
+}
