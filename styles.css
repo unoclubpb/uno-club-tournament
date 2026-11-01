@@ -1882,7 +1882,7 @@ body:has(.nav){overscroll-behavior:none}
 @media(max-width:420px){.tournament-fee-choice .input-wrap{flex-basis:120px;width:120px}}
 /* Align transaction prices with their fee choices, then group chips and cutoff controls. */
 .transaction-settings{align-items:end}
-.transaction-fee-control{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-width:0}
+.transaction-fee-control{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-width:0;transform:translateY(-14px)}
 .transaction-fee-radios{display:flex;align-items:center;gap:16px;flex-wrap:nowrap}
 #structure-form .transaction-fee-radios label{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:5px;width:auto;min-width:max-content;margin:0;white-space:nowrap;font-size:12px}
 #structure-form .transaction-fee-radios input[type=radio]{display:inline-block;width:14px!important;height:14px!important;min-width:14px;min-height:14px;padding:0;margin:0;flex:0 0 14px}
