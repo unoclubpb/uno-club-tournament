@@ -42,7 +42,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.118 · Reorganization';
+const APP_VERSION='0.4.0-reorg.119 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -1091,3 +1091,13 @@ render();
 let authEventSeen=false;
 db.auth.onAuthStateChange((event,newSession)=>{authEventSeen=true;setTimeout(()=>{if(event==='TOKEN_REFRESHED'){session=newSession;void refresh();}else void acceptSession(newSession);},0);});
 db.auth.getSession().then(({data,error})=>{if(authEventSeen)return;if(error){authReady=true;authError='Could not restore your sign-in. Please sign in again.';render();return;}void acceptSession(data.session);}).catch(()=>{authReady=true;authError='Could not connect to sign-in. Please try again.';render();});
+
+document.addEventListener('change',async event=>{
+ const select=event.target;if(!select.matches?.('#structure-form [data-layout-selector]'))return;
+ const form=select.form,rows=[...form.querySelectorAll('[data-level]')],index=rows.indexOf(select.closest('[data-level]')),following=rows.slice(index+1),ed=editor,versionAtPrompt=version,chosen=select.value;
+ if(index<0||!following.length)return;
+ const label=select.selectedOptions[0]?.textContent||'this layout';
+ if(!await confirmApp(`Use ${label} for all subsequent levels and breaks? Choose Cancel to change only this level.`,'Apply Clock Layout','Apply to All Subsequent'))return;
+ if(editor!==ed||version!==versionAtPrompt||!select.isConnected||select.value!==chosen)return;
+ for(const row of following){const next=row.querySelector('[data-layout-selector]');if(next)next.value=chosen;}
+});

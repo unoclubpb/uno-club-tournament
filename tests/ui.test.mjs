@@ -1120,3 +1120,9 @@ for(const published of [false,true])test(`tournament settings stay in Management
   ui.click('[data-go=signup]');await flush();assert.ok(ui.q('[data-go=manage].gold'));ui.click('.nav [data-go=setup]');await flush();assert.equal(ui.q('[data-edit-template]').disabled,true);assert.equal(ui.q('[data-delete-template]').disabled,true);ui.click('[data-action=show-layouts]');assert.ok(ui.q('[data-action=create-layout]'));assert.equal(ui.q('[data-action=create-layout]').disabled,false);
  }finally{ui.close();}
 });
+for(const published of [false,true])test(`level layout change offers subsequent levels and keeps edits unsaved (${published?'published':'source'})`,async()=>{
+ const s=manualSeatingFixture(3);s.clockLayouts=[{id:'chosen-layout',name:'Chosen Layout',appearance:{}}];const ui=await boot('https://example.test/',s,'manage','t1',{published});
+ try{ui.click('[data-action=event-settings]');let selects=[...ui.w.document.querySelectorAll('[data-layout-selector]')];selects[0].value='chosen-layout';let message='';ui.w.__confirmResponse=text=>(message=text,true);selects[0].dispatchEvent(new ui.w.Event('change',{bubbles:true}));await flush();assert.match(message,/all subsequent levels and breaks/);assert.ok(selects.every(s=>s.value==='chosen-layout'));assert.ok(ui.stored().tournaments[0].levels.every(l=>!l.layoutId));
+ ui.w.__confirmResponse=()=>false;selects[1].value='';selects[1].dispatchEvent(new ui.w.Event('change',{bubbles:true}));await flush();assert.equal(selects[0].value,'chosen-layout');assert.equal(selects[1].value,'');assert.equal(selects[2].value,'chosen-layout');
+ ui.w.__confirmResponse=()=>true;selects[1].value='chosen-layout';selects[1].dispatchEvent(new ui.w.Event('change',{bubbles:true}));await flush();await ui.submit(ui.q('#structure-form'));assert.ok(ui.stored().tournaments[0].levels.every(l=>l.layoutId==='chosen-layout'));assert.ok(ui.stored().templates[0].levels.every(l=>!l.layoutId));}finally{ui.close();}
+});
