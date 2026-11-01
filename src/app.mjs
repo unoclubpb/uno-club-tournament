@@ -62,7 +62,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.123 · Reorganization';
+const APP_VERSION='0.4.0-reorg.124 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -484,7 +484,7 @@ function summaryPanel(t){
   const f=financials(t),payments=t.entries.flatMap(e=>e.payments||[]),entries=payments.filter(p=>p.kind==='entry'),addons=payments.filter(p=>p.kind==='addon');
   const entryCalculation=summaryPaymentCalculation(entries.map(p=>paymentTotal(p)-(p.dealerToke||0)),f.tournamentEntries,Math.max(0,t.settings.buyIn-t.settings.dealerToke));
   const tokeCalculation=summaryPaymentCalculation(entries.map(p=>p.dealerToke||0),f.dealerTokes,t.settings.dealerToke);
-  const feeCalculation=f.housePercent==null?'Saved total':`${money(f.houseBase)} × ${f.housePercent}%${Math.round(f.houseBase*f.housePercent/10000)*100===f.houseFee?(f.houseBase*f.housePercent/100===f.houseFee?'':' (rounded)'):' (saved)'}`;
+  const feeCalculation=f.houseFeeMode==='flat'?`${money(f.houseFee)} flat fee per tournament`:f.housePercent==null?'Saved total':`${money(f.houseBase)} × ${f.housePercent}%${Math.round(f.houseBase*f.housePercent/10000)*100===f.houseFee?(f.houseBase*f.housePercent/100===f.houseFee?'':' (rounded)'):' (saved)'}`;
   const poolCalculation=`${money(f.tournamentEntries)} + ${money(f.rebuyTotal)} + ${money(f.addonTotal)} − ${money(f.houseFee)}${f.houseContribution?` + ${money(f.houseContribution)}`:''}${f.basePool===0&&f.houseFee>f.houseBase+f.manualHouseContribution?' (minimum $0)':''}`;
   const rows=[['Tournament Entries',f.tournamentEntries,'credit',entryCalculation],['Dealer Tokes (Buy-Ins Only)',f.dealerTokes,'credit',tokeCalculation],...(t.settings.rebuyEnabled?[['Rebuys',f.rebuyTotal,'credit',`${f.rebuyCount} × ${money(t.settings.rebuyAmount)}`]]:[]),...(t.settings.addonEnabled?[['Add-ons',f.addonTotal,'credit',summaryPaymentCalculation(addons.map(paymentTotal),f.addonTotal,t.settings.addonAmount)]]:[]),['Tournament Fee',-f.houseFee,'debit',feeCalculation],['Dealer Tokes Paid Out',-f.dealerTokesPaidOut,'debit',f.dealerTokesPaidOut===f.dealerTokes?tokeCalculation:'Saved total'],...(f.houseContribution>0?[['House Contribution',f.houseContribution,'credit',f.guaranteeContribution?`${money(f.manualHouseContribution)} + ${money(f.guaranteeContribution)} guarantee`:'House funding']]:[]),['Total Prize Pool',f.pool,'total',Math.max(0,f.tournamentEntries+f.rebuyTotal+f.addonTotal-f.houseFee+f.manualHouseContribution)+f.guaranteeContribution===f.pool?poolCalculation:'Saved total']];
   return `<div class="section-label summary-heading"><h2>Tournament Summary</h2>${t.status==='completed'&&!t.archivedAt?'<button type="button" class="button secondary small" data-action="archive-tournament">Archive Tournament</button>':t.archivedAt?'<span class="pill light">Archived</span>':''}</div><div class="summary-grid financial-summary">${rows.map(([label,value,kind,calculation])=>`<div class="financial-${kind}"><span class="summary-name">${label}</span><span class="summary-calculation">${esc(calculation)}</span><strong>${value<0?'−':kind==='credit'&&value>0?'+':''}${money(Math.abs(value))}</strong></div>`).join('')}</div>${summaryPrizes(t)}${tournamentPoints(t)}`;
@@ -1141,3 +1141,6 @@ document.addEventListener('submit',async event=>{if(event.target.id!=='tournamen
  const form=event.target;if(!form.reportValidity())return;const draft=editor?.structureExportDraft;if(!draft||Number(form.elements.version.value)!==version||editor.version!==version)throw new Error('Tournament changed. Close this dialog and review the settings before trying again.');
  if(await commit({type:'tournament-save-structure',tournamentId:current().id,id:id(),name:form.elements.name.value,settings:draft.settings,levels:draft.levels})){editor.version=version;delete editor.structureExportDraft;dlg.close();toast('New structure saved. Tournament settings remain unsaved until Save Tournament Settings.');}
  }catch(error){toast(error.message,true);}});
+
+// Reveal the amount field for the selected settlement fee type without discarding either value.
+document.addEventListener('change',event=>{if(event.target.name!=='houseFeeMode')return;const form=event.target.form,flat=event.target.value==='flat';form.querySelector('[data-fee-percent]').hidden=flat;form.querySelector('[data-fee-flat]').hidden=!flat;});

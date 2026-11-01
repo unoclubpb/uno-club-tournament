@@ -128,16 +128,16 @@ export function financials(t){
   const dealerTokes=payments.filter(p=>p.kind==='entry').reduce((n,p)=>n+(p.dealerToke||0),0);
   const tournamentEntries=Math.max(0,entryTotal-dealerTokes),addonTotal=payments.filter(p=>p.kind==='addon').reduce((n,p)=>n+paymentTotal(p),0);
   const collected=entryTotal+rebuyTotal+addonTotal,houseBase=tournamentEntries+rebuyTotal+addonTotal;
-  const houseFee=Math.round(houseBase*t.settings.housePercent/10000)*100;
+  const houseFeeMode=t.settings.houseFeeMode||'percent',houseFee=houseFeeMode==='flat'?(t.settings.houseFlatFee||0):Math.round(houseBase*t.settings.housePercent/10000)*100;
   const manualHouseContribution=t.settings.houseContribution||0;
   const basePool=Math.max(0,tournamentEntries+rebuyTotal+addonTotal-houseFee+manualHouseContribution);
   const guaranteeActive=t.settings.payoutMode==='guaranteed'&&guaranteeEligible(t);
   const guaranteeContribution=guaranteeActive?Math.max(0,guaranteeSettings(t.settings).guaranteeAmount-basePool):0;
-  let amounts={collected,owed:0,entryTotal,tournamentEntries,dealerTokes,dealerTokesPaidOut:dealerTokes,houseBase,houseFee,manualHouseContribution,guaranteeContribution,houseContribution:manualHouseContribution+guaranteeContribution,basePool,pool:basePool+guaranteeContribution,housePercent:t.settings.housePercent,guaranteeActive,addonTotal};
+  let amounts={collected,owed:0,entryTotal,tournamentEntries,dealerTokes,dealerTokesPaidOut:dealerTokes,houseBase,houseFee,manualHouseContribution,guaranteeContribution,houseContribution:manualHouseContribution+guaranteeContribution,basePool,pool:basePool+guaranteeContribution,houseFeeMode,houseFlatFee:t.settings.houseFlatFee||0,housePercent:t.settings.housePercent,guaranteeActive,addonTotal};
   // Completed settlements are immutable, including historical accounting rules.
   if(t.status==='completed'&&t.settlement){
     const saved=t.settlement,entries=saved.tournamentEntries??(saved.collected-saved.dealerTokes-rebuyTotal-addonTotal);
-    amounts={...amounts,...saved,tournamentEntries:entries,dealerTokesPaidOut:saved.dealerTokesPaidOut??saved.dealerTokes,houseContribution:saved.houseContribution??(saved.pool-entries-rebuyTotal-addonTotal+saved.houseFee),guaranteeContribution:saved.guaranteeContribution||0};
+    amounts={...amounts,...saved,houseFeeMode:saved.houseFeeMode||'percent',houseFlatFee:saved.houseFlatFee||0,tournamentEntries:entries,dealerTokesPaidOut:saved.dealerTokesPaidOut??saved.dealerTokes,houseContribution:saved.houseContribution??(saved.pool-entries-rebuyTotal-addonTotal+saved.houseFee),guaranteeContribution:saved.guaranteeContribution||0};
   }
   return {...amounts,rebuyCount,rebuyTotal,addonCount:payments.filter(p=>p.kind==='addon').length,chips:payments.reduce((n,p)=>n+p.chips,0)+rebuyCount*t.settings.rebuyChips};
 }
@@ -188,6 +188,8 @@ export function validateTemplate(template,{requireRebuyBreak=true}={}){
   for(const key of ['buyIn','dealerToke','rebuyAmount','addonAmount','houseContribution'])check(s[key]%100===0,'Enter monetary amounts as whole dollars.');
   check(s.payoutMode!=='fixed'||s.payouts.every(n=>Number.isSafeInteger(n)&&n%100===0),'Fixed payouts must be whole dollars.');
   check(s.dealerToke<=s.buyIn,'Dealer toke cannot exceed the full buy-in.');
+  check(['percent','flat'].includes(s.houseFeeMode||'percent'),'Choose a tournament fee type.');
+  check(Number.isSafeInteger(s.houseFlatFee??0)&&(s.houseFlatFee??0)>=0&&(s.houseFlatFee??0)%100===0,'Enter the flat tournament fee as nonnegative whole dollars.');
   check(Number.isFinite(s.housePercent)&&s.housePercent>=0&&s.housePercent<=100,'House percentage must be between 0 and 100.');
   check(s.startingStack>0,'Starting chips must be greater than zero.');check(s.seatsPerTable>=2&&s.seatsPerTable<=10,'Use 2–10 seats per table.');
   check(['off','big_blind','per_player'].includes(s.anteMode),'Choose the ante setting.');
