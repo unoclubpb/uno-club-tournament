@@ -767,12 +767,12 @@ body:has(.nav){overscroll-behavior:none}
 @media(max-width:420px){.tournament-fee-choice .input-wrap{flex-basis:120px;width:120px}}
 /* Align transaction prices with their fee choices, then group chips and cutoff controls. */
 .transaction-settings{align-items:end}
-.transaction-fee-control{display:grid;grid-template-columns:minmax(0,1fr) minmax(88px,112px);align-items:center;gap:8px;min-width:0}
-.transaction-fee-radios{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.transaction-fee-control{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-width:0}
+.transaction-fee-radios{display:flex;align-items:center;gap:16px;flex-wrap:nowrap}
 .transaction-fee-radios label{display:inline-flex;align-items:center;gap:5px;margin:0;white-space:nowrap;font-size:12px}
 .transaction-fee-radios input[type=radio]{width:16px;height:16px;margin:0}
 .transaction-fee-control .input-wrap{width:100%;max-width:none;margin:0;min-width:0}
 .transaction-fee-control .input-wrap input{width:100%;min-width:0}
-@media(max-width:520px){.transaction-fee-control{grid-template-columns:minmax(0,1fr);gap:7px}.transaction-fee-radios{gap:8px}.transaction-fee-radios label{font-size:11px}}
+@media(max-width:520px){.transaction-fee-radios{gap:12px}.transaction-fee-radios label{font-size:11px}}
 /* Align the guarantee amount row with the left edge of the prize format options. */
 .guarantee-settings .guarantee-fields{margin-left:-28px}
