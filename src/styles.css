@@ -668,3 +668,11 @@ body.tv .tv-seating-shell{height:100dvh;min-height:0;width:100%;padding:1.8dvh 2
 .summary-heading>.button{margin-left:auto}
 
 .tournament-danger-zone{display:flex;justify-content:flex-end;margin-top:24px;padding:0}
+
+/* Stop touch scrolling at Management's page boundaries, including the footer. */
+html:has(.management-chrome),
+body:has(.management-chrome),
+body:has(.management-chrome) .workspace,
+body:has(.management-chrome) .management-sidebar{
+ overscroll-behavior-y:none!important;
+}
