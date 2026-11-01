@@ -62,7 +62,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.125 · Reorganization';
+const APP_VERSION='0.4.0-reorg.126 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -236,7 +236,12 @@ function paidPlacesControl(s,t=null,live=false){
   return `<label class="paid-places-label" for="paid-places">Number of Places Paid</label><div class="paid-places-control"><button type="button" class="button secondary" data-payout-step="-1" aria-label="Decrease paid places" ${locked||count===1?'disabled':''}>−</button><input id="paid-places" name="paidPlaces" type="number" min="1" max="20" step="1" value="${count}" required ${locked?'disabled':''}><button type="button" class="button secondary" data-payout-step="1" aria-label="Increase paid places" ${locked||count===20?'disabled':''}>+</button></div><p class="muted small-copy" id="paid-places-note">${s.payoutMode==='guaranteed'?'Automatic guarantee: two paid places.':''}</p>`;
 }
 function setupHouseContribution(s){return `<label class="payout-house-contribution">House contribution added to prizes<div class="input-wrap"><span>$</span><input type="text" inputmode="numeric" data-money="true" name="houseContribution" value="${num(s.houseContribution/100)}" required></div></label>`;}
-function payoutFields(s,t=null){if(s.payoutRules)return '<p class="muted">Custom payouts are managed in Tournament Management or Tournament Remote.</p>'+setupHouseContribution(s);return `<div class="payout-editor-grid" data-setup-payouts><div class="payout-format-column">${paidPlacesControl(s,t)}${payoutFormats(s,t)}${setupHouseContribution(s)}</div><section class="payout-places-column"><h3>Payouts</h3><div id="payout-place-list" data-mode="${s.payoutMode}">${payoutPlaceRows(t,s.payoutMode,s.payouts.map(n=>s.payoutMode==='fixed'?n/100:n),true,s)}</div></section></div><p id="setup-payout-feedback" class="muted" role="status"></p>`;}
+function setupGuaranteeFunding(s,t){
+ if(!t||s.payoutMode!=='guaranteed')return '';
+ const f=financials({...t,settings:s});
+ return f.guaranteeActive?`<p class="guarantee-note">${f.guaranteeContribution?`${money(f.guaranteeContribution)} is automatically added to House Contribution to meet the first-place guarantee. Total House Contribution: ${money(f.houseContribution)}.`:'The first-place guarantee is fully funded; no additional House Contribution is needed.'}</p>`:'';
+}
+function payoutFields(s,t=null){if(s.payoutRules)return '<p class="muted">Custom payouts are managed in Tournament Management or Tournament Remote.</p>'+setupHouseContribution(s);return `<div class="payout-editor-grid" data-setup-payouts><div class="payout-format-column">${paidPlacesControl(s,t)}${payoutFormats(s,t)}${setupHouseContribution(s)}</div><section class="payout-places-column"><h3>Payouts</h3><div id="payout-place-list" data-mode="${s.payoutMode}">${payoutPlaceRows(t,s.payoutMode,s.payouts.map(n=>s.payoutMode==='fixed'?n/100:n),true,s)}</div></section></div><div id="setup-guarantee-funding">${setupGuaranteeFunding(s,t)}</div><p id="setup-payout-feedback" class="muted" role="status"></p>`;}
 function readPayout(form,s){
   if(form.dataset.ruleEditor)return readRuleSettings(form,{...current(),settings:s});
   const fd=new FormData(form),mode=fd.get('payoutMode');if(!mode)return s;readGuarantee(form,s);s.payoutMode=mode;delete s.payoutRules;
@@ -264,9 +269,9 @@ function fundingNotice(t){
 function placeName(index){return ['First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth','Ninth','Tenth','Eleventh','Twelfth','Thirteenth','Fourteenth','Fifteenth','Sixteenth','Seventeenth','Eighteenth','Nineteenth','Twentieth'][index]+' Place';}
 function payoutPlaceRows(t,mode,values,setup=false,settings=t?.settings||{}){
   if(t?.icmChop)return awardRows(t);
-  let amounts=[];if(t)try{amounts=prizes({...t,settings:{...t.settings,payoutMode:mode,payouts:values.map(n=>dollarNumber(n)*(mode==='fixed'?100:1))}});}catch{}
+  let amounts=[];if(t)try{amounts=prizes({...t,settings:{...t.settings,...settings,payoutMode:mode,payouts:values.map(n=>dollarNumber(n)*(mode==='fixed'?100:1))}});}catch{}
   const count=mode==='guaranteed'?2:values.length,readonly=t?.status==='completed'||mode==='guaranteed';
-  return Array.from({length:count},(_,i)=>`<div class="payout-place-row" data-payout-place="${i}">${readonly?`<span>${placeName(i)}</span><output data-payout-amount="${i}">${setup?(i===0?`${money(guaranteeSettings(settings).guaranteeAmount)} minimum at ${num(guaranteeSettings(settings).guaranteePlayers)} players`:'Remainder'):money(amounts[i]||0)}</output>`:`<label for="payout-place-${i}"><span class="payout-place-label">${placeName(i)}</span><div class="input-wrap ${mode==='percent'?'payout-percentage-input':''}">${mode==='fixed'?'<span>$</span>':''}<input id="payout-place-${i}" name="payoutPlace${i+1}" data-payout-value="${i}" aria-label="${placeName(i)} ${mode==='fixed'?'dollars':'percentage'}" type="${mode==='fixed'?'text':'number'}" ${mode==='fixed'?'inputmode="numeric" data-money="true"':''} min="0" ${mode==='percent'?'max="100"':''} step="${mode==='fixed'?'1':'0.0001'}" value="${mode==='fixed'?num(dollarNumber(values[i]??0)):values[i]??0}" required>${mode==='percent'?'<span>%</span>':''}</div></label>${mode==='percent'&&!setup?`<output data-payout-amount="${i}">${money(amounts[i]||0)}</output>`:''}`}</div>`).join('');
+  return Array.from({length:count},(_,i)=>`<div class="payout-place-row" data-payout-place="${i}">${readonly?`<span>${placeName(i)}</span><output data-payout-amount="${i}">${setup&&!t?(i===0?`${money(guaranteeSettings(settings).guaranteeAmount)} minimum at ${num(guaranteeSettings(settings).guaranteePlayers)} players`:'Remainder'):money(amounts[i]||0)}</output>`:`<label for="payout-place-${i}"><span class="payout-place-label">${placeName(i)}</span><div class="input-wrap ${mode==='percent'?'payout-percentage-input':''}">${mode==='fixed'?'<span>$</span>':''}<input id="payout-place-${i}" name="payoutPlace${i+1}" data-payout-value="${i}" aria-label="${placeName(i)} ${mode==='fixed'?'dollars':'percentage'}" type="${mode==='fixed'?'text':'number'}" ${mode==='fixed'?'inputmode="numeric" data-money="true"':''} min="0" ${mode==='percent'?'max="100"':''} step="${mode==='fixed'?'1':'0.0001'}" value="${mode==='fixed'?num(dollarNumber(values[i]??0)):values[i]??0}" required>${mode==='percent'?'<span>%</span>':''}</div></label>${mode==='percent'&&!setup?`<output data-payout-amount="${i}">${money(amounts[i]||0)}</output>`:''}`}</div>`).join('');
 }
 // Confirmation styling is local UI state; only an acknowledged cloud save can
 // mark a schedule saved. A new edit clears it without changing tournament data.
@@ -450,10 +455,10 @@ function refreshPayoutPreview(form){
     if(!Number.isInteger(count)||count<1||count>20)throw new Error('Choose 1–20 paid places.');
     if(mode!==list.dataset.mode||count!==list.children.length)changePlaceRows(form,mode,count);
     mode=form.querySelector('[name=payoutMode]:checked').value;
-    const settings=readPayoutSettings(form,payoutContext(form)||{settings:editor.value.settings});
+    const context=payoutContext(form),base=form.id==='payout-form'?context:{...(context||{}),settings:readSettings(form,editor.value.settings)},settings=readPayoutSettings(form,base);
     setText('#guarantee-eligibility',guaranteeEligibility(settings,payoutContext(form)));
     if(mode==='percent'&&Math.abs(settings.payouts.reduce((a,b)=>a+b,0)-100)>0.000001)throw new Error('Percentages must total 100%.');
-    if(form.id!=='payout-form'){$('#setup-payout-feedback').classList.remove('payout-order-error');if(mode==='percent'||mode==='fixed')validatePayoutOrder(settings.payouts,mode==='percent'?'percent':'dollars');if(mode==='guaranteed')setText('[data-payout-amount="0"]',`${money(settings.guaranteeAmount)} minimum at ${num(settings.guaranteePlayers)} players`);setText('#setup-payout-feedback','');return;}
+    if(form.id!=='payout-form'){$('#setup-payout-feedback').classList.remove('payout-order-error');if(mode==='percent'||mode==='fixed')validatePayoutOrder(settings.payouts,mode==='percent'?'percent':'dollars');if(mode==='guaranteed'){if(context)prizes({...context,settings}).forEach((amount,i)=>setText(`[data-payout-amount="${i}"]`,money(amount)));else setText('[data-payout-amount="0"]',`${money(settings.guaranteeAmount)} minimum at ${num(settings.guaranteePlayers)} players`);}const funding=form.querySelector('#setup-guarantee-funding');if(funding)funding.innerHTML=setupGuaranteeFunding(settings,context);setText('#setup-payout-feedback','');return;}
     const t={...current(),settings},f=financials(t),amounts=prizes(t);amounts.forEach((n,i)=>setText(`[data-payout-amount="${i}"]`,money(n)));$('#guarantee-funding').innerHTML=fundingNotice(t);setText('#payout-pool',money(f.pool));
     const orderError=t.status==='completed'?'':payoutOrderError(amounts);form.querySelector('button.button.primary').disabled=t.status==='completed'||!!orderError;
     const dirty=JSON.stringify(settings)!==JSON.stringify(current().settings),icm=$('[data-action=icm-chop]');if(icm)icm.disabled=!!orderError||dirty||active(t).length<2||active(t).length>20||payoutBalance(t)!==0||hasPendingEliminations(t);
