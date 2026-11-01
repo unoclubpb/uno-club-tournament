@@ -49,7 +49,7 @@ import {renderRegistrationRows} from './registration-rows.mjs';
 import {matchingPlayers} from './player-data.mjs';
 import {registrationCandidates} from './registration-data.mjs';
 import {createClient} from '@supabase/supabase-js';
-import {id,clone,initialState,sampleTemplate,execute,clockAt,roundAt,financials,prizes,statsFor,guaranteeSettings,guaranteeEligible,payoutBalance,icmProposal,manualChopProposal,planSeatMove,planTableSeating,canCombineTables,normalizePhone,tablesRequired,tablesInUse,upgradeState,normalizePlayerName,rebuyOpen,rebuyPhase,cutoffHasBreak,canRecordRebuys,canEditRebuys,registrationOpen,tournamentRebuyCount,playerNumberLabel,tvDisplayMode,tournamentStarted,defaultPayouts,tableBalanceNeeded,hasPendingEliminations} from './domain.mjs';
+import {id,clone,initialState,sampleTemplate,execute,clockAt,roundAt,financials,paymentTotal,prizes,statsFor,guaranteeSettings,guaranteeEligible,payoutBalance,icmProposal,manualChopProposal,planSeatMove,planTableSeating,canCombineTables,normalizePhone,tablesRequired,tablesInUse,upgradeState,normalizePlayerName,rebuyOpen,rebuyPhase,cutoffHasBreak,canRecordRebuys,canEditRebuys,registrationOpen,tournamentRebuyCount,playerNumberLabel,tvDisplayMode,tournamentStarted,defaultPayouts,tableBalanceNeeded,hasPendingEliminations} from './domain.mjs';
 import {pointsState,pointsLabel,parsePoints,chopPoints,pointPreview,leaderboardRows,filteredAwards} from './points.mjs';
 import {calculatePayoutRules,payoutOrderError,validatePayoutOrder} from './payout-rules.mjs';
 import {installSeatDragging} from './seat-dragging.mjs';
@@ -62,7 +62,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.122 · Reorganization';
+const APP_VERSION='0.4.0-reorg.123 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -475,9 +475,19 @@ function summaryPrizes(t){
   const schedule=prizes(t),rows=t.entries.map(e=>({e,amount:e.agreedPayout??(e.place?schedule[e.place-1]||0:0)})).filter(r=>r.amount>0).sort((a,b)=>b.amount-a.amount||(a.e.place??0)-(b.e.place??0)||pName(a.e).localeCompare(pName(b.e)));
   return `<section class="summary-prizes"><h3>Prizes Paid Out</h3>${rows.map(({e,amount})=>`<div class="result-row" data-summary-prize="${e.playerId}"><span>${esc(pName(e))}${e.place?`<small>${placeName(e.place-1)}</small>`:''}</span><strong>${money(amount)}</strong></div>`).join('')}</section>`;
 }
+function summaryPaymentCalculation(amounts,total,fallback){
+  if(amounts.reduce((sum,value)=>sum+value,0)!==total)return 'Saved total';
+  const groups=new Map();for(const value of amounts)groups.set(value,(groups.get(value)||0)+1);
+  return groups.size?[...groups].map(([value,count])=>`${count} × ${money(value)}`).join(' + '):`0 × ${money(fallback)}`;
+}
 function summaryPanel(t){
-  const f=financials(t),rows=[['Tournament Entries',f.tournamentEntries,'credit'],['Dealer Tokes (Buy-Ins Only)',f.dealerTokes,'credit'],...(t.settings.rebuyEnabled?[['Rebuys',f.rebuyTotal,'credit']]:[]),...(t.settings.addonEnabled?[['Add-ons',f.addonTotal,'credit']]:[]),[`Tournament Fee${f.housePercent==null?'':` (${f.housePercent}%)`}`,-f.houseFee,'debit'],['Dealer Tokes Paid Out',-f.dealerTokesPaidOut,'debit'],['House Contribution',f.houseContribution,f.houseContribution>0?'credit':'neutral'],['Total Prize Pool',f.pool,'total']];
-  return `<div class="section-label summary-heading"><h2>Tournament Summary</h2>${t.status==='completed'&&!t.archivedAt?'<button type="button" class="button secondary small" data-action="archive-tournament">Archive Tournament</button>':t.archivedAt?'<span class="pill light">Archived</span>':''}</div><div class="summary-grid financial-summary">${rows.map(([label,value,kind])=>`<div class="financial-${kind}"><span>${label}</span><strong>${value<0?'−':kind==='credit'&&value>0?'+':''}${money(Math.abs(value))}</strong>${label==='House Contribution'&&f.guaranteeContribution?`<small>Includes ${money(f.guaranteeContribution)} additional funding for the guarantee.</small>`:''}</div>`).join('')}</div>${summaryPrizes(t)}${tournamentPoints(t)}`;
+  const f=financials(t),payments=t.entries.flatMap(e=>e.payments||[]),entries=payments.filter(p=>p.kind==='entry'),addons=payments.filter(p=>p.kind==='addon');
+  const entryCalculation=summaryPaymentCalculation(entries.map(p=>paymentTotal(p)-(p.dealerToke||0)),f.tournamentEntries,Math.max(0,t.settings.buyIn-t.settings.dealerToke));
+  const tokeCalculation=summaryPaymentCalculation(entries.map(p=>p.dealerToke||0),f.dealerTokes,t.settings.dealerToke);
+  const feeCalculation=f.housePercent==null?'Saved total':`${money(f.houseBase)} × ${f.housePercent}%${Math.round(f.houseBase*f.housePercent/10000)*100===f.houseFee?(f.houseBase*f.housePercent/100===f.houseFee?'':' (rounded)'):' (saved)'}`;
+  const poolCalculation=`${money(f.tournamentEntries)} + ${money(f.rebuyTotal)} + ${money(f.addonTotal)} − ${money(f.houseFee)}${f.houseContribution?` + ${money(f.houseContribution)}`:''}${f.basePool===0&&f.houseFee>f.houseBase+f.manualHouseContribution?' (minimum $0)':''}`;
+  const rows=[['Tournament Entries',f.tournamentEntries,'credit',entryCalculation],['Dealer Tokes (Buy-Ins Only)',f.dealerTokes,'credit',tokeCalculation],...(t.settings.rebuyEnabled?[['Rebuys',f.rebuyTotal,'credit',`${f.rebuyCount} × ${money(t.settings.rebuyAmount)}`]]:[]),...(t.settings.addonEnabled?[['Add-ons',f.addonTotal,'credit',summaryPaymentCalculation(addons.map(paymentTotal),f.addonTotal,t.settings.addonAmount)]]:[]),['Tournament Fee',-f.houseFee,'debit',feeCalculation],['Dealer Tokes Paid Out',-f.dealerTokesPaidOut,'debit',f.dealerTokesPaidOut===f.dealerTokes?tokeCalculation:'Saved total'],...(f.houseContribution>0?[['House Contribution',f.houseContribution,'credit',f.guaranteeContribution?`${money(f.manualHouseContribution)} + ${money(f.guaranteeContribution)} guarantee`:'House funding']]:[]),['Total Prize Pool',f.pool,'total',Math.max(0,f.tournamentEntries+f.rebuyTotal+f.addonTotal-f.houseFee+f.manualHouseContribution)+f.guaranteeContribution===f.pool?poolCalculation:'Saved total']];
+  return `<div class="section-label summary-heading"><h2>Tournament Summary</h2>${t.status==='completed'&&!t.archivedAt?'<button type="button" class="button secondary small" data-action="archive-tournament">Archive Tournament</button>':t.archivedAt?'<span class="pill light">Archived</span>':''}</div><div class="summary-grid financial-summary">${rows.map(([label,value,kind,calculation])=>`<div class="financial-${kind}"><span class="summary-name">${label}</span><span class="summary-calculation">${esc(calculation)}</span><strong>${value<0?'−':kind==='credit'&&value>0?'+':''}${money(Math.abs(value))}</strong></div>`).join('')}</div>${summaryPrizes(t)}${tournamentPoints(t)}`;
 }
 function players(){if(!playerScreenModule)return screenPlaceholder('players');return playerScreenModule.renderPlayerDatabase({state,playerSearch,showArchived,playerDetail,profilePanel,esc,dateLabel,playerHistoryContents,empty,onMissingProfile:()=>{playerDetail=null;return players();}});}
 function playerRows(rows){return playerScreenModule?.renderPlayerRows?playerScreenModule.renderPlayerRows(rows,{esc,empty,playerSearch}):'';}

@@ -25,7 +25,7 @@ async function boot(base,seed,view='home',selected='',options={}){
   };
  };`;
  if(options.published)w.eval(stub.replace('export const createClient=', 'window.__createClientFixture='));
- const out=await build({entryPoints:[options.published?'app.js':'src/app.mjs'],bundle:true,write:false,format:'iife',plugins:[{name:'local-auth-fixture',setup(b){if(options.published)b.onLoad({filter:/\/app\.js$/},async args=>({contents:(await readFile(args.path,'utf8')).replace('var pe=Ho(Xo,Zo)','var pe=window.__createClientFixture()'),loader:'js'}));b.onResolve({filter:/^@supabase\/supabase-js$/},()=>({path:'auth-fixture',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:stub,loader:'js'}));}}]});
+ const out=await build({entryPoints:[options.published?'app.js':'src/app.mjs'],bundle:true,write:false,format:'iife',plugins:[{name:'local-auth-fixture',setup(b){if(options.published)b.onLoad({filter:/\/app\.js$/},async args=>({contents:(await readFile(args.path,'utf8')).replace(/(var \w+)=\w+\(Qo,el\)/,'$1=window.__createClientFixture()'),loader:'js'}));b.onResolve({filter:/^@supabase\/supabase-js$/},()=>({path:'auth-fixture',namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:stub,loader:'js'}));}}]});
  const errors=[];w.addEventListener('error',e=>errors.push(e.error));w.eval(out.outputFiles[0].text);await flush();
  const q=s=>w.document.querySelector(s),click=s=>{assert.ok(q(s),'Missing '+s);q(s).click();};
  const submit=async (f,action)=>{f.dispatchEvent(new w.SubmitEvent('submit',{bubbles:true,cancelable:true,submitter:action?f.querySelector(`[value=${action}]`):null}));await flush();};
@@ -523,7 +523,7 @@ test('configured guarantee activates on tenth registration and funds the full pr
   ui.click('[data-tab=payouts]');assert.match(ui.q('#guarantee-funding').textContent,/Additional house contribution required: \$680/);
   assert.deepEqual([...ui.w.document.querySelectorAll('[data-payout-amount]')].map(e=>e.textContent),['$1,000','$0']);
   ui.click('[data-tab=summary]');const row=[...ui.w.document.querySelectorAll('.financial-summary>div')].find(r=>r.querySelector('span').textContent==='House Contribution');
-  assert.equal(row.querySelector('strong').textContent,'+$680');assert.match(row.textContent,/Includes \$680/);assert.deepEqual(ui.errors,[]);
+  assert.equal(row.querySelector('strong').textContent,'+$680');assert.match(row.querySelector('.summary-calculation').textContent,/\$0 \+ \$680 guarantee/);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
 test('guaranteed payouts recalculate on house contribution changes, keep the selected mode, and reject fractional fixed payouts',async()=>{
@@ -1141,4 +1141,11 @@ for(const published of [false,true])test(`existing-player settings confirmation 
 for(const published of [false,true])test(`fee change updates summary including rebuys and add-ons (${published?'published':'source'})`,async()=>{
  const s=manualSeatingFixture(2);s.tournaments[0].rebuyCount=2;s.tournaments[0].entries[0].payments.push({id:'addon-fee',kind:'addon',total:9000,dealerToke:0,chips:20000,paid:true,at:1});const ui=await boot('https://example.test/',s,'manage','t1',{published});
  try{ui.click('[data-action=event-settings]');ui.q('#structure-form').elements.housePercent.value='10';let message='';ui.w.__confirmResponse=t=>(message=t,true);await ui.submit(ui.q('#structure-form'));assert.match(message,/Players have already bought in/);assert.equal(financials(ui.stored().tournaments[0]).houseFee,2200);assert.equal(financials(ui.stored().tournaments[0]).pool,19800);ui.click('[data-tab=summary]');const fee=[...ui.w.document.querySelectorAll('.financial-summary>div')].find(e=>e.textContent.includes('Tournament Fee'));assert.match(fee.textContent,/10%/);assert.match(fee.textContent,/22/);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+});
+
+for(const published of [false,true])test(`summary has inline calculations matching mixed payments (${published?'published':'source'})`,async()=>{
+ const s=manualSeatingFixture(2),t=s.tournaments[0];t.settings.rebuyEnabled=true;t.settings.addonEnabled=true;t.settings.houseContribution=0;t.rebuyCount=3;
+ t.entries[0].payments[0].total=5000;t.entries[1].payments[0].total=7000;t.entries.forEach(e=>e.payments[0].dealerToke=1000);
+ const ui=await boot('https://example.test/',s,'manage','t1',{published});
+ try{ui.click('[data-tab=summary]');const rows=[...ui.w.document.querySelectorAll('.financial-summary>div')],find=name=>rows.find(r=>r.querySelector('.summary-name').textContent===name);assert.equal(find('House Contribution'),undefined);assert.equal(find('Tournament Entries').querySelector('.summary-calculation').textContent,'1 × $40 + 1 × $60');assert.equal(find('Dealer Tokes (Buy-Ins Only)').querySelector('.summary-calculation').textContent,'2 × $10');assert.match(find('Rebuys').querySelector('.summary-calculation').textContent,/^3 × /);assert.match(find('Add-ons').querySelector('.summary-calculation').textContent,/^0 × /);for(const row of rows){assert.equal(row.children.length,3);assert.equal(row.children[1].className,'summary-calculation');assert.equal(row.children[2].tagName,'STRONG');}assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });

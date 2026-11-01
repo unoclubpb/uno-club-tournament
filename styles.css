@@ -1838,3 +1838,16 @@ body:has(.nav){overscroll-behavior:none}
 .tournament-settings-page .form-section:has(.level-table){grid-column:1/-1}
 
 .setup-page .setup-library-results>#saved-structures.structures-locked{overflow:hidden!important;overflow-y:hidden!important}
+
+/* Keep names, calculations, and totals in three aligned columns. */
+.financial-summary{max-width:none;width:100%;display:grid;grid-template-columns:minmax(160px,1fr) minmax(130px,1.35fr) max-content;column-gap:24px}
+.financial-summary>div{grid-column:1/-1;display:grid;grid-template-columns:subgrid;column-gap:24px}
+.financial-summary>div>.summary-name{font-size:17px;font-weight:700;line-height:1.4}
+.financial-summary>div>.summary-calculation{font-size:13px;font-weight:400;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}
+.financial-summary>div>strong{text-align:right;white-space:nowrap}
+@media(max-width:650px){
+ .financial-summary{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) max-content;column-gap:10px}
+ .financial-summary>div{column-gap:10px}
+ .financial-summary>div>.summary-name{font-size:16px}
+ .financial-summary>div>.summary-calculation{font-size:12px}
+}
