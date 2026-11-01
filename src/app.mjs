@@ -1,3 +1,4 @@
+function preserveSeatingScroll(){const selectors=['html','body','.workspace','.content','.management-panel','.seat-tables','.table-scroll','.remote-seating'];const positions=selectors.map(selector=>[selector,[...document.querySelectorAll(selector)].map(el=>[el.scrollTop,el.scrollLeft])]);const restore=()=>{for(const [selector,values] of positions)document.querySelectorAll(selector).forEach((el,index)=>{if(values[index]){el.scrollTop=values[index][0];el.scrollLeft=values[index][1];}});};return ()=>{restore();if(typeof requestAnimationFrame==='function')requestAnimationFrame(restore);};}
 import {refreshDesignLayoutPreviews} from './tournament-design-layout-previews.mjs';
 import {updateDesignLayoutClock} from './tournament-design-layout-clock.mjs';
 import {createLayoutDraft} from './tournament-design-layout-draft.mjs';
@@ -27,7 +28,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.113 · Reorganization';
+const APP_VERSION='0.4.0-reorg.114 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -765,12 +766,12 @@ function clearSeatPick(){
   pickedSeat=null;document.querySelectorAll('.seat-player-grip[aria-pressed="true"]').forEach(el=>el.setAttribute('aria-pressed','false'));
   setText('#seat-move-instructions',seatMoveInstructions());const cancel=$('#cancel-seat-pick');if(cancel)cancel.hidden=true;
 }
-function chooseSeatPlayer(entryId){
+function chooseSeatPlayer(entryId){const restoreScroll=preserveSeatingScroll();try{
   if(pickedSeat?.entryId===entryId){clearSeatPick();return;}
   clearSeatPick();pickedSeat=seatSource(entryId);
   document.querySelectorAll('[data-seat-grab]').forEach(el=>{if(el.dataset.seatGrab===entryId)el.setAttribute('aria-pressed','true');});
   setText('#seat-move-instructions',`Choose a destination seat for ${pName(current().entries.find(e=>e.id===entryId))}.`);$('#cancel-seat-pick').hidden=false;
-}
+}finally{restoreScroll();}}
 async function saveSeatMove(source,table,seat,mode){
   try{
     const t=checkSeatSource(source);planSeatMove(t,{entryId:source.entryId,table,seat,mode});
@@ -905,11 +906,11 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   if(el.dataset.adjust){await commit({type:'clock',tournamentId:selected,command:'adjust',seconds:Number(el.dataset.adjust)});return;}
   if(el.dataset.levelDelete!==undefined||el.dataset.levelUp!==undefined||el.dataset.levelDown!==undefined){captureEditor();const l=editor.value.levels;if(el.dataset.levelDelete!==undefined)l.splice(Number(el.dataset.levelDelete),1);else{const i=Number(el.dataset.levelUp??el.dataset.levelDown),j=i+(el.dataset.levelUp!==undefined?-1:1);if(j>=0&&j<l.length)[l[i],l[j]]=[l[j],l[i]];}render();return;}
   switch(el.dataset.action){
-    case 'toggle-move-players':{
-      if(!movePlayersEnabled){seatingContext();if(current()?.status==='completed')break;}
+    case 'toggle-move-players':{const restoreScroll=preserveSeatingScroll();
+      if(!movePlayersEnabled){seatingContext();if(current()?.status==='completed'){restoreScroll();break;}}
       movePlayersEnabled=!movePlayersEnabled;movePlayersTournament=selected;
       if(!movePlayersEnabled){if(dlg.open&&(seatMoveChoice||$('#seat-form')))dlg.close();seatMoveChoice=null;}
-      render();$('[data-action=toggle-move-players]')?.focus({preventScroll:true});break;
+      render();$('[data-action=toggle-move-players]')?.focus({preventScroll:true});restoreScroll();break;
     }
     case 'icm-chop':icmDialog();break;
     case 'icm-calculate':calculateIcm();break;
@@ -1026,7 +1027,7 @@ document.addEventListener('submit',async event=>{event.preventDefault();const fo
     }
     editor.value.clockAppearance=appearance;dlg.close();render();toast(editor.event?'Clock appearance selected. Save tournament settings to keep it.':'Clock appearance selected. Save structure to keep it.');return;
   }
-  if(form.id==='seating-settings-form'){if(await commit({type:'seating-settings',tournamentId:fd.get('tournamentId'),seatsPerTable:Number(fd.get('seatsPerTable'))})){toast('Seats per table updated.');}return;}
+  if(form.id==='seating-settings-form'){const tournament=current(),capacity=Number(fd.get('seatsPerTable')),affected=active(tournament).filter(e=>e.table!=null&&e.seat>capacity&&active(tournament).filter(v=>v.table===e.table).length>capacity);if(affected.length&&!await confirmApp(`Reducing to ${capacity} seats per table will move ${affected.length} player(s) to Unseated Players. Continue?`,'Change Seats Per Table','Confirm'))return;if(await commit({type:'seating-settings',tournamentId:fd.get('tournamentId'),seatsPerTable:Number(fd.get('seatsPerTable'))})){toast('Seats per table updated.');}return;}
   if(form.id==='icm-form'){
     if(!icmReview)throw new Error('Calculate the ICM payouts before accepting.');checkIcmContext(icmReview);
     const participants=icmRows();for(const row of participants){const original=icmReview.proposal.participants.find(v=>v.entryId===row.entryId);if(!original||original.chips!==row.chips)throw new Error('Chip counts changed. Calculate ICM again.');}

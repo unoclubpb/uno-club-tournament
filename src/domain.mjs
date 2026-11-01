@@ -368,15 +368,13 @@ export function execute(state,action,now=Date.now()){
   }
   if(a.type==='seating-settings'){
     check(Number.isSafeInteger(a.seatsPerTable)&&a.seatsPerTable>=2&&a.seatsPerTable<=10,'Use 2–10 seats per table.');
-    for(const entry of t.entries.filter(e=>!e.eliminatedAt&&e.seat>a.seatsPerTable))requireUnlocked(entry);
-    t.settings.seatsPerTable=a.seatsPerTable;
-    const remaining=t.entries.filter(e=>!e.eliminatedAt),displaced=remaining.filter(e=>e.seat>a.seatsPerTable);
-    for(const entry of displaced){entry.table=null;entry.seat=null;}
-    const count=tablesInUse(t);
-    for(const entry of displaced){
-      const available=Array.from({length:count},(_,i)=>({table:i+1,entries:remaining.filter(e=>e.table===i+1)})).filter(v=>v.entries.length<a.seatsPerTable).sort((a,b)=>a.entries.length-b.entries.length||a.table-b.table)[0];
-      check(available,'No seat is available.');entry.table=available.table;entry.seat=Array.from({length:a.seatsPerTable},(_,i)=>i+1).find(seat=>!available.entries.some(e=>e.seat===seat));
-    }
+    const capacity=a.seatsPerTable;const remaining=t.entries.filter(e=>!e.eliminatedAt&&e.table!=null),changes=[];
+for(const table of new Set(remaining.map(e=>e.table))){const rows=remaining.filter(e=>e.table===table).sort((a,b)=>a.seat-b.seat);if(!rows.some(e=>e.seat>capacity))continue;
+if(rows.length<=capacity)rows.forEach((entry,index)=>{if(entry.seat!==index+1)changes.push({entry,table,seat:index+1});});
+else rows.filter(e=>e.seat>capacity).forEach(entry=>changes.push({entry,table:null,seat:null}));}
+for(const change of changes)requireUnlocked(change.entry);
+for(const change of changes){change.entry.table=change.table;change.entry.seat=change.seat;}
+t.settings.seatsPerTable=capacity;
     return s;
   }
   if(a.type==='seat-move'){applySeats(t,planSeatMove(t,a));return s;}

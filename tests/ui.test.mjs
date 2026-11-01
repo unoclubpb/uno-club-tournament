@@ -1096,3 +1096,11 @@ test('completed tournament deletion rolls back awarded points and keeps player r
 });
 
 }
+for(const published of [false,true])test(`seat selection retains document and seating scroll (${published?'published':'source'})`,async()=>{
+ const s=manualSeatingFixture(10),ui=await boot('https://example.test/',s,'manage','t1',{published});
+ try{ui.click('[data-tab=tables]');ui.w.document.documentElement.scrollTop=640;ui.q('.management-panel').scrollTop=180;ui.click('[data-action=toggle-move-players]');assert.equal(ui.w.document.documentElement.scrollTop,640);assert.equal(ui.q('.management-panel').scrollTop,180);const handle=ui.q('[data-seat-grab]');ui.click(`[data-seat-grab="${handle.dataset.seatGrab}"]`);await flush();assert.equal(ui.w.document.documentElement.scrollTop,640);assert.equal(ui.q('.management-panel').scrollTop,180);assert.equal(handle.getAttribute('aria-pressed'),'true');}finally{ui.close();}
+});
+for(const published of [false,true])test(`capacity reduction compacts fitting tables without an unseating warning (${published?'published':'source'})`,async()=>{
+ const s=manualSeatingFixture(10);s.tournaments[0].settings.seatsPerTable=6;s.tournaments[0].entries.forEach((e,i)=>{e.table=i<5?1:2;e.seat=i<5?[1,3,4,5,6][i]:i-4;});const ui=await boot('https://example.test/',s,'manage','t1',{published});
+ try{ui.click('[data-tab=tables]');let confirmations=0;ui.w.__confirmResponse=()=>{confirmations++;return false;};let form=ui.q('#seating-settings-form');form.elements.seatsPerTable.value='5';await ui.submit(form);assert.equal(confirmations,0);assert.deepEqual(ui.stored().tournaments[0].entries.map(e=>e.seat),[1,2,3,4,5,1,2,3,4,5]);form=ui.q('#seating-settings-form');form.elements.seatsPerTable.value='4';await ui.submit(form);await flush();assert.equal(confirmations,1);assert.equal(ui.stored().tournaments[0].settings.seatsPerTable,5);}finally{ui.close();}
+});
