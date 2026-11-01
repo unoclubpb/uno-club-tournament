@@ -699,3 +699,18 @@ body:has(.nav){overscroll-behavior:none}
  .nav button,.nav button.active{font-size:9px!important;padding:8px 5px!important;gap:4px!important}
  .nav svg{width:16px!important;height:16px!important}
 }
+
+/* Compact event settings while keeping the original structure informational. */
+.tournament-name-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.tournament-name-row input[readonly]{background:var(--bg);color:var(--muted);cursor:default}
+.tournament-settings-page .structure-editor-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-content:start;align-items:start}
+.tournament-settings-page .tournament-name-row{grid-column:1/-1}
+.tournament-settings-page .structure-editor-body>.form-section{margin:0;padding:12px;border:1px solid var(--line);border-radius:8px;min-width:0}
+.tournament-settings-page .form-section:has(.level-table),.tournament-settings-page .structure-editor-body>.form-section:last-child{grid-column:1/-1}
+.tournament-settings-page .form-grid{gap:10px}
+.tournament-settings-page label{margin-bottom:8px}
+.tournament-settings-page .form-section h3{margin-bottom:8px}
+.tournament-settings-page .form-section p{font-size:12px;line-height:1.4;margin-bottom:8px}
+.metrics:has(>div:nth-child(5)){grid-template-columns:repeat(5,minmax(0,1fr))}
+.metrics strong{overflow-wrap:anywhere}
+@media(max-width:700px){.tournament-settings-page .structure-editor-body{grid-template-columns:minmax(0,1fr)}.metrics:has(>div:nth-child(5)){grid-template-columns:repeat(2,minmax(0,1fr))}.tournament-name-row{gap:10px}}

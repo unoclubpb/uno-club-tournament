@@ -307,8 +307,8 @@ export function execute(state,action,now=Date.now()){
     check(!s.templates.some(v=>v.levels.some(l=>l.layoutId===a.id))&&!s.tournaments.some(v=>v.levels.some(l=>l.layoutId===a.id)),'This layout is assigned to a saved structure or tournament. Reassign those levels before deleting it.');
     s.clockLayouts=s.clockLayouts.filter(v=>v.id!==a.id);return s;
   }
-  if(a.type==='template-save'){const template=clone(a.template);template.clockAppearance=clockAppearance(template.clockAppearance||s.clockAppearanceDefaults);if(template.settings.payoutMode==='guaranteed')template.settings.payouts=[65,35];validateTemplate(template);const ix=s.templates.findIndex(v=>v.id===template.id);if(ix<0)s.templates.push(template);else s.templates[ix]=template;return s;}
-  if(a.type==='template-delete'){check(s.templates.length>1,'Keep at least one saved structure.');s.templates=s.templates.filter(v=>v.id!==a.id);return s;}
+  if(a.type==='template-save'){check(!s.tournaments.some(t=>!t.archivedAt),'Saved structures are locked until the current tournament is archived. Use Edit This Tournament.');const template=clone(a.template);template.clockAppearance=clockAppearance(template.clockAppearance||s.clockAppearanceDefaults);if(template.settings.payoutMode==='guaranteed')template.settings.payouts=[65,35];validateTemplate(template);const ix=s.templates.findIndex(v=>v.id===template.id);if(ix<0)s.templates.push(template);else s.templates[ix]=template;return s;}
+  if(a.type==='template-delete'){check(!s.tournaments.some(t=>!t.archivedAt),'Saved structures are locked until the current tournament is archived.');check(s.templates.length>1,'Keep at least one saved structure.');s.templates=s.templates.filter(v=>v.id!==a.id);return s;}
   if(a.type==='tournament-create'){
     check(!s.tournaments.some(t=>!t.archivedAt),'You must archive the current tournament before creating a new one.');
     const template=s.templates.find(v=>v.id===a.templateId);check(template,'Choose a saved structure.');validateTemplate(template);check(String(a.name||'').trim(),'Give the tournament a name.');
@@ -322,7 +322,7 @@ export function execute(state,action,now=Date.now()){
     check(tournamentStarted(t)||a.mode==='clock-seating','Full Clock becomes available when the tournament starts.');
     t.tvDisplayMode=a.mode;return s;
   }
-  if(a.type==='tournament-settings'||a.type==='payout-settings'){
+  if(a.type==='tournament-settings'||a.type==='payout-settings'){if(a.type==='tournament-settings'&&a.name!==undefined){check(String(a.name).trim()&&String(a.name).trim().length<=120,'Enter a tournament name (up to 120 characters).');t.name=String(a.name).trim();}
     check(t.status!=='completed','Completed tournament is locked.');
     if(a.type==='tournament-settings'&&tournamentStarted(t))check(a.settings.payoutMode===t.settings.payoutMode&&JSON.stringify(a.settings.payouts)===JSON.stringify(t.settings.payouts)&&JSON.stringify(a.settings.payoutRules)===JSON.stringify(t.settings.payoutRules)&&JSON.stringify(guaranteeSettings(a.settings))===JSON.stringify(guaranteeSettings(t.settings)),'Use Save Payouts in Tournament Management to change an active payout agreement.');
     const template={id:'event',name:t.name,levels:clone(a.levels||t.levels),settings:clone(a.settings)};validateTemplate(template,{requireRebuyBreak:a.type!=='payout-settings'&&(!tournamentStarted(t)||!!a.levels||a.settings.rebuyLastRound!==t.settings.rebuyLastRound||a.settings.rebuyEnabled!==t.settings.rebuyEnabled)});
