@@ -2094,3 +2094,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
   max-width:none!important;
   transform:translateX(-3px);
 }
+/* reorg.152t: match Rebuy Tracking radios to the native blue-and-white fee radios. */
+#structure-form .rebuy-tracking-settings fieldset input[type="radio"]{
+  accent-color:auto!important;
+}
