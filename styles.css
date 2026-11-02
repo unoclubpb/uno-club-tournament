@@ -2040,3 +2040,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
   outline-offset:1px!important;
   box-shadow:none!important;
 }
+/* reorg.152n: comparison step — make Chips per Rebuy border 2px. */
+#structure-form input[name="rebuyChips"]{
+  border-width:2px!important;
+}
