@@ -819,3 +819,6 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 .tournament-settings-page .structure-editor-body>.tournament-fees-section{grid-column:1;grid-row:3}
 .tournament-settings-page .structure-editor-body>.addons-section{grid-column:2;grid-row:3}
 @media(max-width:700px){.tournament-settings-page .structure-editor-body>.buy-in-section,.tournament-settings-page .structure-editor-body>.rebuy-section,.tournament-settings-page .structure-editor-body>.tournament-fees-section,.tournament-settings-page .structure-editor-body>.addons-section{grid-column:1;grid-row:auto}}
+
+/* Lower the buy-in amount, fee choice, and their labels together in every editor. */
+.buy-in-section .transaction-settings>label:first-child,.buy-in-section .transaction-settings>.transaction-fee-control{transform:translateY(20px)}
