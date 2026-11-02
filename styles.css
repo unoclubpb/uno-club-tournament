@@ -1926,5 +1926,5 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 /* Lower the buy-in amount, fee choice, and their labels together in every editor. */
 .buy-in-section .transaction-settings>label:first-child,.buy-in-section .transaction-settings>.transaction-fee-control,.buy-in-section .transaction-settings>label:nth-child(3),.buy-in-section>.split-note{transform:translateY(40px)}
 
-/* Move both tournament fee choices and their descriptions down together. */
-.tournament-fees-section>.tournament-fee-options{margin-top:80px}
+/* Keep the Tournament Fees heading fixed while raising its contents. */
+.tournament-fees-section>.tournament-fee-options{margin-top:67px}
