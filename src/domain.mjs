@@ -48,8 +48,6 @@ export function purchaseOpen(t,c,kind){
 export const rebuyOpen=(t,c)=>purchaseOpen(t,c,'rebuy');
 export const canRecordRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&rebuyPhase(t,c)==='final-break';
 export const canEditRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&(canRecordRebuys(t,c)||!rebuyOpen(t,c));
-export const canRecordRebuyEntries=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&rebuyOpen(t,c);
-export const canEditRebuyEntries=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready';
 export const registrationOpen=(t,c)=>t.status!=='completed'&&!t.archivedAt&&c.status!=='ended'&&(c.status==='ready'||!t.settings.rebuyEnabled||rebuyOpen(t,c));
 function requireRegistration(t,action,now){
   check(t&&t.status!=='completed'&&!t.archivedAt,'This tournament is finished.');
@@ -402,7 +400,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
   }
   if(a.type==='rebuy-count'){
     check((t.settings.rebuyTracking||'total')==='total','Rebuys are being tracked by player for this tournament.');
-    const playerCounts=Array.isArray(a.counts),canEdit=playerCounts?canEditRebuyEntries(t,c):canEditRebuys(t,c),canRecord=playerCounts?canRecordRebuyEntries(t,c):canRecordRebuys(t,c);
+    const playerCounts=Array.isArray(a.counts),canEdit=canEditRebuys(t,c),canRecord=canRecordRebuys(t,c);
     check(canEdit,'Start the tournament before recording rebuys.');
     check(canRecord||a.overrideCutoff===true,'Rebuys are closed. Override is required.');
     let count=a.count;
