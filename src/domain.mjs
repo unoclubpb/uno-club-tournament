@@ -447,7 +447,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
     check(typeof a.locked==='boolean','Choose lock or unlock.');e.seatLocked=a.locked;return s;
   }
   if(a.type==='payment'){
-    const k=a.kind;check(k==='addon'||k==='rebuy'&&(t.settings.rebuyTracking||'total')==='player','Record tournament rebuys as a total, or enable per-player rebuy tracking in the saved structure.');check(!e.eliminatedAt,'Player has been eliminated.');
+    const k=a.kind;check(k==='addon'||k==='rebuy'&&(t.settings.rebuyTracking||'total')==='player','Record tournament rebuys as a tournament total, or enable per-player rebuy tracking in the saved structure.');check(!e.eliminatedAt,'Player has been eliminated.');
     if(k==='rebuy'){check(tournamentStarted(t),'Start the tournament before recording player rebuys.');check(!e.pendingElimination,'This player has a pending elimination.');}
     check(purchaseOpen(t,c,k),`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
     check(t.settings[k+'Enabled'],`${k==='rebuy'?'Rebuys':'Add-ons'} are turned off.`);
