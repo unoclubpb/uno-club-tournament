@@ -727,15 +727,15 @@ function acceptSession(next){
   if(!user){const previous=channel;channel=null;if(previous)void db.removeChannel(previous);state=initialState();version=0;online=false;editor=null;serverSample=null;if(dlg.open)dlg.close();render();return;}
   return enterCloud();
 }
-async function confirmApp(message,title='Are You Sure?',yesLabel='Confirm'){
+async function confirmApp(message,title='Are You Sure?',yesLabel='Confirm',saveLabel=null){
   let box=$('#confirmation-dialog');if(box?.open)return false;
   if(!box){box=document.createElement('dialog');box.id='confirmation-dialog';document.body.append(box);}
   const context={version,selected,user:session?.user.id};
   box.setAttribute('aria-labelledby','confirmation-title');box.setAttribute('aria-describedby','confirmation-message');
-  box.innerHTML=`<div class="modal-heading"><h2 id="confirmation-title">${esc(title)}</h2></div><p id="confirmation-message">${esc(message)}</p><div class="button-row"><button type="button" class="button secondary" data-confirm-answer="no">Cancel</button><button type="button" class="button primary" data-confirm-answer="yes">${esc(yesLabel)}</button></div>`;
+  box.innerHTML=`<div class="modal-heading"><h2 id="confirmation-title">${esc(title)}</h2></div><p id="confirmation-message">${esc(message)}</p><div class="button-row"><button type="button" class="button secondary" data-confirm-answer="no">Cancel</button>${saveLabel?`<button type="button" class="button secondary" data-confirm-answer="save">${esc(saveLabel)}</button>`:''}<button type="button" class="button primary" data-confirm-answer="yes">${esc(yesLabel)}</button></div>`;
   const answer=await new Promise(resolve=>{
     const finish=value=>{box.removeEventListener('click',click);box.removeEventListener('cancel',cancel);box.removeEventListener('close',cancel);if(box.open)box.close();resolve(value);};
-    const click=event=>{const button=event.target.closest('[data-confirm-answer]');if(button){event.stopPropagation();finish(button.dataset.confirmAnswer==='yes');}};
+    const click=event=>{const button=event.target.closest('[data-confirm-answer]');if(button){event.stopPropagation();finish(button.dataset.confirmAnswer==='save'?'save':button.dataset.confirmAnswer==='yes');}};
     const cancel=event=>{event?.preventDefault();finish(false);};box.addEventListener('click',click);box.addEventListener('cancel',cancel);box.addEventListener('close',cancel);box.showModal();
   });
   if(answer&&(context.version!==version||context.selected!==selected||context.user!==session?.user.id))throw new Error('Tournament changed. Review the latest information and try again.');
@@ -1012,7 +1012,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
     case 'cancel-layout':{const form=$('#saved-layout-form');if(form&&layoutInitialSnapshot!==null&&layoutFormSnapshot(form)!==layoutInitialSnapshot){if(!await confirmApp('You have unsaved layout changes. Go back without saving?','Discard Changes','Discard Changes'))break;}layoutDraft=null;layoutInitialSnapshot=null;setupLibraryTab='layouts';render();break;}
     case 'new-structure':{const value=sampleTemplate();value.name='New tournament structure';for(const key of ['buyIn','dealerToke','startingStack','rebuyAmount','rebuyFeeAmount','rebuyChips','rebuyLastRound','housePercent','houseFlatFee','addonAmount','addonFeeAmount','addonChips','addonLastRound'])value.settings[key]='';value.clockAppearance=clockAppearance(state.clockAppearanceDefaults);editor={value,isNew:true,event:false,version};view='setup';render();break;}
     case 'event-settings':{const t=current();editor={event:true,version,value:{id:t.id,name:t.name,settings:clone(t.settings),levels:clone(t.levels),clockAppearance:clockAppearance(t.clockAppearance)}};view='setup';render();break;}
-    case 'close-editor':if(editor?.event){const form=$('#structure-form');if(form&&editor.initialFormSnapshot!==settingsDraftSnapshot(form,editor)&&!await confirmApp('Changes have been made. Do you want to return to Tournament Management without saving changes?','Unsaved Tournament Settings','Return Without Saving'))break;editor=null;go('manage');}else{editor=null;render();}break;
+    case 'close-editor':if(editor?.event){const form=$('#structure-form');if(form&&editor.initialFormSnapshot!==settingsDraftSnapshot(form,editor)){const choice=await confirmApp('Changes have been made. Save them before returning to Tournament Management?','Unsaved Tournament Settings','Return Without Saving','Save Changes & Return');if(choice==='save'){form.requestSubmit();break}if(!choice)break}editor=null;go('manage');}else{editor=null;render();}break;
     case 'add-level':case 'add-break':captureEditor();editor.value.levels.push({kind:el.dataset.action==='add-break'?'break':'play',minutes:el.dataset.action==='add-break'?10:15,sb:0,bb:0,ante:0,game:el.dataset.action==='add-break'?'':(editor.value.levels.slice().reverse().find(l=>l.kind==='play')?.game||''),chipUp:false});render();break;
     case 'recalculate-payouts':await recalculatePayouts();break;case 'clock-appearance':appearanceDialog();break;case 'structure-clock-appearance':appearanceDialog();break;case 'restore-clock-appearance':fillAppearance(el.closest('form'),ORIGINAL_CLOCK_APPEARANCE);break;case 'use-clock-defaults':fillAppearance(el.closest('form'),state.clockAppearanceDefaults);break;
     case 'seat-remaining':{const context=seatingContext();await commit({type:'seat-remaining',tournamentId:context.tournamentId,order:randomSeatOrder(current())});break;}
