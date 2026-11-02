@@ -2100,3 +2100,15 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 }
 /* reorg.152v: separate rebuy count from its confirmation action. */
 #payment-form .rebuy-recorded-count{margin:18px 0 30px!important}
+
+
+/* Keep management navigation pinned above the scrolling panel on all workspace layouts. */
+.management-layout{align-items:stretch!important;overflow:visible!important}
+.management-layout>.management-sidebar{
+ position:-webkit-sticky!important;position:sticky!important;
+ top:var(--management-sticky-top,110px)!important;
+ align-self:start!important;height:max-content!important;
+ max-height:calc(100dvh - var(--management-sticky-top,110px) - 8px)!important;
+ overflow-y:auto!important;overscroll-behavior-y:contain!important;z-index:30!important;
+}
+.management-layout>.management-panel{min-height:100%!important}
