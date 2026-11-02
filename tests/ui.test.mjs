@@ -212,12 +212,12 @@ test('opening a clock link retains its requested tournament while cloud records 
 });
 
 
-test('total-mode rebuy control opens during play and records counts for each player',async()=>{
+test('total-mode rebuy control waits until after the configured level and records each player count',async()=>{
  let s=initialState();for(const [id,name] of [['p1','Alex'],['p2','Casey']])s=execute(s,{type:'player-save',id,name});s=execute(s,{type:'tournament-create',id:'t1',name:'Rebuy total',templateId:s.templates[0].id});s=execute(s,{type:'register',tournamentId:'t1',playerId:'p1'});s=execute(s,{type:'register',tournamentId:'t1',playerId:'p2'});
  const t=s.tournaments[0];t.settings.rebuyLastRound=8;t.clock={index:7,status:'paused',remainingMs:900000,deadline:null};
  const ui=await boot('https://example.test/',s,'manage','t1');
  try{
-  assert.equal(ui.q('#record-rebuys').disabled,false);assert.equal(ui.q('[data-paid]'),null);assert.equal(ui.q('[data-rebuy]'),null);ui.click('#record-rebuys');let f=ui.q('#rebuy-count-form');assert.equal(f.querySelectorAll('[data-rebuy-player-count]').length,2);assert.equal(f.elements.count.value,'0');
+  assert.equal(ui.q('#record-rebuys').disabled,true);assert.match(ui.q('#rebuy-total-help').textContent,/after Level 8/);assert.equal(ui.q('[data-paid]'),null);assert.equal(ui.q('[data-rebuy]'),null);t.clock.index=8;await ui.storage(s);assert.equal(ui.q('#record-rebuys').disabled,false);ui.click('#record-rebuys');let f=ui.q('#rebuy-count-form');assert.equal(f.querySelectorAll('[data-rebuy-player-count]').length,2);assert.equal(f.elements.count.value,'0');
   ui.click('[data-rebuy-player-step="1"][data-entry-id="p1"]');ui.click('[data-rebuy-player-step="1"][data-entry-id="p1"]');ui.click('[data-rebuy-player-step="1"][data-entry-id="p2"]');ui.click('[data-rebuy-player-step="1"][data-entry-id="p2"]');assert.equal(f.elements.count.value,'4');await ui.submit(f);assert.equal(ui.stored().tournaments[0].rebuyCount,4);assert.deepEqual(ui.stored().tournaments[0].rebuyCountsByEntry,{p1:2,p2:2});assert.ok(ui.stored().tournaments[0].entries.every(e=>e.payments.length===1));assert.match(ui.q('.metrics').textContent,/4/);
   ui.click('#record-rebuys');f=ui.q('#rebuy-count-form');ui.input(f.elements['rebuy-p1'],'1');ui.input(f.elements['rebuy-p2'],'1');assert.equal(f.elements.count.value,'2');await ui.submit(f);assert.equal(ui.stored().tournaments[0].rebuyCount,2);
   ui.click('#record-rebuys');f=ui.q('#rebuy-count-form');ui.input(f.elements['rebuy-p1'],'1.5');await ui.submit(f);assert.equal(ui.stored().tournaments[0].rebuyCount,2);assert.equal(ui.q('#dialog').open,true);
