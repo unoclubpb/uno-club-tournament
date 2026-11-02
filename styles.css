@@ -1904,3 +1904,6 @@ body:has(.nav){overscroll-behavior:none}
 #new-tournament-form input[name="name"],#new-tournament-form input[name="date"]{display:block!important;width:100%!important;inline-size:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;flex:1 1 auto!important}
 /* WebKit date controls render wider than text inputs on iPad; match the visible name field width. */
 #new-tournament-form input[name="date"]{width:calc(95% - 4px)!important;inline-size:calc(95% - 4px)!important;max-width:calc(95% - 4px)!important}
+
+/* Match the Dealer Toke amount style across numeric tournament setup fields. */
+#structure-form input[type="number"],#structure-form input[data-money],#structure-form input[data-chips]{font-family:inherit!important;font-size:15px!important;font-weight:400!important}
