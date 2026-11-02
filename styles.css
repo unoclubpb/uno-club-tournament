@@ -1019,6 +1019,7 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 
 /* Keep the table's blue header continuous; position only label text via inset. */
 #structure-form .level-table thead th:nth-child(7){text-indent:-10px}
+#structure-form .level-table thead th:nth-child(8){text-indent:-15px}
 #structure-form .level-table thead th:nth-child(8){padding-left:52px}
 
 /* Full-clock designer: same header, timer, blinds and sidebar composition as TV. */
