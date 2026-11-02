@@ -2124,3 +2124,8 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 #rebuy-count-form .rebuy-unassigned-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0}
 #rebuy-count-form .rebuy-unassigned-row input{width:104px;text-align:center}
 @media(max-width:560px){#rebuy-count-form .rebuy-entry-row{grid-template-columns:minmax(0,1fr) auto;gap:6px;padding:7px}#rebuy-count-form .rebuy-player-stepper{gap:4px}#rebuy-count-form .rebuy-player-stepper>.button{flex-basis:34px;min-height:34px}#rebuy-count-form .rebuy-player-stepper>input{width:58px;min-width:48px}}
+
+/* Keep the rebuy and disabled ante controls aligned beneath the minute controls. */
+.control-panel .clock-controls>.rebuy-control-button,.control-panel .clock-controls>.ante-control-button,.control-panel .clock-controls>.rebuy-control-slot{width:100%;min-width:0;}
+.control-panel .clock-controls>.rebuy-control-button{height:auto;min-height:44px;white-space:normal;line-height:1.25;padding-left:8px;padding-right:8px;}
+.control-panel .clock-controls>.rebuy-control-slot{display:flex;align-items:center;justify-content:center;}
