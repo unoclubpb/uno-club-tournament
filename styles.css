@@ -2085,3 +2085,12 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 #structure-form input[name="rebuyChips"]{
   border-width:1px!important;
 }
+/* reorg.152s: extend Max Rebuys field 3px to the left; align its title. */
+.rebuy-max-setting .rebuy-max-title{
+  transform:translateX(-3px);
+}
+.rebuy-max-setting input{
+  width:calc(100% + 3px)!important;
+  max-width:none!important;
+  transform:translateX(-3px);
+}
