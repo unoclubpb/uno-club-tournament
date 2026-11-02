@@ -63,7 +63,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.162 · Reorganization';
+const APP_VERSION='0.4.0-reorg.163 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -210,7 +210,7 @@ function homeTournament(){const isActive=t=>!t.archivedAt&&t.status!=='completed
 // Home is now a separately loaded screen. Other screens remain in place for later phases.
 function home(){return homeModule?homeModule.renderHome({t:homeTournament(),icon,esc,money,statusLabel}):homeLoadError&&homeLoadError!=='loading'?'<section class="panel" role="alert"><h2>Home could not load</h2><p>'+esc(homeLoadError)+'</p><button class="button secondary" data-action="retry-home">Retry</button></section>':'<section class="panel" role="status" aria-live="polite"><p>Loading Home…</p></section>'+nav();}
 
-function settingsFields(s,eventSettings=false){return renderDesignSettings(s,{num,money,eventSettings});}
+function settingsFields(s,eventSettings=false){const t=eventSettings?current():null,locked=eventSettings&&(!t||t.status!=='ready'||tournamentStarted(t)||(t.entries||[]).length>0||!!t.archivedAt);return renderDesignSettings(s,{num,money,eventSettings:locked});}
 function readSettings(form,base){return readDesignSettings(form,base,{clone,wholeDollars});}
 function levelRows(levels){return designLevelRows(levels,{esc,clockLayouts:state.clockLayouts||[]});}
 function refreshSavedLayoutPreviews(){if(view!=='setup')return;refreshDesignLayoutPreviews({document,clockLayouts:state.clockLayouts||[],defaults:state.clockAppearanceDefaults,originalAppearance:ORIGINAL_CLOCK_APPEARANCE,layoutDraft,applyClockAppearance});}
