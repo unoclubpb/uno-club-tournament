@@ -941,7 +941,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   if(el.dataset.archiveTournament){archiveDetail=el.dataset.archiveTournament;render();return;}
   if(el.dataset.resume){chooseTournament(el.dataset.resume);go('manage');return;}
   if(el.dataset.select){chooseTournament(el.dataset.select);return;}
-  if(el.dataset.tab){tab=el.dataset.tab;render();$(`[data-tab="${tab}"]`)?.focus({preventScroll:true});return;}
+  if(el.dataset.tab){if(el.dataset.tab!=='tables')movePlayersEnabled=false;tab=el.dataset.tab;render();$(`[data-tab="${tab}"]`)?.focus({preventScroll:true});return;}
   if(el.dataset.profilePanel){if(pointsEditor){toast('Save or cancel your point edits first.');return;}profilePanel=el.dataset.profilePanel;if(profilePanel!=='details'){profileHistoryMode=profilePanel==='points'?'points':'tournaments';showPlayerHistory();}$('.player-profile-panels').dataset.panel=profilePanel;for(const button of document.querySelectorAll('[data-profile-panel]'))button.setAttribute('aria-pressed',String(button.dataset.profilePanel===profilePanel));return;}
   if(el.dataset.player){pointsEditor=null;profileHistoryMode='tournaments';playerDetail=el.dataset.player;profilePanel='details';render();return;}
   if(el.dataset.createTemplate){newTournament(el.dataset.createTemplate);return;}
