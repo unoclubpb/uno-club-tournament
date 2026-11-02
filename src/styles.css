@@ -825,3 +825,10 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 
 /* Move both tournament fee choices and their descriptions down together. */
 .tournament-fees-section>.tournament-fee-options{margin-top:80px}
+
+
+/* Keep management section navigation pinned while the content panel scrolls. */
+.management-layout .management-sidebar{position:sticky;top:12px;align-self:start;z-index:2}
+body:not(.fixed-workspace) .management-layout{overflow:visible!important;align-items:stretch}
+body:not(.fixed-workspace) .management-layout>.management-sidebar{position:-webkit-sticky;position:sticky;top:var(--management-sticky-top,110px);align-self:start;height:max-content;max-height:calc(100dvh - var(--management-sticky-top,110px) - 8px);overflow-y:auto;overscroll-behavior:contain;z-index:5}
+body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
