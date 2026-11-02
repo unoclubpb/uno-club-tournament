@@ -453,7 +453,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
     check(t.settings[k+'Enabled'],`${k==='rebuy'?'Rebuys':'Add-ons'} are turned off.`);
     check(roundAt(t,c.index)<=t.settings[k+'LastRound'],`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
     if(k==='addon')check(!e.payments.some(p=>p.kind==='addon'),'Add-on already recorded.');
-    if(k==='rebuy'&&(t.settings.rebuyMax||0)>0)check(e.payments.filter(p=>p.kind==='rebuy').length<t.settings.rebuyMax,`This player has reached the maximum of ${t.settings.rebuyMax} rebuys.`);
+    if(k==='rebuy'&&(t.settings.rebuyMax||0)>0)check(e.payments.filter(p=>p.kind==='rebuy').length<t.settings.rebuyMax,`Max rebuys purchased for this player.`);
     const feeType=t.settings[k+'FeeType']||'toke',fee=t.settings[k+'FeeAmount']||0;e.payments.push({id:id(),kind:k,total:t.settings[k+'Amount'],dealerToke:feeType==='toke'?fee:0,adminFee:feeType==='admin'?fee:0,feeType,chips:t.settings[k+'Chips'],paid:true,at:now});return s;
   }
   if(a.type==='eliminate'){
