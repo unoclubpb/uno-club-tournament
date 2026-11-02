@@ -2057,3 +2057,18 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
   outline:none!important;
   box-shadow:none!important;
 }
+/* reorg.152p: enforce a single 1px edge around rebuy boxes in every interaction state. */
+#structure-form .rebuy-tracking-settings fieldset,
+#structure-form .rebuy-tracking-settings fieldset:focus,
+#structure-form .rebuy-tracking-settings fieldset:focus-within,
+#structure-form .rebuy-tracking-settings fieldset:focus-visible,
+#structure-form .rebuy-tracking-settings .rebuy-max-setting input,
+#structure-form .rebuy-tracking-settings .rebuy-max-setting input:focus,
+#structure-form .rebuy-tracking-settings .rebuy-max-setting input:focus-visible{
+  border-width:1px!important;
+  border-style:solid!important;
+  border-color:#d8ded6!important;
+  outline:none!important;
+  outline-offset:0!important;
+  box-shadow:none!important;
+}
