@@ -1928,3 +1928,5 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 
 /* Keep the Tournament Fees heading fixed while raising its contents. */
 .tournament-fees-section>.tournament-fee-options{margin-top:67px}
+.tournament-fee-choice:nth-child(1)>.tournament-fee-choice-main,.tournament-fee-choice:nth-child(1)>.muted{transform:translateY(2px)}
+.tournament-fee-choice:nth-child(2)>.tournament-fee-choice-main,.tournament-fee-choice:nth-child(2)>.muted{transform:translateY(-4px)}
