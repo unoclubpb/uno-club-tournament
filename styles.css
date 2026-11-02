@@ -1910,3 +1910,7 @@ body:has(.nav){overscroll-behavior:none}
 
 /* Keep text and values in boxed form controls visually consistent across the app. */
 input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="color"]):not([type="file"]),select,textarea{font-family:inherit!important;font-size:15px!important;font-weight:400!important}
+
+/* Match tournament stat labels to navigation and keep all displayed values uniform. */
+.metrics>div>span{font-family:inherit!important;font-size:13px!important;font-weight:600!important}
+.metrics>div>strong,.metrics>div>strong small{font:700 20px/1.25 "DM Sans",system-ui,sans-serif!important;letter-spacing:normal!important;color:inherit!important}
