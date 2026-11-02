@@ -1944,3 +1944,18 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 .rebuy-tracking-settings fieldset{border:1px solid #fff}.rebuy-mode-title,.rebuy-tracking-settings .rebuy-max-setting{font-size:12px;font-weight:600}.rebuy-tracking-settings .rebuy-max-setting input{border:1px solid #fff}.rebuy-tracking-settings fieldset input[type=radio]{flex:0 0 14px;width:14px;height:14px;min-width:14px;min-height:14px;padding:0}
 
 .rebuy-tracking-settings fieldset,.rebuy-tracking-settings .rebuy-max-setting input{border-width:1px!important;border-style:solid!important;border-color:#d8ded6!important;box-shadow:none}.rebuy-mode-title{color:#fff!important}
+/* reorg.152h: render rebuy controls with one matching, explicit outline. */
+.rebuy-tracking-settings fieldset,
+.rebuy-tracking-settings .rebuy-max-setting input{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  outline:0!important;
+  box-shadow:none!important;
+  border:1px solid #d8ded6!important;
+}
+.rebuy-tracking-settings fieldset{
+  background:transparent!important;
+}
+.rebuy-tracking-settings .rebuy-max-setting input{
+  background:transparent!important;
+}
