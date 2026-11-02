@@ -46,8 +46,10 @@ export function purchaseOpen(t,c,kind){
   return t.levels[c.index].kind==='play'||t.levels[c.index-1]?.kind==='play';
 }
 export const rebuyOpen=(t,c)=>purchaseOpen(t,c,'rebuy');
-export const canRecordRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&rebuyOpen(t,c);
-export const canEditRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready';
+export const canRecordRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&rebuyPhase(t,c)==='final-break';
+export const canEditRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&(canRecordRebuys(t,c)||!rebuyOpen(t,c));
+export const canRecordRebuyEntries=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&rebuyOpen(t,c);
+export const canEditRebuyEntries=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready';
 export const registrationOpen=(t,c)=>t.status!=='completed'&&!t.archivedAt&&c.status!=='ended'&&(c.status==='ready'||!t.settings.rebuyEnabled||rebuyOpen(t,c));
 function requireRegistration(t,action,now){
   check(t&&t.status!=='completed'&&!t.archivedAt,'This tournament is finished.');
@@ -400,8 +402,9 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
   }
   if(a.type==='rebuy-count'){
     check((t.settings.rebuyTracking||'total')==='total','Rebuys are being tracked by player for this tournament.');
-    check(canEditRebuys(t,c),'Start the tournament before recording rebuys.');
-    check(canRecordRebuys(t,c)||a.overrideCutoff===true,'Rebuys are closed. Override is required.');
+    const playerCounts=Array.isArray(a.counts),canEdit=playerCounts?canEditRebuyEntries(t,c):canEditRebuys(t,c),canRecord=playerCounts?canRecordRebuyEntries(t,c):canRecordRebuys(t,c);
+    check(canEdit,'Start the tournament before recording rebuys.');
+    check(canRecord||a.overrideCutoff===true,'Rebuys are closed. Override is required.');
     let count=a.count;
     if(Array.isArray(a.counts)){
       check(a.counts.length===t.entries.length,'Rebuy counts must include every tournament player.');
@@ -413,7 +416,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
       t.rebuyCountsByEntry=byEntry;t.rebuyUnassignedCount=unassigned;
     }else{check(Number.isSafeInteger(count)&&count>=0,'Enter a whole number of rebuys, zero or greater.');t.rebuyCountsByEntry={};t.rebuyUnassignedCount=count;}
     check(Number.isSafeInteger(count)&&Number.isSafeInteger(count*t.settings.rebuyAmount)&&Number.isSafeInteger(count*t.settings.rebuyChips),'Rebuy count is too large.');
-    if(!canRecordRebuys(t,c))recordCutoffOverride(t,{...a,count},now,'rebuy-count');
+    if(!canRecord)recordCutoffOverride(t,{...a,count},now,'rebuy-count');
     t.rebuyCount=count;return s;
   }
   if(a.type==='seating-settings'){
