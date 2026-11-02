@@ -1008,7 +1008,7 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 #structure-form [data-setup-panel="play"]>.form-section:nth-child(2)>.form-grid{position:relative;top:-10px}
 
 /* Center Order above the level-row arrow controls. */
-#structure-form .level-table thead th:last-child{text-align:left;padding-left:52px;white-space:nowrap}
+#structure-form .level-table thead th:last-child{text-align:left;padding-left:52px;text-indent:-20px;white-space:nowrap}
 
 /* Shift only the Chip Up column heading 5px left. */
 #structure-form .level-table thead th:nth-child(7){position:static;transform:none}
@@ -1019,7 +1019,7 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 
 /* Keep the table's blue header continuous; position only label text via inset. */
 #structure-form .level-table thead th:nth-child(7){text-indent:0}
-#structure-form .level-table thead th:nth-child(8){text-indent:-45px;padding-left:52px;white-space:nowrap}
+#structure-form .level-table thead th:nth-child(8){text-indent:-55px;padding-left:52px;white-space:nowrap}
 
 /* Full-clock designer: same header, timer, blinds and sidebar composition as TV. */
 #saved-layout-form .designer-tv{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;max-width:none!important;margin:0!important;padding:3%!important;box-sizing:border-box!important;border:0!important;border-radius:0!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:stretch!important;gap:0!important;background:var(--clock-background,#101d23);color:#f5f5ed;overflow:hidden;font-size:clamp(7px,1.05vw,15px)}
