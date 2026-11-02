@@ -14,7 +14,7 @@ function updateExistingEntryTerms(t,next){
 function settingsDraftSnapshot(form,ed){return JSON.stringify({fields:[...new FormData(form).entries()],levels:ed.value.levels});}
 function configureTournamentSettingsUI(){
  const ed=editor,editing=view==='setup'&&ed?.event,form=document.querySelector('#structure-form');
- document.body.classList.toggle('tournament-settings-page',!!editing);
+ document.body.classList.toggle('tournament-settings-page',view==='setup'&&!!ed);
  if(state.tournaments.some(t=>!t.archivedAt))document.querySelectorAll('[data-edit-template],[data-delete-template],[data-copy-template],[data-action="new-structure"]').forEach(el=>{el.disabled=true;el.title='Saved structures are locked until the current tournament is archived. Edit This Tournament to change its copy.';});
  if(view==='signup')document.querySelectorAll('[data-go="manage"]').forEach(el=>{el.classList.remove('secondary');el.classList.add('gold');});
 
@@ -62,7 +62,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.148k · Reorganization';
+const APP_VERSION='0.4.0-reorg.148l · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
