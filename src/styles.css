@@ -718,7 +718,7 @@ body:has(.nav){overscroll-behavior:none}
 /* Saved Structures remain visible behind a fixed, noninteractive play lock. */
 .structures-lock-container{position:relative;overflow:hidden!important}
 #saved-structures.structures-locked{overflow:hidden!important;touch-action:none;pointer-events:none;user-select:none}
-.structures-lock-notice{position:absolute;inset:4px 14px auto 4px;z-index:10;min-height:120px;padding:24px;display:flex;align-items:center;justify-content:center;background:#a32727;color:#fff;border:2px solid #e05a5a;border-radius:10px;font-size:clamp(22px,3vw,34px);font-weight:800;text-align:center}
+.structures-lock-notice{position:absolute;inset:54px 14px auto 4px;z-index:10;min-height:120px;padding:24px;display:flex;align-items:center;justify-content:center;background:#a32727;color:#fff;border:2px solid #e05a5a;border-radius:10px;font-size:clamp(22px,3vw,34px);font-weight:800;text-align:center}
 .protected-level{opacity:.65}
 .tournament-settings-page .form-section:has(.level-table){grid-column:1/-1}
 
