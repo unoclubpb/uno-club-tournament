@@ -2081,3 +2081,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
   outline:none!important;
   box-shadow:none!important;
 }
+/* reorg.152r: return Chips per Rebuy to a 1px border. */
+#structure-form input[name="rebuyChips"]{
+  border-width:1px!important;
+}
