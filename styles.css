@@ -1008,7 +1008,7 @@ body:not(.fixed-workspace) .management-layout>.management-sidebar{top:var(--mana
 #structure-form [data-setup-panel="play"]>.form-section:nth-child(2)>.form-grid{position:relative;top:-10px}
 
 /* Center Order above the level-row arrow controls. */
-#structure-form .level-table thead th:last-child{text-align:left;padding-left:52px;text-indent:-20px;white-space:nowrap}
+#structure-form .level-table thead th:last-child{text-align:left;padding-left:52px;text-indent:-30px;white-space:nowrap}
 
 /* Shift only the Chip Up column heading 5px left. */
 #structure-form .level-table thead th:nth-child(7){position:static;transform:none}
