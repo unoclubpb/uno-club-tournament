@@ -9,7 +9,7 @@ test('main source loads Player Database and Registration only when requested',as
  assert.match(app,/registerScreen\('players',\(\)=>import\('\.\/player-database-screen\.mjs'\)\)/);
  assert.match(app,/registerScreen\('signup',\(\)=>import\('\.\/tournament-registration-screen\.mjs'\)\)/);
  assert.match(app,/ensureScreenModule\(view\)/);
- assert.match(app,/const APP_VERSION='0\.4\.0-reorg\.\d+[a-z]* · Reorganization'/);
+ assert.match(app,/const APP_VERSION='0\.4\.0-reorg\.\d+[a-z]* · Reorganization(?: · Upload Test)?'/);
 });
 test('production Player Database module preserves player list buttons and profile tabs',()=>{
  const C={players:[{id:'p1',name:'Amy',phone:'',archived:false}]};
