@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initialState,execute,clone} from '../src/domain.mjs';
-import * as published from '../chunks/chunk-A6XBXYJE.js';
+import * as published from '../chunks/chunk-CDIEYG7T.js';
 import {leaderboardRows} from '../src/points.mjs';
-for(const [label,initial,run] of [['source',initialState,execute],['published',published.C,published.W]]){
+for(const [label,initial,run] of [['source',initialState,execute],['published',published.C,published.X]]){
  const setup=()=>{let s=initial();s=run(s,{type:'tournament-create',id:'t',name:'Delete test',templateId:s.templates[0].id});for(let i=1;i<=3;i++){s=run(s,{type:'player-save',id:'p'+i,name:'Player '+i});s=run(s,{type:'register',id:'e'+i,tournamentId:'t',playerId:'p'+i});}s.tournaments[0].entries.forEach((e,i)=>{e.table=1;e.seat=i+1;});return s;};
  for(const stage of ['ready','running','paused','completed'])test(`${label}: delete ${stage} tournament voids its results and points, retaining archives and players`,()=>{
   let s=setup();if(stage!=='ready')s=run(s,{type:'clock',tournamentId:'t',command:'start'});

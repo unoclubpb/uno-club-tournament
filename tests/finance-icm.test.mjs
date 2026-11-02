@@ -8,10 +8,10 @@ const act=(s,a)=>execute(s,{tournamentId:'t',...a},now);
 const event=s=>s.tournaments[0];
 function checkLedger(f){assert.equal(f.tournamentEntries+f.dealerTokes+f.rebuyTotal+f.addonTotal-f.houseFee-f.dealerTokesPaidOut+f.houseContribution,f.pool);}
 function guaranteePool(pool){let s=fixture();event(s).settings.housePercent=0;event(s).settings.houseContribution=pool-40000;s=act(s,{type:'payout-settings',settings:{...event(s).settings,payoutMode:'guaranteed',payouts:[65,35]}});return s;}
-test('summary matches the requested $420 example and only net entries attract the configured fee',()=>{
- const s=fixture(),t=event(s);t.rebuyCount=4;let f=financials(t);assert.equal(f.tournamentEntries,40000);assert.equal(f.dealerTokes,10000);assert.equal(f.rebuyTotal,10000);assert.equal(f.houseFee,8000);assert.equal(f.dealerTokesPaidOut,10000);assert.equal(f.houseContribution,0);assert.equal(f.pool,42000);checkLedger(f);
- t.settings.housePercent=12.5;f=financials(t);assert.equal(f.houseFee,5000);assert.equal(f.pool,45000);checkLedger(f);t.rebuyCount=8;assert.equal(financials(t).houseFee,5000);
- t.entries[0].payments.push({kind:'addon',total:9000,dealerToke:0,chips:20000});t.settings.houseContribution=10000;f=financials(t);assert.equal(f.addonTotal,9000);assert.equal(f.houseFee,5000);checkLedger(f);
+test('summary applies the configured fee to entries, rebuys and add-ons',()=>{
+ const s=fixture(),t=event(s);t.rebuyCount=4;let f=financials(t);assert.equal(f.tournamentEntries,40000);assert.equal(f.dealerTokes,10000);assert.equal(f.rebuyTotal,10000);assert.equal(f.houseFee,10000);assert.equal(f.dealerTokesPaidOut,10000);assert.equal(f.houseContribution,0);assert.equal(f.pool,40000);checkLedger(f);
+ t.settings.housePercent=12.5;f=financials(t);assert.equal(f.houseFee,6300);assert.equal(f.pool,43700);checkLedger(f);t.rebuyCount=8;assert.equal(financials(t).houseFee,7500);
+ t.entries[0].payments.push({kind:'addon',total:9000,dealerToke:0,chips:20000});t.settings.houseContribution=10000;f=financials(t);assert.equal(f.addonTotal,9000);assert.equal(f.houseFee,8600);assert.equal(f.pool,70400);checkLedger(f);
 });
 test('the saved guarantee is inactive at nine and activates at ten, including eliminated entrants',()=>{
  let s=fixture(9),settings={...event(s).settings,payoutMode:'guaranteed',payouts:[65,35]};assert.equal(guaranteeEligible(event(s)),false);s=act(s,{type:'payout-settings',settings});assert.equal(financials(event(s)).guaranteeActive,false);assert.equal(event(s).settings.payoutMode,'guaranteed');assert.deepEqual(prizes(event(s)),[18700,10100]);
@@ -22,8 +22,8 @@ test('all guarantee examples and the $1539 threshold recalculate with lower-plac
 });
 test('guarantee shortfalls are explicit, included in house contribution and frozen on completion',()=>{
  let s=fixture();s=act(s,{type:'payout-settings',settings:{...event(s).settings,payoutMode:'guaranteed',payouts:[65,35]}});let f=financials(event(s));assert.equal(f.basePool,32000);assert.equal(f.guaranteeContribution,68000);assert.equal(f.houseContribution,68000);assert.equal(f.pool,100000);assert.deepEqual(prizes(event(s)),[100000,0]);checkLedger(f);
- event(s).rebuyCount=4;f=financials(event(s));assert.equal(f.guaranteeContribution,58000);event(s).settings.houseContribution=20000;f=financials(event(s));assert.equal(f.guaranteeContribution,38000);assert.equal(f.houseContribution,58000);checkLedger(f);
- for(let i=1;i<10;i++)s=act(s,{type:'eliminate',entryId:'e'+i});s=act(s,{type:'finish'});const frozen=clone(event(s).settlement),payouts=prizes(event(s));event(s).settings.houseContribution=0;event(s).settings.housePercent=0;assert.deepEqual(financials(event(s)).pool,frozen.pool);assert.deepEqual(prizes(event(s)),payouts);assert.equal(event(s).settlement.guaranteeContribution,38000);
+ event(s).rebuyCount=4;f=financials(event(s));assert.equal(f.guaranteeContribution,60000);event(s).settings.houseContribution=20000;f=financials(event(s));assert.equal(f.guaranteeContribution,40000);assert.equal(f.houseContribution,60000);checkLedger(f);
+ for(let i=1;i<10;i++)s=act(s,{type:'eliminate',entryId:'e'+i});s=act(s,{type:'finish'});const frozen=clone(event(s).settlement),payouts=prizes(event(s));event(s).settings.houseContribution=0;event(s).settings.housePercent=0;assert.deepEqual(financials(event(s)).pool,frozen.pool);assert.deepEqual(prizes(event(s)),payouts);assert.equal(event(s).settlement.guaranteeContribution,40000);
 });
 test('percentage odd dollars go one at a time to lower positions and all ordinary amounts stay whole dollars',()=>{
  const t=event(fixture());t.settings.housePercent=0;t.settings.houseContribution=100;t.settings.payouts=[33.33,33.33,33.34];assert.deepEqual(prizes(t),[13300,13400,13400]);assert.equal(prizes(t).reduce((a,b)=>a+b,0),40100);

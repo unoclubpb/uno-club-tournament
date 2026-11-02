@@ -1,14 +1,13 @@
 function existingEntrySettingsChanged(t,a){
  if(!t?.entries?.length)return false;
- const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
- const levels=rows=>rows.map(l=>[l.kind,l.minutes,l.sb,l.bb,l.ante,l.game||'',l.layoutId||'',!!l.chipUp]);
- return a.name!==undefined&&String(a.name).trim()!==t.name||a.settings&&canonical(a.settings)!==canonical(t.settings)||a.levels&&canonical(levels(a.levels))!==canonical(levels(t.levels))||a.clockAppearance&&canonical(a.clockAppearance)!==canonical(t.clockAppearance);
+ const paymentFields=['buyIn','dealerToke','entryFeeType','startingStack','rebuyAmount','rebuyFeeAmount','rebuyFeeType','rebuyChips','addonAmount','addonFeeAmount','addonFeeType','addonChips','houseFeeMode','housePercent','houseFlatFee'];
+ return !!a.settings&&paymentFields.some(key=>a.settings[key]!==t.settings[key]);
 }
 function updateExistingEntryTerms(t,next){
  const old=t.settings;
  for(const entry of t.entries)for(const payment of entry.payments||[]){
-  if(payment.kind==='entry'){if(next.buyIn!==old.buyIn)payment.total=next.buyIn;payment.dealerToke=(next.entryFeeType||'toke')==='toke'?next.dealerToke:0;payment.adminFee=(next.entryFeeType||'toke')==='admin'?next.dealerToke:0;payment.feeType=next.entryFeeType||'toke';if(next.startingStack!==old.startingStack)payment.chips=next.startingStack;}
-  else if(payment.kind==='addon'){if(next.addonAmount!==old.addonAmount)payment.total=next.addonAmount;if(next.addonChips!==old.addonChips)payment.chips=next.addonChips;payment.dealerToke=(next.addonFeeType||'toke')==='toke'?next.addonFeeAmount:0;payment.adminFee=(next.addonFeeType||'toke')==='admin'?next.addonFeeAmount:0;payment.feeType=next.addonFeeType||'toke';}
+  if(payment.kind==='entry'){if(next.buyIn!==old.buyIn)payment.total=next.buyIn;if(next.startingStack!==old.startingStack)payment.chips=next.startingStack;if(next.dealerToke!==old.dealerToke||next.entryFeeType!==old.entryFeeType){payment.dealerToke=(next.entryFeeType||'toke')==='toke'?next.dealerToke:0;payment.adminFee=(next.entryFeeType||'toke')==='admin'?next.dealerToke:0;payment.feeType=next.entryFeeType||'toke';}}
+  else if(payment.kind==='addon'){if(next.addonAmount!==old.addonAmount)payment.total=next.addonAmount;if(next.addonChips!==old.addonChips)payment.chips=next.addonChips;if(next.addonFeeAmount!==old.addonFeeAmount||next.addonFeeType!==old.addonFeeType){payment.dealerToke=(next.addonFeeType||'toke')==='toke'?next.addonFeeAmount:0;payment.adminFee=(next.addonFeeType||'toke')==='admin'?next.addonFeeAmount:0;payment.feeType=next.addonFeeType||'toke';}}
  }
 }
 function assertFutureLevelEdits(t,levels,now){if(!tournamentStarted(t))return;const current=clockAt(t,now).index;check(levels.length>current,'Keep the current level and all completed levels.');const key=l=>JSON.stringify([l.kind,l.minutes,l.sb,l.bb,l.ante,l.game||'',l.layoutId||'',!!l.chipUp]);for(let i=0;i<=current;i++)check(key(t.levels[i])===key(levels[i]),'The clock advanced or a protected level changed. Current and completed levels cannot be changed.');}
@@ -400,13 +399,14 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
   }
   if(a.type==='seating-settings'){
     check(Number.isSafeInteger(a.seatsPerTable)&&a.seatsPerTable>=2&&a.seatsPerTable<=10,'Use 2–10 seats per table.');
-    const capacity=a.seatsPerTable;const remaining=t.entries.filter(e=>!e.eliminatedAt&&e.table!=null),changes=[];
-for(const table of new Set(remaining.map(e=>e.table))){const rows=remaining.filter(e=>e.table===table).sort((a,b)=>a.seat-b.seat);if(!rows.some(e=>e.seat>capacity))continue;
-if(rows.length<=capacity)rows.forEach((entry,index)=>{if(entry.seat!==index+1)changes.push({entry,table,seat:index+1});});
-else rows.filter(e=>e.seat>capacity).forEach(entry=>changes.push({entry,table:null,seat:null}));}
-for(const change of changes)requireUnlocked(change.entry);
-for(const change of changes){change.entry.table=change.table;change.entry.seat=change.seat;}
-t.settings.seatsPerTable=capacity;
+    const capacity=a.seatsPerTable,remaining=t.entries.filter(e=>!e.eliminatedAt&&e.table!=null),changes=[];
+    for(const table of new Set(remaining.map(e=>e.table))){const rows=remaining.filter(e=>e.table===table).sort((x,y)=>x.seat-y.seat);if(!rows.some(e=>e.seat>capacity))continue;
+      if(rows.length<=capacity)rows.forEach((entry,index)=>{if(entry.seat!==index+1)changes.push({entry,table,seat:index+1});});
+      else rows.filter(e=>e.seat>capacity).forEach(entry=>changes.push({entry,table:null,seat:null}));
+    }
+    changes.forEach(change=>requireUnlocked(change.entry));
+    changes.forEach(change=>{change.entry.table=change.table;change.entry.seat=change.seat;});
+    t.settings.seatsPerTable=capacity;
     return s;
   }
   if(a.type==='seat-move'){applySeats(t,planSeatMove(t,a));return s;}
