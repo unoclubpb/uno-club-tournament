@@ -62,7 +62,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.149 · Reorganization';
+const APP_VERSION='0.4.0-reorg.150 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -983,7 +983,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
     case 'duplicate-default-layout':openLayout({name:'Default Layout Copy',appearance:clockAppearance(state.clockAppearanceDefaults)},false);break;
     case 'save-layout':$('#saved-layout-form')?.requestSubmit();break;
     case 'cancel-layout':{const form=$('#saved-layout-form');if(form&&layoutInitialSnapshot!==null&&layoutFormSnapshot(form)!==layoutInitialSnapshot){if(!await confirmApp('You have unsaved layout changes. Go back without saving?','Discard Changes','Discard Changes'))break;}layoutDraft=null;layoutInitialSnapshot=null;setupLibraryTab='layouts';render();break;}
-    case 'new-structure':{const value=sampleTemplate();value.name='New tournament structure';value.clockAppearance=clockAppearance(state.clockAppearanceDefaults);editor={value,isNew:true,event:false,version};view='setup';render();break;}
+    case 'new-structure':{const value=sampleTemplate();value.name='New tournament structure';for(const key of ['buyIn','dealerToke','startingStack','rebuyAmount','rebuyFeeAmount','rebuyChips','rebuyLastRound','housePercent','houseFlatFee','addonAmount','addonFeeAmount','addonChips','addonLastRound'])value.settings[key]='';value.clockAppearance=clockAppearance(state.clockAppearanceDefaults);editor={value,isNew:true,event:false,version};view='setup';render();break;}
     case 'event-settings':{const t=current();editor={event:true,version,value:{id:t.id,name:t.name,settings:clone(t.settings),levels:clone(t.levels),clockAppearance:clockAppearance(t.clockAppearance)}};view='setup';render();break;}
     case 'close-editor':if(editor?.event){const form=$('#structure-form');if(form&&editor.initialFormSnapshot!==settingsDraftSnapshot(form,editor)&&!await confirmApp('Changes have been made. Do you want to return to Tournament Management without saving changes?','Unsaved Tournament Settings','Return Without Saving'))break;editor=null;go('manage');}else{editor=null;render();}break;
     case 'add-level':case 'add-break':captureEditor();editor.value.levels.push({kind:el.dataset.action==='add-break'?'break':'play',minutes:el.dataset.action==='add-break'?10:15,sb:0,bb:0,ante:0,game:el.dataset.action==='add-break'?'':(editor.value.levels.slice().reverse().find(l=>l.kind==='play')?.game||''),chipUp:false});render();break;

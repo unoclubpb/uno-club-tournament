@@ -25,7 +25,7 @@ export function sampleTemplate() {
     levels.push({kind:'play',minutes:15,sb,bb,ante:i>=6?bb:0,game:"No Limit Hold’em",chipUp:false});
     if([7,15,23].includes(i)) levels.push({kind:'break',minutes:({7:5,15:10,23:15})[i],sb:0,bb:0,ante:0,game:'',chipUp:[7,15].includes(i)});
   });
-  return {id:id(),name:'Uno Club — 15-minute levels',levels,settings:{financeVersion:2,startingStack:5000,buyIn:5000,dealerToke:1000,entryFeeType:'toke',housePercent:20,rebuyEnabled:true,rebuyAmount:2500,rebuyFeeAmount:0,rebuyFeeType:'toke',rebuyChips:5000,rebuyLastRound:8,rebuyMax:0,addonEnabled:false,addonAmount:9000,addonFeeAmount:0,addonFeeType:'toke',addonChips:20000,addonLastRound:4,anteMode:'off',pauseBreaks:true,seatsPerTable:10,houseContribution:0,guaranteeAmount:100000,guaranteePlayers:10,payoutMode:'percent',payouts:[65,35]}};
+  return {id:id(),name:'Uno Club — 15-minute levels',levels,settings:{financeVersion:2,startingStack:5000,buyIn:5000,dealerToke:1000,entryFeeType:'toke',housePercent:20,houseFlatFee:0,rebuyEnabled:true,rebuyAmount:2500,rebuyFeeAmount:0,rebuyFeeType:'toke',rebuyChips:5000,rebuyLastRound:8,rebuyMax:0,addonEnabled:false,addonAmount:9000,addonFeeAmount:0,addonFeeType:'toke',addonChips:20000,addonLastRound:4,anteMode:'off',pauseBreaks:true,seatsPerTable:10,houseContribution:0,guaranteeAmount:100000,guaranteePlayers:10,payoutMode:'percent',payouts:[65,35]}};
 }
 export const playerNumberLabel=p=>String(p.playerNumber).padStart(3,'0');
 function assignPlayerNumbers(players){
