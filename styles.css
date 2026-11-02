@@ -2026,3 +2026,17 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
   outline-offset:1px!important;
   box-shadow:none!important;
 }
+/* reorg.152m: apply the requested single-pixel idle border to both rebuy boxes. */
+.rebuy-tracking-settings fieldset,
+.rebuy-tracking-settings .rebuy-max-setting input{
+  border:1px solid #d8ded6!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+.rebuy-tracking-settings fieldset:focus-within,
+.rebuy-tracking-settings .rebuy-max-setting input:focus{
+  border:1px solid #d8ded6!important;
+  outline:2px solid #c99944!important;
+  outline-offset:1px!important;
+  box-shadow:none!important;
+}
