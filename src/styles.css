@@ -824,4 +824,4 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 .buy-in-section .transaction-settings>label:first-child,.buy-in-section .transaction-settings>.transaction-fee-control,.buy-in-section .transaction-settings>label:nth-child(3),.buy-in-section>.split-note{transform:translateY(40px)}
 
 /* Move both tournament fee choices and their descriptions down together. */
-.tournament-fees-section>.tournament-fee-options{margin-top:40px}
+.tournament-fees-section>.tournament-fee-options{margin-top:80px}
