@@ -217,12 +217,13 @@ function requireUnlocked(entry){check(!entry.pendingElimination,'Pending elimina
 export function canCombineTables(t){const remaining=t.entries.filter(e=>!e.eliminatedAt),count=tablesRequired(t);return count>0&&remaining.some(e=>e.table)&&(remaining.some(e=>!e.table||e.table>count)||Array.from({length:count},(_,i)=>remaining.filter(e=>e.table===i+1).length!==Math.floor(remaining.length/count)+(i<remaining.length%count?1:0)).some(Boolean));}
 export function planTableSeating(t,{mode='remaining',order=[]}={}){
   check(t&&t.status!=='completed','Completed tournament is locked.');
-  check(['remaining','combine','redraw','legacy-redraw'].includes(mode),'Choose a valid seating action.');
+  check(['remaining','combine','redraw','legacy-redraw','shuffle'].includes(mode),'Choose a valid seating action.');
   const active=t.entries.filter(e=>!e.eliminatedAt),capacity=t.settings.seatsPerTable;
   const count=mode==='remaining'?tablesInUse(t):tablesRequired(t);
   if(mode==='combine'||mode==='redraw')check(canCombineTables(t),'No tables need to be combined.');
+  if(mode==='shuffle')check(!canCombineTables(t),'Balance or combine tables before shuffling seats.');
   if(mode==='redraw')check(count===1,'Redraw is only available when forming the final table.');
-  const redraw=mode==='redraw'||mode==='legacy-redraw';
+  const redraw=mode==='redraw'||mode==='legacy-redraw'||mode==='shuffle';
   const moving=active.filter(e=>redraw?!e.seatLocked:!e.table||(mode==='combine'&&e.table>count));
   const targets=Array.from({length:count},(_,i)=>Math.floor(active.length/count)+(i<active.length%count?1:0));
   // Refuse to close a locked player's table before planning any changes.
@@ -243,10 +244,13 @@ export function planTableSeating(t,{mode='remaining',order=[]}={}){
   for(const entry of moving){
     requireUnlocked(entry);
     let table=0;
-    for(let i=0;i<count;i++)if(loads[i]<(mode==='combine'?targets[i]:capacity)&&(!table||loads[i]<loads[table-1]))table=i+1;
-    check(table,'No open seat is available.');
-    let seat=1;while(occupied.has(`${table}/${seat}`))seat++;
-    check(seat<=capacity,'No open seat is available.');
+    const least=Math.min(...loads.map((load,i)=>load<(mode==='combine'||mode==='shuffle'?targets[i]:capacity)?load:Infinity));
+    const tableChoices=loads.map((load,i)=>({load,index:i})).filter(v=>v.load===least).map(v=>v.index+1);
+    check(tableChoices.length,'No open seat is available.');
+    table=tableChoices[Math.floor(Math.random()*tableChoices.length)];
+    const seatChoices=Array.from({length:capacity},(_,i)=>i+1).filter(seat=>!occupied.has(`${table}/${seat}`));
+    check(seatChoices.length,'No open seat is available.');
+    const seat=seatChoices[Math.floor(Math.random()*seatChoices.length)];
     updates.push({entryId:entry.id,table,seat});occupied.add(`${table}/${seat}`);loads[table-1]++;
   }
   return updates;
@@ -413,6 +417,20 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
     changes.forEach(change=>requireUnlocked(change.entry));
     changes.forEach(change=>{change.entry.table=change.table;change.entry.seat=change.seat;});
     t.settings.seatsPerTable=capacity;
+    return s;
+  }
+  if(a.type==='unseat-all'){
+    check(t.status!=='completed','Completed tournament is locked.');
+    const includeLocked=a.includeLocked===true;
+    const locked=t.entries.filter(e=>!e.eliminatedAt&&e.seatLocked);
+    check(includeLocked||locked.length===0||a.confirmed===true,'Choose whether to keep locked players seated or unseat everyone.');
+    for(const entry of t.entries.filter(e=>!e.eliminatedAt&&(!e.seatLocked||includeLocked))){entry.table=null;entry.seat=null;if(includeLocked)entry.seatLocked=false;}
+    return s;
+  }
+  if(a.type==='seating-restore'){
+    check(t.status!=='completed','Completed tournament is locked.');
+    check(Array.isArray(a.positions),'Choose a seating snapshot to restore.');
+    for(const position of a.positions){const entry=t.entries.find(e=>e.id===position.entryId);check(entry,'Player entry not found.');entry.table=position.table;entry.seat=position.seat;entry.seatLocked=!!position.seatLocked;}
     return s;
   }
   if(a.type==='seat-move'){applySeats(t,planSeatMove(t,a));return s;}
