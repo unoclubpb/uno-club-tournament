@@ -2044,3 +2044,16 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 #structure-form input[name="rebuyChips"]{
   border-width:2px!important;
 }
+/* reorg.152o: keep the rebuy controls to one visible pixel at rest and on focus. */
+.rebuy-tracking-settings fieldset,
+.rebuy-tracking-settings .rebuy-max-setting input{
+  border:1px solid #d8ded6!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+.rebuy-tracking-settings fieldset:focus-within,
+.rebuy-tracking-settings .rebuy-max-setting input:focus{
+  border:1px solid #c99944!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
