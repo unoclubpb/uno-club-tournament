@@ -2098,3 +2098,5 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 #structure-form .rebuy-tracking-settings fieldset input[type="radio"]{
   accent-color:auto!important;
 }
+/* reorg.152v: separate rebuy count from its confirmation action. */
+#payment-form .rebuy-recorded-count{margin:18px 0 30px!important}
