@@ -436,7 +436,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
   if(a.type==='seat-move'){applySeats(t,planSeatMove(t,a));return s;}
   if(a.type==='seat-remaining'||a.type==='combine-tables'||a.type==='auto-seat'){
     const mode=a.type==='seat-remaining'?'remaining':a.type==='auto-seat'?'legacy-redraw':a.mode;
-    check(a.type!=='combine-tables'||['combine','redraw'].includes(mode),'Choose how to combine tables.');
+    check(a.type!=='combine-tables'||['combine','redraw','shuffle'].includes(mode),'Choose how to combine, balance, or shuffle seats.');
     applySeats(t,planTableSeating(t,{mode,order:a.order}));return s;
   }
   const e=t.entries.find(e=>e.id===a.entryId);
