@@ -1959,3 +1959,17 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 .rebuy-tracking-settings .rebuy-max-setting input{
   background:transparent!important;
 }
+/* reorg.152i: suppress the gold focus ring that made the rebuy outlines look thicker. */
+.rebuy-tracking-settings fieldset:focus-within,
+.rebuy-tracking-settings .rebuy-max-setting input:focus,
+.rebuy-tracking-settings fieldset input:focus{
+  outline:none!important;
+  outline-offset:0!important;
+  box-shadow:none!important;
+}
+.rebuy-tracking-settings fieldset:focus-within,
+.rebuy-tracking-settings fieldset,
+.rebuy-tracking-settings .rebuy-max-setting input,
+.rebuy-tracking-settings .rebuy-max-setting input:focus{
+  border:1px solid #d8ded6!important;
+}
