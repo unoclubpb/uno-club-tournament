@@ -2113,3 +2113,14 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
  overflow-y:auto!important;overscroll-behavior-y:contain!important;z-index:30!important;
 }
 .management-layout>.management-panel{min-height:100%!important}
+
+/* Total-mode rebuy entry list */
+#rebuy-count-form .rebuy-entry-list{display:grid;gap:8px;max-height:min(48vh,420px);overflow:auto;margin:8px 0 16px;padding-right:4px}
+#rebuy-count-form .rebuy-entry-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:8px 10px;border:1px solid var(--line,#d8ded6);border-radius:8px}
+#rebuy-count-form .rebuy-player-stepper{display:flex;align-items:center;gap:6px}
+#rebuy-count-form .rebuy-player-stepper>.button{flex:0 0 38px;min-height:38px;padding:2px;font-size:20px}
+#rebuy-count-form .rebuy-player-stepper>input{width:76px;min-width:56px;min-height:38px;text-align:center;font-size:18px;font-variant-numeric:tabular-nums;appearance:textfield;-moz-appearance:textfield}
+#rebuy-count-form .rebuy-player-stepper>input::-webkit-inner-spin-button,#rebuy-count-form .rebuy-player-stepper>input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+#rebuy-count-form .rebuy-unassigned-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0}
+#rebuy-count-form .rebuy-unassigned-row input{width:104px;text-align:center}
+@media(max-width:560px){#rebuy-count-form .rebuy-entry-row{grid-template-columns:minmax(0,1fr) auto;gap:6px;padding:7px}#rebuy-count-form .rebuy-player-stepper{gap:4px}#rebuy-count-form .rebuy-player-stepper>.button{flex-basis:34px;min-height:34px}#rebuy-count-form .rebuy-player-stepper>input{width:58px;min-width:48px}}
