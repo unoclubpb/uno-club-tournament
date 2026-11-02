@@ -800,4 +800,4 @@ body:has(.nav){overscroll-behavior:none}
 /* Keep the tournament date input the same rendered width as the name input. */
 #new-tournament-form input[name="name"],#new-tournament-form input[name="date"]{display:block!important;width:100%!important;inline-size:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;flex:1 1 auto!important}
 /* WebKit date controls render wider than text inputs on iPad; match the visible name field width. */
-#new-tournament-form input[name="date"]{width:95%!important;inline-size:95%!important;max-width:95%!important}
+#new-tournament-form input[name="date"]{width:calc(95% - 4px)!important;inline-size:calc(95% - 4px)!important;max-width:calc(95% - 4px)!important}
