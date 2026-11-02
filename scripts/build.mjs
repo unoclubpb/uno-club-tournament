@@ -1,5 +1,6 @@
 import { build } from 'esbuild';
-import { mkdir,copyFile,readdir,rm } from 'node:fs/promises';
+import { mkdir,copyFile,readdir,rm,readFile } from 'node:fs/promises';
+const {version}=JSON.parse(await readFile('package.json','utf8'));
 await rm('dist',{recursive:true,force:true});
 await mkdir('dist',{recursive:true});
 await build({entryPoints:['src/app.mjs'],bundle:true,splitting:true,format:'esm',target:['es2022'],outdir:'dist/reorganization-modules',entryNames:'app',chunkNames:'chunks/[name]-[hash]',minify:true});
@@ -10,4 +11,4 @@ await mkdir('chunks',{recursive:true});
 await mkdir('dist/chunks',{recursive:true});
 for(const file of await readdir('dist'))if(false)await copyFile('dist/'+file,file);
 for(const file of await readdir('dist/reorganization-modules/chunks')){await copyFile('dist/reorganization-modules/chunks/'+file,'chunks/'+file);await copyFile('dist/reorganization-modules/chunks/'+file,'dist/chunks/'+file);}
-console.log('Built Tournament Director 0.4.0-reorg.152g (Reorganization) with lazy screen chunks');
+console.log(`Built Tournament Director ${version} (Reorganization) with lazy screen chunks`);
