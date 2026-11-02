@@ -1942,3 +1942,5 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 .rebuy-tracking-settings{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 22px}.rebuy-mode-setting,.rebuy-max-setting{width:100%;min-width:0}.rebuy-tracking-settings fieldset{width:100%;background:transparent;border-color:#fff}.rebuy-tracking-settings .rebuy-max-setting input{width:100%;background:transparent;border-color:#fff}
 
 .rebuy-tracking-settings fieldset{border:1px solid #fff}.rebuy-mode-title,.rebuy-tracking-settings .rebuy-max-setting{font-size:12px;font-weight:600}.rebuy-tracking-settings .rebuy-max-setting input{border:1px solid #fff}.rebuy-tracking-settings fieldset input[type=radio]{flex:0 0 14px;width:14px;height:14px;min-width:14px;min-height:14px;padding:0}
+
+.rebuy-tracking-settings fieldset,.rebuy-tracking-settings .rebuy-max-setting input{border-width:1px!important;border-style:solid!important;border-color:#fff!important;box-shadow:none}.rebuy-mode-title{color:#fff!important}
