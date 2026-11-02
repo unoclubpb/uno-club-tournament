@@ -46,7 +46,7 @@ export function installSeatDragging({getScrollBounds=()=>({top:0,bottom:innerHei
   document.addEventListener('pointerup',event=>{
     if(!drag||event.pointerId!==drag.id)return;
     const source=drag.source,active=drag.active,target=active?targetAt(event.clientX,event.clientY):null;
-    const destination=target?{table:Number(target.dataset.table),seat:Number(target.dataset.seat)}:null;
+    const destination=target?(target.dataset.seat==='unseated'?{unseated:true}:{table:Number(target.dataset.table),seat:Number(target.dataset.seat)}):null;
     cancel();if(active&&destination)Promise.resolve(onDrop(source,destination)).catch(onError);
   });
   document.addEventListener('pointercancel',cancel);
