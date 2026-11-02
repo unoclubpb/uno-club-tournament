@@ -401,7 +401,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
   if(a.type==='rebuy-count'){
     check((t.settings.rebuyTracking||'total')==='total','Rebuys are being tracked by player for this tournament.');
     const playerCounts=Array.isArray(a.counts),canEdit=canEditRebuys(t,c),canRecord=canRecordRebuys(t,c);
-    check(canEdit,'Start the tournament before recording rebuys.');
+    check(canEdit,playerCounts?'Start the tournament before recording rebuys.':t.status==='completed'?'Completed tournament is locked.':'Enter the rebuy total during the break after the final rebuy round, or afterward with an override.');
     check(canRecord||a.overrideCutoff===true,'Rebuys are closed. Override is required.');
     let count=a.count;
     if(Array.isArray(a.counts)){
