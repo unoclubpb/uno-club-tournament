@@ -811,3 +811,11 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 /* Match tournament stat labels to navigation and keep all displayed values uniform. */
 .metrics>div>span{font-family:inherit!important;font-size:13px!important;font-weight:600!important}
 .metrics>div>strong,.metrics>div>strong small{font:700 20px/1.25 "DM Sans",system-ui,sans-serif!important;letter-spacing:normal!important;color:inherit!important}
+
+/* Keep saved structure settings in the same two-column section layout as event settings. */
+.tournament-settings-page .structure-editor-body>.structure-name-row{grid-column:1/-1}
+.tournament-settings-page .structure-editor-body>.buy-in-section{grid-column:1;grid-row:2}
+.tournament-settings-page .structure-editor-body>.rebuy-section{grid-column:2;grid-row:2}
+.tournament-settings-page .structure-editor-body>.tournament-fees-section{grid-column:1;grid-row:3}
+.tournament-settings-page .structure-editor-body>.addons-section{grid-column:2;grid-row:3}
+@media(max-width:700px){.tournament-settings-page .structure-editor-body>.buy-in-section,.tournament-settings-page .structure-editor-body>.rebuy-section,.tournament-settings-page .structure-editor-body>.tournament-fees-section,.tournament-settings-page .structure-editor-body>.addons-section{grid-column:1;grid-row:auto}}
