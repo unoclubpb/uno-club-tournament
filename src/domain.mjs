@@ -96,9 +96,13 @@ export function upgradeState(value){
       t.settings=upgradeSettings(t.settings);
       for(const e of t.entries)for(const p of e.payments){p.total=paymentTotal(p);p.dealerToke=p.kind==='entry'?(p.house||0):0;delete p.prize;delete p.house;}
     }
-    // Rebuys belong to the tournament. Move old records into its total exactly once.
-    t.rebuyCount=tournamentRebuyCount(t);
-    for(const e of t.entries){e.payments=(e.payments||[]).filter(p=>p.kind!=='rebuy');if(t.status!=='completed')for(const p of e.payments)p.paid=true;}
+    // Total tracking stores rebuys on the tournament; player tracking keeps each payment on its entry.
+    if((t.settings.rebuyTracking||'total')!=='player'){
+      t.rebuyCount=tournamentRebuyCount(t);
+      for(const e of t.entries){e.payments=(e.payments||[]).filter(p=>p.kind!=='rebuy');if(t.status!=='completed')for(const p of e.payments)p.paid=true;}
+    }else if(t.status!=='completed'){
+      for(const e of t.entries)for(const p of e.payments||[])p.paid=true;
+    }
   }
   return s;
 }
