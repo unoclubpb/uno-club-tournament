@@ -462,7 +462,7 @@ test('movement stays enabled for consecutive moves but resets after leaving tabl
  try{
   ui.click('[data-tab=tables]');ui.click('[data-action=toggle-move-players]');ui.click('[data-seat-grab=e7]');ui.click('[data-table="1"][data-seat="9"] [data-seat-target-button]');await flush();assert.equal(ui.stored().tournaments[0].entries[6].seat,9);assert.equal(ui.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'true');assert.equal(ui.q('[data-seat-grab=e7]').disabled,false);
   ui.click('[data-tab=players]');ui.click('[data-tab=tables]');assert.equal(ui.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'false');ui.click('[data-action=toggle-move-players]');ui.click('[data-go=home]');ui.click('[data-go=manage]');assert.equal(ui.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'false');
-  ui.click('[data-action=toggle-move-players]');assert.equal(ui.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'false');assert.equal(ui.w.__fixture.saves,1);assert.deepEqual(ui.errors,[]);
+  assert.equal(ui.q('[data-action=toggle-move-players]').getAttribute('aria-pressed'),'false');assert.equal(ui.w.__fixture.saves,1);assert.deepEqual(ui.errors,[]);
  }finally{ui.close();}
 });
 
