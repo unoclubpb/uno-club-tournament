@@ -2072,3 +2072,12 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
   outline-offset:0!important;
   box-shadow:none!important;
 }
+/* reorg.152q: gold focus color at the same single-pixel width. */
+#structure-form .rebuy-tracking-settings fieldset:focus-within,
+#structure-form .rebuy-tracking-settings .rebuy-max-setting input:focus{
+  border-width:1px!important;
+  border-style:solid!important;
+  border-color:#c99944!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
