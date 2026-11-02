@@ -1994,3 +1994,21 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
   outline:2px solid #c99944!important;
   outline-offset:1px!important;
 }
+/* reorg.152k: remove native inset edges from idle rebuy controls; retain gold focus. */
+.rebuy-tracking-settings fieldset,
+.rebuy-tracking-settings .rebuy-max-setting input{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  border:1px solid #d8ded6!important;
+  box-shadow:none!important;
+}
+.rebuy-tracking-settings fieldset:focus-within{
+  border:1px solid #c99944!important;
+  outline:2px solid #c99944!important;
+  outline-offset:1px!important;
+}
+.rebuy-tracking-settings .rebuy-max-setting input:focus{
+  border:1px solid #c99944!important;
+  outline:2px solid #c99944!important;
+  outline-offset:1px!important;
+}
