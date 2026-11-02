@@ -1081,19 +1081,19 @@ test('deleting a running tournament shows the current level, can cancel, and rem
  let s=manualSeatingFixture(3);s=execute(s,{type:'clock',tournamentId:'t1',command:'start'});s.tournaments[0].clock.index=4;s.tournaments[0].levels.splice(2,0,{kind:'break',minutes:5});
  const ui=await boot('https://example.test/',s,'manage','t1',{manualConfirm:true});
  try{
-  assert.ok(ui.q('[data-action="delete-tournament"]'));assert.equal(ui.q('.tournament-danger-zone p'),null);
+  assert.equal(ui.q('[data-action="delete-tournament"]'),null);ui.click('[data-tab=tables]');assert.equal(ui.q('[data-action="delete-tournament"]'),null);ui.click('[data-tab=payouts]');assert.equal(ui.q('[data-action="delete-tournament"]'),null);ui.click('[data-tab=summary]');assert.ok(ui.q('[data-action="delete-tournament"]'));assert.equal(ui.q('.tournament-danger-zone p'),null);
   ui.click('[data-action="delete-tournament"]');await flush();assert.match(ui.q('#confirmation-message').textContent,/Level 4/);assert.match(ui.q('#confirmation-message').textContent,/remove all results and points/);
   ui.click('[data-confirm-answer=no]');await flush();assert.equal(ui.stored().tournaments.length,1);
   ui.click('[data-action="delete-tournament"]');await flush();ui.click('[data-confirm-answer=yes]');await flush();assert.equal(ui.stored().tournaments.length,0);assert.equal(ui.w.localStorage.getItem('uno-tournament-selected'),null);assert.match(ui.w.location.search,/view=home/);
  }finally{ui.close();}
 });
-test('completed unarchived tournament keeps New Tournament visible but blocks its creation',async()=>{
+test('completed unarchived tournament does not offer New Tournament before archive',async()=>{
  const s=completedPointsFixture(),ui=await boot('https://example.test/',s,'setup','t1',{published});
- try{assert.ok(ui.q('[data-action="new-tournament"]'));ui.click('[data-action="new-tournament"]');await flush();assert.equal(ui.q('#new-tournament-form'),null);assert.match(ui.q('#toast').textContent,/must archive/);assert.equal(ui.stored().tournaments.length,1);}finally{ui.close();}
+ try{assert.equal(ui.q('[data-action="new-tournament"]'),null);assert.equal(ui.stored().tournaments.length,1);}finally{ui.close();}
 });
 test('completed tournament deletion rolls back awarded points and keeps player records',async()=>{
  const s=completedPointsFixture(),ui=await boot('https://example.test/',s,'manage','t1',{published});
- try{let prompt='';ui.w.__confirmResponse=text=>(prompt=text,true);ui.click('[data-action="delete-tournament"]');await flush();await flush();assert.match(prompt,/completed/);assert.equal(ui.stored().tournaments.length,0);assert.equal(ui.stored().points.awards.length,0);assert.equal(ui.stored().players.length,s.players.length);}finally{ui.close();}
+ try{let prompt='';ui.w.__confirmResponse=text=>(prompt=text,true);assert.equal(ui.q('[data-action="delete-tournament"]'),null);ui.click('[data-tab=summary]');ui.click('[data-action="delete-tournament"]');await flush();await flush();assert.match(prompt,/completed/);assert.equal(ui.stored().tournaments.length,0);assert.equal(ui.stored().points.awards.length,0);assert.equal(ui.stored().players.length,s.players.length);}finally{ui.close();}
 });
 
 }
