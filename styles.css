@@ -1907,3 +1907,6 @@ body:has(.nav){overscroll-behavior:none}
 
 /* Match the Dealer Toke amount style across numeric tournament setup fields. */
 #structure-form input[type="number"],#structure-form input[data-money],#structure-form input[data-chips]{font-family:inherit!important;font-size:15px!important;font-weight:400!important}
+
+/* Keep text and values in boxed form controls visually consistent across the app. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="color"]):not([type="file"]),select,textarea{font-family:inherit!important;font-size:15px!important;font-weight:400!important}
