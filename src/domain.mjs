@@ -46,6 +46,7 @@ export function purchaseOpen(t,c,kind){
   return t.levels[c.index].kind==='play'||t.levels[c.index-1]?.kind==='play';
 }
 export const rebuyOpen=(t,c)=>purchaseOpen(t,c,'rebuy');
+export const addonAvailable=(t,c)=>{if(!t?.settings?.addonEnabled||!tournamentStarted(t)||t.status==='completed'||c.status==='ended')return false;const round=roundAt(t,c.index),last=t.settings.addonLastRound;return round>last||round===last&&t.levels[c.index]?.kind==='break';};
 export const canRecordRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&rebuyPhase(t,c)==='final-break';
 export const canEditRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&(canRecordRebuys(t,c)||!rebuyOpen(t,c));
 export const registrationOpen=(t,c)=>t.status!=='completed'&&!t.archivedAt&&c.status!=='ended'&&(c.status==='ready'||!t.settings.rebuyEnabled||rebuyOpen(t,c));
@@ -403,7 +404,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
     check(setting,isRebuy?'Rebuys are turned off.':'Add-ons are turned off.');
     check(t.status!=='completed'&&!t.archivedAt,'Completed tournament is locked.');
     if(isRebuy){check((t.settings.rebuyTracking||'total')==='player','Rebuys are tracked as a tournament total.');check(tournamentStarted(t),'Start the tournament before recording player rebuys.');}
-    const open=purchaseOpen(t,c,kind);check(open||a.overrideCutoff===true,isRebuy?'Rebuys are closed. Override is required.':'Add-ons are closed. Override is required.');
+    const open=isRebuy?canRecordRebuys(t,c):addonAvailable(t,c);check(open||a.overrideCutoff===true,isRebuy?'Rebuys are closed. Override is required.':'Add-ons are closed. Override is required.');
     check(Array.isArray(a.counts)&&a.counts.length===t.entries.length,'Counts must include every tournament player.');
     const byEntry=new Map(),seen=new Set();
     for(const row of a.counts){const entry=t.entries.find(v=>v.id===row.entryId);check(entry&&!seen.has(row.entryId),'Count contains an invalid player.');check(Number.isSafeInteger(row.count)&&row.count>=0&&(isRebuy||row.count<=1),'Enter a valid whole-number count.');if(isRebuy&&(t.settings.rebuyMax||0)>0)check(row.count<=t.settings.rebuyMax,'Rebuy count cannot exceed the player limit of '+t.settings.rebuyMax+'.');byEntry.set(row.entryId,{entry,count:row.count});seen.add(row.entryId);}
@@ -481,9 +482,9 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
   if(a.type==='payment'){
     const k=a.kind;check(k==='addon'||k==='rebuy'&&(t.settings.rebuyTracking||'total')==='player','Record tournament rebuys as a tournament total, or enable per-player rebuy tracking in the saved structure.');check(!e.eliminatedAt,'Player has been eliminated.');
     if(k==='rebuy'){check(tournamentStarted(t),'Start the tournament before recording player rebuys.');check(!e.pendingElimination,'This player has a pending elimination.');}
-    check(purchaseOpen(t,c,k),`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
+    check(k==='rebuy'?canRecordRebuys(t,c):addonAvailable(t,c),`${k==='rebuy'?'Rebuy':'Add-on'} period is not open.`);
     check(t.settings[k+'Enabled'],`${k==='rebuy'?'Rebuys':'Add-ons'} are turned off.`);
-    check(roundAt(t,c.index)<=t.settings[k+'LastRound'],`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
+    if(k==='rebuy')check(roundAt(t,c.index)<=t.settings.rebuyLastRound,'Rebuy period has closed.');
     if(k==='addon')check(!e.payments.some(p=>p.kind==='addon'),'Add-on already recorded.');
     if(k==='rebuy'&&(t.settings.rebuyMax||0)>0)check(e.payments.filter(p=>p.kind==='rebuy').length<t.settings.rebuyMax,`Max rebuys purchased for this player.`);
     const feeType=t.settings[k+'FeeType']||'toke',fee=t.settings[k+'FeeAmount']||0;e.payments.push({id:id(),kind:k,total:t.settings[k+'Amount'],dealerToke:feeType==='toke'?fee:0,adminFee:feeType==='admin'?fee:0,feeType,chips:t.settings[k+'Chips'],paid:true,at:now});if(k==='rebuy')t.rebuyCountsEntered=true;if(k==='addon')t.addonCountsEntered=true;return s;
