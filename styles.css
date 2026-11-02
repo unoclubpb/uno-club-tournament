@@ -1973,3 +1973,24 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 .rebuy-tracking-settings .rebuy-max-setting input:focus{
   border:1px solid #d8ded6!important;
 }
+/* reorg.152j: keep rebuy outlines pale at rest; use the standard gold focus treatment when active. */
+.rebuy-tracking-settings fieldset,
+.rebuy-tracking-settings .rebuy-max-setting input{
+  border:1px solid #d8ded6!important;
+  box-shadow:none!important;
+  outline:none;
+}
+.rebuy-tracking-settings .rebuy-max-setting input{
+  appearance:auto!important;
+  -webkit-appearance:auto!important;
+}
+.rebuy-tracking-settings fieldset:focus-within{
+  border-color:#c99944!important;
+  outline:2px solid #c99944!important;
+  outline-offset:1px!important;
+}
+.rebuy-tracking-settings .rebuy-max-setting input:focus{
+  border-color:#c99944!important;
+  outline:2px solid #c99944!important;
+  outline-offset:1px!important;
+}
