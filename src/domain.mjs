@@ -247,7 +247,7 @@ export function planTableSeating(t,{mode='remaining',order=[]}={}){
     const least=Math.min(...loads.map((load,i)=>load<(mode==='combine'||mode==='shuffle'?targets[i]:capacity)?load:Infinity));
     const tableChoices=loads.map((load,i)=>({load,index:i})).filter(v=>v.load===least).map(v=>v.index+1);
     check(tableChoices.length,'No open seat is available.');
-    table=mode==='shuffle'||mode==='redraw'||mode==='legacy-redraw'?tableChoices[Math.floor(Math.random()*tableChoices.length)]:tableChoices[0];
+    table=mode==='shuffle'||mode==='redraw'?tableChoices[Math.floor(Math.random()*tableChoices.length)]:tableChoices[0];
     const seatChoices=Array.from({length:capacity},(_,i)=>i+1).filter(seat=>!occupied.has(`${table}/${seat}`));
     check(seatChoices.length,'No open seat is available.');
     const seat=seatChoices[Math.floor(Math.random()*seatChoices.length)];
