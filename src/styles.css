@@ -832,3 +832,15 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 body:not(.fixed-workspace) .management-layout{overflow:visible!important;align-items:stretch}
 body:not(.fixed-workspace) .management-layout>.management-sidebar{position:-webkit-sticky;position:sticky;top:var(--management-sticky-top,110px);align-self:start;height:max-content;max-height:calc(100dvh - var(--management-sticky-top,110px) - 8px);overflow-y:auto;overscroll-behavior:contain;z-index:5}
 body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
+
+
+/* Keep management navigation pinned above the scrolling panel on all workspace layouts. */
+.management-layout{align-items:stretch!important;overflow:visible!important}
+.management-layout>.management-sidebar{
+ position:-webkit-sticky!important;position:sticky!important;
+ top:var(--management-sticky-top,110px)!important;
+ align-self:start!important;height:max-content!important;
+ max-height:calc(100dvh - var(--management-sticky-top,110px) - 8px)!important;
+ overflow-y:auto!important;overscroll-behavior-y:contain!important;z-index:30!important;
+}
+.management-layout>.management-panel{min-height:100%!important}
