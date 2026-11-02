@@ -482,7 +482,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
   if(a.type==='payment'){
     const k=a.kind;check(k==='addon'||k==='rebuy'&&(t.settings.rebuyTracking||'total')==='player','Record tournament rebuys as a tournament total, or enable per-player rebuy tracking in the saved structure.');check(!e.eliminatedAt,'Player has been eliminated.');
     if(k==='rebuy'){check(tournamentStarted(t),'Start the tournament before recording player rebuys.');check(!e.pendingElimination,'This player has a pending elimination.');}
-    check(k==='rebuy'?canRecordRebuys(t,c):addonAvailable(t,c),`${k==='rebuy'?'Rebuy':'Add-on'} period is not open.`);
+    check(purchaseOpen(t,c,k),`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
     check(t.settings[k+'Enabled'],`${k==='rebuy'?'Rebuys':'Add-ons'} are turned off.`);
     if(k==='rebuy')check(roundAt(t,c.index)<=t.settings.rebuyLastRound,'Rebuy period has closed.');
     if(k==='addon')check(!e.payments.some(p=>p.kind==='addon'),'Add-on already recorded.');
