@@ -398,6 +398,28 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
     check(s.players.some(p=>p.id===a.playerId&&!p.archived),'Choose an active player.');check(!t.entries.some(e=>e.playerId===a.playerId),'Player is already registered.');
     const entryTokeType=(t.settings.entryFeeType||'toke')==='toke';t.entries.push({id:a.id||id(),playerId:a.playerId,registeredAt:now,eliminatedAt:null,place:null,table:null,seat:null,payments:[{id:id(),kind:'entry',total:t.settings.buyIn,dealerToke:entryTokeType?t.settings.dealerToke:0,adminFee:entryTokeType?0:t.settings.dealerToke,feeType:t.settings.entryFeeType||'toke',chips:t.settings.startingStack,paid:true,at:now}]});t.eliminationUndo=[];return s;
   }
+  if(a.type==='rebuy-player-counts'||a.type==='addon-counts'){
+    const kind=a.type==='rebuy-player-counts'?'rebuy':'addon',isRebuy=kind==='rebuy',setting= t.settings[kind+'Enabled'];
+    check(setting,isRebuy?'Rebuys are turned off.':'Add-ons are turned off.');
+    check(t.status!=='completed'&&!t.archivedAt,'Completed tournament is locked.');
+    if(isRebuy){check((t.settings.rebuyTracking||'total')==='player','Rebuys are tracked as a tournament total.');check(tournamentStarted(t),'Start the tournament before recording player rebuys.');}
+    const open=purchaseOpen(t,c,kind);check(open||a.overrideCutoff===true,isRebuy?'Rebuys are closed. Override is required.':'Add-ons are closed. Override is required.');
+    check(Array.isArray(a.counts)&&a.counts.length===t.entries.length,'Counts must include every tournament player.');
+    const byEntry=new Map(),seen=new Set();
+    for(const row of a.counts){const entry=t.entries.find(v=>v.id===row.entryId);check(entry&&!seen.has(row.entryId),'Count contains an invalid player.');check(Number.isSafeInteger(row.count)&&row.count>=0&&(isRebuy||row.count<=1),'Enter a valid whole-number count.');if(isRebuy&&(t.settings.rebuyMax||0)>0)check(row.count<=t.settings.rebuyMax,'Rebuy count cannot exceed the player limit of '+t.settings.rebuyMax+'.');byEntry.set(row.entryId,{entry,count:row.count});seen.add(row.entryId);}
+    check(seen.size===t.entries.length,'Counts must include every tournament player.');
+    for(const {entry,count} of byEntry.values()){
+      const current=entry.payments.filter(p=>p.kind===kind).length;
+      check(count<=current||!entry.eliminatedAt&&!entry.pendingElimination,'An eliminated or pending-elimination player cannot receive another '+(isRebuy?'rebuy.':'add-on.'));
+    }
+    for(const {entry,count} of byEntry.values()){
+      const payments=entry.payments.filter(p=>p.kind===kind),current=payments.length;
+      if(count<current){let remove=current-count;for(let i=entry.payments.length-1;i>=0&&remove>0;i--)if(entry.payments[i].kind===kind){entry.payments.splice(i,1);remove--;}}
+      else if(count>current){const feeType=t.settings[kind+'FeeType']||'toke',fee=t.settings[kind+'FeeAmount']||0;for(let i=current;i<count;i++)entry.payments.push({id:id(),kind,total:t.settings[kind+'Amount'],dealerToke:feeType==='toke'?fee:0,adminFee:feeType==='admin'?fee:0,feeType,chips:t.settings[kind+'Chips'],paid:true,at:now});}
+    }
+    if(!open)recordCutoffOverride(t,{...a,count:a.counts.reduce((sum,row)=>sum+row.count,0)},now,isRebuy?'rebuy-player-counts':'addon-counts');
+    if(isRebuy)t.rebuyCountsEntered=true;else t.addonCountsEntered=true;return s;
+  }
   if(a.type==='rebuy-count'){
     check((t.settings.rebuyTracking||'total')==='total','Rebuys are being tracked by player for this tournament.');
     const playerCounts=Array.isArray(a.counts),canEdit=canEditRebuys(t,c),canRecord=canRecordRebuys(t,c);
@@ -415,7 +437,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
     }else{check(Number.isSafeInteger(count)&&count>=0,'Enter a whole number of rebuys, zero or greater.');t.rebuyCountsByEntry={};t.rebuyUnassignedCount=count;}
     check(Number.isSafeInteger(count)&&Number.isSafeInteger(count*t.settings.rebuyAmount)&&Number.isSafeInteger(count*t.settings.rebuyChips),'Rebuy count is too large.');
     if(!canRecord)recordCutoffOverride(t,{...a,count},now,'rebuy-count');
-    t.rebuyCount=count;return s;
+    t.rebuyCount=count;t.rebuyCountsEntered=true;return s;
   }
   if(a.type==='seating-settings'){
     check(Number.isSafeInteger(a.seatsPerTable)&&a.seatsPerTable>=2&&a.seatsPerTable<=10,'Use 2–10 seats per table.');
@@ -464,7 +486,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
     check(roundAt(t,c.index)<=t.settings[k+'LastRound'],`${k==='rebuy'?'Rebuy':'Add-on'} period has closed.`);
     if(k==='addon')check(!e.payments.some(p=>p.kind==='addon'),'Add-on already recorded.');
     if(k==='rebuy'&&(t.settings.rebuyMax||0)>0)check(e.payments.filter(p=>p.kind==='rebuy').length<t.settings.rebuyMax,`Max rebuys purchased for this player.`);
-    const feeType=t.settings[k+'FeeType']||'toke',fee=t.settings[k+'FeeAmount']||0;e.payments.push({id:id(),kind:k,total:t.settings[k+'Amount'],dealerToke:feeType==='toke'?fee:0,adminFee:feeType==='admin'?fee:0,feeType,chips:t.settings[k+'Chips'],paid:true,at:now});return s;
+    const feeType=t.settings[k+'FeeType']||'toke',fee=t.settings[k+'FeeAmount']||0;e.payments.push({id:id(),kind:k,total:t.settings[k+'Amount'],dealerToke:feeType==='toke'?fee:0,adminFee:feeType==='admin'?fee:0,feeType,chips:t.settings[k+'Chips'],paid:true,at:now});if(k==='rebuy')t.rebuyCountsEntered=true;if(k==='addon')t.addonCountsEntered=true;return s;
   }
   if(a.type==='eliminate'){
     check(!e.eliminatedAt,'Player already eliminated.');check(!e.pendingElimination,'That player has a pending elimination.');
