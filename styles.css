@@ -2143,3 +2143,6 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 #confirmation-dialog .propagation-choice{flex:1 1 175px;min-width:0;min-height:44px;padding:10px 12px;background:transparent!important;color:var(--ink)!important;-webkit-text-fill-color:var(--ink)!important;border:1px solid var(--line)!important;line-height:1.25;white-space:normal;text-align:center}
 #confirmation-dialog .propagation-choice:hover{background:transparent!important;border-color:var(--gold)!important}
 #confirmation-dialog .propagation-choice:focus-visible{outline:3px solid #d2a449;outline-offset:3px}
+
+/* Keep the seating requirement inside the disabled start control without moving clock buttons. */
+.clock-controls #clock-main[data-needs-seats="true"]{height:44px;min-height:44px;padding:6px 10px;font-size:clamp(10px,1.45vw,14px);line-height:1.1;white-space:normal;opacity:.7}
