@@ -870,3 +870,7 @@ body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
 /* Stack player cards vertically instead of inheriting the legacy horizontal drop-zone layout. */
 .unseated-drop-zone,.remote-seating .unseated-drop-zone{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0}
 .unseated-drop-zone .unseated-area-label{align-self:center;width:100%}
+
+/* v0.4.0-reorg.176a: match the Unseated Area to one table column. */
+.management-panel .unseated-drop-zone{width:calc((100% - 14px)/2);max-width:100%;margin-right:auto}
+@media(max-width:650px){.management-panel .unseated-drop-zone{width:calc((100% - 8px)/2)}}
