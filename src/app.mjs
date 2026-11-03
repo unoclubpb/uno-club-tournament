@@ -63,7 +63,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.168a · Reorganization';
+const APP_VERSION='0.4.0-reorg.169 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -663,7 +663,7 @@ function tick(){updateLayoutDesignerClock();const t=current();if(!t)return;const
   for(const button of document.querySelectorAll('[data-remote-undo]')){const left=Number(button.dataset.expiry)-timeNow();button.disabled=busy||!online||left<=0;button.textContent=left>0?'Undo ('+Math.ceil(left/1000)+')':'Finalizing…';}for(const button of document.querySelectorAll('[data-remote-eliminate]'))button.disabled=busy||!online||active(t).filter(e=>!e.pendingElimination).length<=1;
   const guarantee=$('#payout-form [name=payoutMode][value=guaranteed]');if(guarantee){guarantee.disabled=t.status==='completed';try{setText('#guarantee-eligibility',guaranteeEligibility(readGuarantee(guarantee.form,clone(t.settings)),t));}catch{ /* Keep the draft validation message while editing. */ }}
   const balanceNotice=$('#remote-balance-warning');if(view==='remote'&&balanceNotice){const html=balanceWarning(t);if(balanceNotice.innerHTML!==html)balanceNotice.innerHTML=html;}
-  const rebuyButton=$('#record-rebuys');if(rebuyButton){const tracking=t.settings.rebuyTracking||'total',allowed=canEditRebuys(t,c);rebuyButton.disabled=busy||!online||!t.settings.rebuyEnabled||!allowed;rebuyButton.classList.toggle('rebuy-available',!rebuyButton.disabled&&canRecordRebuys(t,c));rebuyButton.textContent=rebuyCountLabel(t,c);rebuyButton.setAttribute('aria-label',rebuyCountLabel(t,c));}const addonButton=$('#record-addons');if(addonButton){addonButton.disabled=busy||!online||!t.settings.addonEnabled||!addonAvailable(t,c)&&!t.addonCountsEntered;addonButton.textContent=addonCountLabel(t,c);addonButton.setAttribute('aria-label',addonCountLabel(t,c));}
+  const deleteTournamentButton=$('[data-action="delete-tournament"]');if(deleteTournamentButton)deleteTournamentButton.disabled=busy||!online;const rebuyButton=$('#record-rebuys');if(rebuyButton){const tracking=t.settings.rebuyTracking||'total',allowed=canEditRebuys(t,c);rebuyButton.disabled=busy||!online||!t.settings.rebuyEnabled||!allowed;rebuyButton.classList.toggle('rebuy-available',!rebuyButton.disabled&&canRecordRebuys(t,c));rebuyButton.textContent=rebuyCountLabel(t,c);rebuyButton.setAttribute('aria-label',rebuyCountLabel(t,c));}const addonButton=$('#record-addons');if(addonButton){addonButton.disabled=busy||!online||!t.settings.addonEnabled||!addonAvailable(t,c)&&!t.addonCountsEntered;addonButton.textContent=addonCountLabel(t,c);addonButton.setAttribute('aria-label',addonCountLabel(t,c));}
   for(const button of document.querySelectorAll('[data-tv-display]')){const selectedMode=button.dataset.tvDisplay===tvDisplayMode(t);button.disabled=busy||!online||button.dataset.tvDisplay==='full-clock'&&!tournamentStarted(t);button.classList.toggle('is-selected',selectedMode);button.setAttribute('aria-pressed',String(selectedMode));}
   const key=`${t.id}/${c.index}/${c.status}`;if(lastClockKey&&key!==lastClockKey&&view==='clock'&&sound)beep();lastClockKey=key;
   const launchFallback=$('.tv-launch-fallback');if(launchFallback)launchFallback.hidden=!!document.fullscreenElement;
