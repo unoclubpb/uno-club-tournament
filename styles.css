@@ -1840,15 +1840,14 @@ body:has(.nav){overscroll-behavior:none}
 
 .setup-page .setup-library-results>#saved-structures.structures-locked{overflow:hidden!important;overflow-y:hidden!important}
 
-/* Keep names, calculations, and totals in three aligned columns. */
-.financial-summary{max-width:none;width:100%;display:grid;grid-template-columns:minmax(160px,1fr) minmax(130px,1.35fr) max-content;column-gap:24px}
-.financial-summary>div{grid-column:1/-1;display:grid;grid-template-columns:subgrid;column-gap:24px}
+/* Keep the summary columns aligned in browsers without CSS subgrid support. */
+.financial-summary{max-width:none;width:100%;display:flex;flex-direction:column;gap:0}
+.financial-summary>div{display:grid;grid-template-columns:minmax(160px,30%) minmax(0,1fr) minmax(100px,15%);align-items:center;gap:8px 24px;padding:16px 0;border-bottom:1px solid var(--line)}
 .financial-summary>div>.summary-name{font-size:17px;font-weight:700;line-height:1.4}
-.financial-summary>div>.summary-calculation{font-size:13px;font-weight:400;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}
+.financial-summary>div>.summary-calculation{font-size:13px;font-weight:400;line-height:1.5;color:var(--muted);overflow-wrap:anywhere;min-width:0}
 .financial-summary>div>strong{text-align:right;white-space:nowrap}
 @media(max-width:650px){
- .financial-summary{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) max-content;column-gap:10px}
- .financial-summary>div{column-gap:10px}
+ .financial-summary>div{grid-template-columns:minmax(0,30%) minmax(0,1fr) minmax(78px,20%);column-gap:10px}
  .financial-summary>div>.summary-name{font-size:16px}
  .financial-summary>div>.summary-calculation{font-size:12px}
 }
