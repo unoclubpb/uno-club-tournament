@@ -2172,3 +2172,8 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 /* v0.4.0-reorg.176a: match the Unseated Area to one table column. */
 .management-panel .unseated-drop-zone{width:calc((100% - 14px)/2);max-width:100%;margin-right:auto}
 @media(max-width:650px){.management-panel .unseated-drop-zone{width:calc((100% - 8px)/2)}}
+
+/* Reorg 177: consistent seated/unseated names and neutral unseat action. */
+.unseated-drop-zone .unseated-player-grip{font-size:14px;font-weight:600;line-height:1.4}
+.management-panel .management-table-actions [data-action="unseat-all"]{background:transparent!important;color:#fff!important;border-color:#d8ded6!important}
+.management-panel .management-table-actions [data-action="unseat-all"]:hover:not(:disabled){background:rgba(255,255,255,.1)!important;color:#fff!important}
