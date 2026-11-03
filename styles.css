@@ -2177,3 +2177,9 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 .unseated-drop-zone .unseated-player-grip{font-size:14px;font-weight:600;line-height:1.4}
 .management-panel .management-table-actions [data-action="unseat-all"]{background:transparent!important;color:#fff!important;border-color:#d8ded6!important}
 .management-panel .management-table-actions [data-action="unseat-all"]:hover:not(:disabled){background:rgba(255,255,255,.1)!important;color:#fff!important}
+
+/* Reorg 177a: Move Players spans exactly the Seats per table + Apply row. */
+.management-panel .seating-action-stack{display:inline-flex;flex-direction:column;align-items:stretch;width:max-content;max-width:100%;vertical-align:top}
+.management-panel .seating-action-stack .seating-settings-form{width:100%;margin-bottom:0}
+.management-panel .seating-action-stack .seat-move-help{display:flex;width:100%;margin:8px 0!important;flex-wrap:nowrap}
+.management-panel .seating-action-stack .move-players-toggle{width:100%;flex:1 1 auto;min-width:0}
