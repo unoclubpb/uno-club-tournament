@@ -77,7 +77,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.175 · Reorganization';
+const APP_VERSION='0.4.0-reorg.176 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -574,7 +574,7 @@ function manage(){const t=current();if(!t)return noTournament('No active tournam
 function tableManagement(t,remote=false){
   const remaining=active(t),seated=remaining.filter(e=>e.table),unseated=remaining.filter(e=>!e.table),needsBalance=canCombineTables(t),undoIndex=seatingUndo.map(item=>item.tournamentId).lastIndexOf(t.id);
   const seatAction=needsBalance?'combine-tables':'shuffle-seats';
-  return `<div class="section-label"><h2>Tables & Seating</h2><div class="management-table-actions"><div class="button-row">${!remote||unseated.length?`<button class="button secondary small" data-action="seat-remaining" ${t.status==='completed'||!unseated.length?'disabled':''}>${seated.length?'Seat Remaining Players':'Seat Players'}</button>`:''}${!remote?`<button class="button danger small" data-action="unseat-all" ${t.status==='completed'||!seated.length?'disabled':''}>Unseat All Players</button>`:''}<button class="button ${needsBalance?'management-balance-button':'secondary'} small" data-action="${seatAction}" ${t.status==='completed'||!remaining.length?'disabled':''}>${tableActionName(t)}</button>${!remote&&undoIndex>=0?`<button type="button" class="button secondary small" data-action="undo-seating">Undo Last Move</button>`:''}</div></div></div>${remote?'':`<form id="seating-settings-form" class="seating-settings-form"><input type="hidden" name="tournamentId" value="${t.id}"><label>Seats per table<input type="number" name="seatsPerTable" min="2" max="10" step="1" value="${t.settings.seatsPerTable}" required ${t.status==='completed'?'disabled':''}></label><button class="button secondary" ${t.status==='completed'?'disabled':''}>Apply</button></form>`}<div class="seat-move-help"><p class="muted" id="seat-move-instructions" role="status" hidden></p>${remote?'':`<button type="button" class="button secondary small move-players-toggle ${movePlayersEnabled?'is-active':''}" data-action="toggle-move-players" aria-pressed="${movePlayersEnabled}" ${t.status==='completed'?'disabled':''}>Move Players</button>`}<button type="button" class="button secondary small" id="cancel-seat-pick" data-action="cancel-seat-pick" hidden>Cancel move</button></div><div class="seat-tables ${remote||movePlayersEnabled?'moves-enabled':''}">${Array.from({length:tablesInUse(t)},(_,i)=>`<div class="seat-table"><h3><span class="seat-table-title">TABLE ${i+1}</span><small>${remaining.filter(e=>e.table===i+1).length} of ${t.settings.seatsPerTable} Seats Filled</small></h3>${Array.from({length:t.settings.seatsPerTable},(_,j)=>{const e=remaining.find(e=>e.table===i+1&&e.seat===j+1);return seatRow(t,i+1,j+1,e,remote);}).join('')}</div>`).join('')}</div><div class="unseated-drop-zone" data-seat-target data-seat="unseated" data-seat-unseated-target="true"><h3 class="unseated-area-label">Unseated Area</h3>${unseated.map(e=>`<div class="result-row unseated-player-row"><button type="button" class="unseated-player-grip" data-seat-grab="${e.id}" aria-label="Select ${esc(pName(e))} to move to a seat" ${t.status==='completed'||e.pendingElimination?'disabled':''}>${esc(pName(e))}</button><div class="unseated-player-actions">${remote?'':seatEliminateButton(t,e)}</div></div>`).join('')}</div>`;
+  return `<div class="section-label"><h2>Tables & Seating</h2><div class="management-table-actions"><div class="button-row">${!remote||unseated.length?`<button class="button secondary small" data-action="seat-remaining" ${t.status==='completed'||!unseated.length?'disabled':''}>${seated.length?'Seat Remaining Players':'Seat Players'}</button>`:''}${!remote?`<button class="button danger small" data-action="unseat-all" ${t.status==='completed'||!seated.length?'disabled':''}>Unseat All Players</button>`:''}<button class="button ${needsBalance?'management-balance-button':'secondary'} small" data-action="${seatAction}" ${t.status==='completed'||!remaining.length?'disabled':''}>${tableActionName(t)}</button>${!remote&&undoIndex>=0?`<button type="button" class="button secondary small" data-action="undo-seating">Undo Last Move</button>`:''}</div></div></div>${remote?'':`<form id="seating-settings-form" class="seating-settings-form"><input type="hidden" name="tournamentId" value="${t.id}"><label>Seats per table<input type="number" name="seatsPerTable" min="2" max="10" step="1" value="${t.settings.seatsPerTable}" required ${t.status==='completed'?'disabled':''}></label><button class="button secondary" ${t.status==='completed'?'disabled':''}>Apply</button></form>`}<div class="seat-move-help"><p class="muted" id="seat-move-instructions" role="status" hidden></p>${remote?'':`<button type="button" class="button secondary small move-players-toggle ${movePlayersEnabled?'is-active':''}" data-action="toggle-move-players" aria-pressed="${movePlayersEnabled}" ${t.status==='completed'?'disabled':''}>Move Players</button>`}</div><div class="seat-tables ${remote||movePlayersEnabled?'moves-enabled':''}">${Array.from({length:tablesInUse(t)},(_,i)=>`<div class="seat-table"><h3><span class="seat-table-title">TABLE ${i+1}</span><small>${remaining.filter(e=>e.table===i+1).length} of ${t.settings.seatsPerTable} Seats Filled</small></h3>${Array.from({length:t.settings.seatsPerTable},(_,j)=>{const e=remaining.find(e=>e.table===i+1&&e.seat===j+1);return seatRow(t,i+1,j+1,e,remote);}).join('')}</div>`).join('')}</div><div class="unseated-drop-zone" data-seat-target data-seat="unseated" data-seat-unseated-target="true"><h3 class="unseated-area-label">Unseated Area</h3>${unseated.map(e=>`<div class="result-row unseated-player-row" data-unseated-entry="${e.id}"><button type="button" class="unseated-player-grip" aria-pressed="false" data-seat-grab="${e.id}" aria-label="Select ${esc(pName(e))} to move to a seat" ${t.status==='completed'||e.pendingElimination?'disabled':''}>${esc(pName(e))}</button><div class="unseated-player-actions">${remote?'':seatEliminateButton(t,e)}</div></div>`).join('')}</div>`;
 }
 function unseatAllDialog(){
   const t=current();if(!t)return;
@@ -878,13 +878,13 @@ function checkSeatSource(source){
 }
 function clearSeatPick(){
   pickedSeat=null;document.querySelectorAll('[data-seat-grab][aria-pressed="true"]').forEach(el=>el.setAttribute('aria-pressed','false'));
-  setText('#seat-move-instructions',seatMoveInstructions());const cancel=$('#cancel-seat-pick');if(cancel)cancel.hidden=true;
+  setText('#seat-move-instructions','');
 }
 function chooseSeatPlayer(entryId){const restoreScroll=preserveSeatingScroll();try{
   if(pickedSeat?.entryId===entryId){clearSeatPick();return;}
   clearSeatPick();pickedSeat=seatSource(entryId);
   document.querySelectorAll('[data-seat-grab]').forEach(el=>{if(el.dataset.seatGrab===entryId)el.setAttribute('aria-pressed','true');});
-  setText('#seat-move-instructions',`Choose a destination seat for ${pName(current().entries.find(e=>e.id===entryId))}.`);$('#cancel-seat-pick').hidden=false;
+  setText('#seat-move-instructions',`Choose a destination seat for ${pName(current().entries.find(e=>e.id===entryId))}.`);
 }finally{restoreScroll();}}
 async function saveSeatMove(source,table,seat,mode){
   try{
@@ -940,7 +940,7 @@ async function tryTvFullscreen(feedback=true){const result=await tvWindow.fullsc
 function openClock(){const target=view==='home'?(homeTournament()||current()):current();if(target&&target.id!==selected){selected=target.id;localStorage.setItem('uno-tournament-selected',selected);}if(!target){toast('Choose or create a tournament first.',true);return;}const url=`${APP_ROOT}?view=clock&tournament=${encodeURIComponent(selected)}`;const win=tvWindow.open(url,'uno-clock-'+selected);if(!win)toast('Allow pop-ups for this site to open the clock window.',true);else win.focus();}
 
 document.addEventListener('submit',event=>{if(event.target.id==='archive-filter'){event.preventDefault();const f=new FormData(event.target);archiveFilter={period:String(f.get('period')||'all'),search:String(f.get('search')||''),seasonId:String(f.get('seasonId')||archiveFilter.seasonId)};render();}},true);
-document.addEventListener('click',async event=>{const el=event.target.closest('button,a[data-go],[data-seat-unseated-target]');if(!el||el.disabled)return;try{
+document.addEventListener('click',async event=>{const el=event.target.closest('button,a[data-go],[data-unseated-entry],[data-seat-unseated-target]');if(!el||el.disabled)return;try{
   if(!session&&el.dataset.action!=='account'&&el.dataset.action!=='close-modal')return;
   if(el.dataset.action==='retry-home'){homeLoadError='';ensureHomeModule();render();return;}
   if(el.dataset.leaderboardPlayer){go('players');playerDetail=el.dataset.leaderboardPlayer;profileHistoryMode='points';profilePanel='points';render();return;}
@@ -999,6 +999,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   if(el.dataset.countStep){const input=document.getElementById(el.dataset.countKind+'-entry-'+el.dataset.entryId),value=Number(input?.value);if(input){input.value=String(Math.max(Number(input.min||0),Math.min(Number(input.max||Number.MAX_SAFE_INTEGER),(Number.isSafeInteger(value)?value:0)+Number(el.dataset.countStep))));}return;}if(el.dataset.rebuyStep){const input=$('#rebuy-count'),value=Number(input.value);input.value=String(Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,(Number.isSafeInteger(value)?value:0)+Number(el.dataset.rebuyStep))));return;}
   if(el.dataset.undoElimination){const t=current(),e=t.entries.find(e=>e.id===el.dataset.undoElimination),seat=e.eliminationSeat||t.eliminationUndo.find(v=>v.entryId===e.id);if(await confirmApp(`Are you sure you want to undo the elimination of ${pName(e)}? ${seat?.table?'Restore Table '+seat.table+', Seat '+seat.seat+'.':seat?'Restore as an active, unseated player.':'The original seat was not recorded for this older elimination. Restore as unseated?'}`))await commit({type:'undo-elimination',tournamentId:selected,entryId:e.id,allowUnseated:!seat});return;}
   if(el.dataset.eliminate){eliminationDialog(el.dataset.eliminate);return;}
+  if(el.dataset.unseatedEntry){if(seatMovesEnabled())chooseSeatPlayer(el.dataset.unseatedEntry);return;}
   if(el.dataset.archive){await commit({type:'player-archive',id:el.dataset.archive});return;}
   if(el.dataset.seatLock){
     const context=seatingContext(),entry=current().entries.find(e=>e.id===el.dataset.seatLock);checkSeatingContext(context);
@@ -1214,7 +1215,7 @@ document.addEventListener('keydown',event=>{
   const next=event.key==='ArrowDown'?(index+1)%tabs.length:event.key==='ArrowUp'?(index+tabs.length-1)%tabs.length:event.key==='Home'?0:event.key==='End'?tabs.length-1:null;
   if(next!==null){event.preventDefault();tabs[next].click();}
 });
-document.addEventListener('keydown',event=>{if(event.key==='Escape')clearSeatPick();});
+document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;const focused=document.activeElement;if(pickedSeat||focused?.closest?.('.seat-table,.unseated-drop-zone')){clearSeatPick();if(focused?.closest?.('.seat-table,.unseated-drop-zone'))focused.blur();event.preventDefault();}});
 render();
 let authEventSeen=false;
 db.auth.onAuthStateChange((event,newSession)=>{authEventSeen=true;setTimeout(()=>{if(event==='TOKEN_REFRESHED'){session=newSession;void refresh();}else void acceptSession(newSession);},0);});
