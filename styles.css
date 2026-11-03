@@ -2128,3 +2128,13 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 .control-panel .clock-controls>.rebuy-control-button,.control-panel .clock-controls>.addon-control-button,.control-panel .clock-controls>.rebuy-control-slot{width:100%;min-width:0;}
 .control-panel .clock-controls>.rebuy-control-button,.control-panel .clock-controls>.addon-control-button{height:auto;min-height:44px;white-space:normal;line-height:1.25;padding-left:8px;padding-right:8px;}
 .control-panel .clock-controls>.rebuy-control-slot{display:flex;align-items:center;justify-content:center;}
+
+/* Tournament settings editor history and future-minute guidance. */
+.round-minutes-note{margin:8px 0 0;font-size:12px;line-height:1.45}
+.tournament-settings-page #structure-form .sticky-save{flex-wrap:wrap;align-items:center}
+.sticky-save .editor-history-controls{margin-left:auto;align-self:center;min-width:160px;flex:0 0 160px}
+.sticky-save .editor-history-controls>button{min-height:36px!important;padding:7px 12px!important;font-size:12px!important}
+.sticky-save .editor-history-controls>button:not(:disabled){background:#2563eb!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
+.sticky-save .editor-history-controls>button:not(:disabled):hover{background:#1d4ed8!important}
+.sticky-save .editor-history-controls>button:disabled{background:#fff!important;color:#203330!important;-webkit-text-fill-color:#203330!important;opacity:.55!important}
+@media(max-width:560px){.sticky-save .editor-history-controls{margin-left:auto;flex-basis:132px;min-width:132px}.sticky-save .editor-history-controls>button{padding:6px 8px!important}}

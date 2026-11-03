@@ -13,8 +13,14 @@ function updateExistingEntryTerms(t,next){
  }
 }
 function settingsDraftSnapshot(form,ed){return JSON.stringify({fields:[...new FormData(form).entries()],levels:ed.value.levels});}
+function editorHistorySnapshot(){if(!editor)return null;captureEditor();return JSON.stringify(editor.value);}
+function updateEditorHistoryButtons(){const active=editorHistory.owner===editor,undo=$('#structure-form [data-editor-undo]'),redo=$('#structure-form [data-editor-redo]');if(undo)undo.disabled=!active||!editorHistory.undo.length;if(redo)redo.disabled=!active||!editorHistory.redo.length;}
+function initializeEditorHistory(ed=editor){if(!ed)return;if(editorHistory.owner!==ed)editorHistory={owner:ed,undo:[],redo:[],baseline:JSON.stringify(ed.value)};updateEditorHistoryButtons();}
+function beginEditorHistoryAction(){if(!editor)return null;initializeEditorHistory();const before=editorHistorySnapshot();editorHistory.baseline=before;return before;}
+function finishEditorHistoryAction(before){if(!editor||before===null)return;const after=JSON.stringify(editor.value);if(after!==before){editorHistory.undo.push(before);editorHistory.redo=[];}editorHistory.baseline=after;updateEditorHistoryButtons();}
+function applyEditorHistory(redo=false){if(!editor||editorHistory.owner!==editor)return;const source=redo?editorHistory.redo:editorHistory.undo,destination=redo?editorHistory.undo:editorHistory.redo;if(!source.length)return;const currentState=editorHistorySnapshot();destination.push(currentState);editor.value=JSON.parse(source.pop());editorHistory.baseline=JSON.stringify(editor.value);render();}
 function configureTournamentSettingsUI(){
- const ed=editor,editing=view==='setup'&&ed?.event,form=document.querySelector('#structure-form');
+ const ed=editor,editing=view==='setup'&&ed?.event,form=document.querySelector('#structure-form');if(view==='setup'&&ed&&form)initializeEditorHistory(ed);
  document.body.classList.toggle('tournament-settings-page',view==='setup'&&!!ed);
  if(state.tournaments.some(t=>!t.archivedAt))document.querySelectorAll('[data-edit-template],[data-delete-template],[data-copy-template],[data-action="new-structure"]').forEach(el=>{el.disabled=true;el.title='Saved structures are locked until the current tournament is archived. Edit This Tournament to change its copy.';});
  if(view==='signup')document.querySelectorAll('[data-go="manage"]').forEach(el=>{el.classList.remove('secondary');el.classList.add('gold');});
@@ -22,7 +28,7 @@ function configureTournamentSettingsUI(){
  const locked=state.tournaments.some(t=>!t.archivedAt),library=document.querySelector('#saved-structures');
  if(locked&&library){library.classList.add('structures-locked');library.setAttribute('aria-label','Saved structures — locked during play');library.inert=true;library.querySelectorAll('button').forEach(el=>el.disabled=true);if(!library.parentElement.querySelector('.structures-lock-notice')){const notice=document.createElement('div');notice.className='structures-lock-notice';notice.textContent='Locked During Play';notice.setAttribute('role','status');library.parentElement.classList.add('structures-lock-container');library.before(notice);}}
  if(editing&&form){
-  if(!form.querySelector('[data-action="save-as-structure"]')){const button=document.createElement('button');button.type='button';button.className='button secondary';button.dataset.action='save-as-structure';button.textContent='Save as New Structure';form.querySelector('.sticky-save').append(button);}
+  if(!form.querySelector('[data-action="save-as-structure"]')){const button=document.createElement('button');button.type='button';button.className='button secondary';button.dataset.action='save-as-structure';button.textContent='Save as New Structure';form.querySelector('.sticky-save').insertBefore(button,form.querySelector('.editor-history-controls'));}
   const t=current();if(tournamentStarted(t)){const at=clockAt(t,timeNow()).index;form.querySelectorAll('[data-level]').forEach((row,index)=>{if(index<=at){row.classList.add('protected-level');row.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);}else{const up=row.querySelector('[data-level-up]');if(up&&index===at+1)up.disabled=true;}});}
  }
  if(!editing||!form)return;
@@ -63,7 +69,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.169 · Reorganization';
+const APP_VERSION='0.4.0-reorg.170 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -88,7 +94,7 @@ const app=$('#app'),dlg=$('#dialog');
 const legacyKey='uno-tournament-practice-v1',migrationKey='uno-tournament-browser-imported';
 let state=initialState(),version=0,session=null,authReady=false,authError='',connectedUser='',legacyError='';
 let legacy=readBrowserData(),legacyPending=!!legacy&&!localStorage.getItem(migrationKey);
-let busy=false,channel=null,online=false,serverSample=null,lastSync=null,remoteError='',clockTimer,editor=null,setupLibraryTab='structures',layoutDraft=null;
+let busy=false,channel=null,online=false,serverSample=null,lastSync=null,remoteError='',clockTimer,editor=null,setupLibraryTab='structures',layoutDraft=null,editorHistory={owner:null,undo:[],redo:[],baseline:null};
 let selected=localStorage.getItem('uno-tournament-selected')||'',view=new URLSearchParams(location.search).get('view')||'home';
 const tvWindow=createTvWindowController();
 const automaticTvLaunch=new URLSearchParams(location.search).get('autotv')==='1';let tvLaunchAttempted=false;
@@ -745,6 +751,20 @@ async function confirmApp(message,title='Are You Sure?',yesLabel='Confirm',saveL
   if(answer&&(context.version!==version||context.selected!==selected||context.user!==session?.user.id))throw new Error('Tournament changed. Review the latest information and try again.');
   return answer;
 }
+async function chooseApp(message,title,currentLabel,futureLabel){
+  let box=$('#confirmation-dialog');if(box?.open)return null;
+  if(!box){box=document.createElement('dialog');box.id='confirmation-dialog';document.body.append(box);}
+  const context={version,selected,user:session?.user.id};
+  box.setAttribute('aria-labelledby','confirmation-title');box.setAttribute('aria-describedby','confirmation-message');
+  box.innerHTML=`<div class="modal-heading"><h2 id="confirmation-title">${esc(title)}</h2></div><p id="confirmation-message">${esc(message)}</p><div class="button-row"><button type="button" class="button secondary" data-choice="current">${esc(currentLabel)}</button><button type="button" class="button primary" data-choice="future">${esc(futureLabel)}</button></div>`;
+  const answer=await new Promise(resolve=>{
+    const finish=value=>{box.removeEventListener('click',click);box.removeEventListener('cancel',cancel);box.removeEventListener('close',cancel);if(box.open)box.close();resolve(value);};
+    const click=event=>{const button=event.target.closest('[data-choice]');if(button){event.stopPropagation();finish(button.dataset.choice);}};
+    const cancel=event=>{event?.preventDefault();finish(null);};box.addEventListener('click',click);box.addEventListener('cancel',cancel);box.addEventListener('close',cancel);box.showModal();
+  });
+  if(answer==='future'&&(context.version!==version||context.selected!==selected||context.user!==session?.user.id))throw new Error('Tournament changed. Review the latest information and try again.');
+  return answer;
+}
 async function registrationPermission(t=current(),creating=false){
   if(!t||t.status==='completed'||t.archivedAt)throw new Error('This tournament is finished.');
   if(registrationOpen(t,clockAt(t,timeNow())))return {allowed:true,overrideCutoff:false};
@@ -936,7 +956,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   if(el.dataset.gradientPreset){changeGradient(el.closest('form'),el.dataset.gradientPreset);return;}
   if(el.dataset.gradientRemove!==undefined){changeGradient(el.closest('form'),'remove',Number(el.dataset.gradientRemove));return;}
   if(el.dataset.action==='gradient-add'){changeGradient(el.closest('form'),'add');return;}
-  if(el.dataset.action==='required-rebuy-break'){addRequiredRebuyBreak();return;}if(el.dataset.action==='go-rebuy-levels'){captureEditor();editor.setupTab='levels';render();document.querySelector('.level-table')?.scrollIntoView({block:'start'});return;}if(el.dataset.action==='keep-nearby-rebuy-breaks'){dlg.close();return;}if(el.dataset.action==='delete-nearby-rebuy-breaks'){const indexes=[...dlg.querySelectorAll('[data-remove-nearby-break]:checked')].map(e=>Number(e.dataset.removeNearbyBreak)).sort((a,b)=>b-a);captureEditor();for(const i of indexes)if(editor.value.levels[i]?.kind==='break')editor.value.levels.splice(i,1);dlg.close();render();toast(indexes.length?'Selected breaks removed. Save to keep changes.':'No breaks selected.');return;}if(el.dataset.go){event.preventDefault();go(el.dataset.go);return;}
+  if(el.dataset.action==='required-rebuy-break'){addRequiredRebuyBreak();return;}if(el.dataset.action==='go-rebuy-levels'){captureEditor();editor.setupTab='levels';render();document.querySelector('.level-table')?.scrollIntoView({block:'start'});return;}if(el.dataset.action==='keep-nearby-rebuy-breaks'){dlg.close();return;}if(el.dataset.action==='delete-nearby-rebuy-breaks'){const indexes=[...dlg.querySelectorAll('[data-remove-nearby-break]:checked')].map(e=>Number(e.dataset.removeNearbyBreak)).sort((a,b)=>b-a);const before=indexes.length?beginEditorHistoryAction():null;for(const i of indexes)if(editor.value.levels[i]?.kind==='break')editor.value.levels.splice(i,1);finishEditorHistoryAction(before);dlg.close();render();toast(indexes.length?'Selected breaks removed. Save to keep changes.':'No breaks selected.');return;}if(el.dataset.go){event.preventDefault();go(el.dataset.go);return;}
   if(el.dataset.remotePanel){goRemote(el.dataset.remotePanel);return;}
   if(el.dataset.remoteEliminate){await remoteElimination(el.dataset.remoteEliminate);return;}
   if(el.dataset.remoteUndo){await remoteElimination(el.dataset.remoteUndo,true);return;}
@@ -996,7 +1016,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   if(el.dataset.seat){if(view==='remote')chooseSeatPlayer(el.dataset.seat);else seatDialog(el.dataset.seat);return;}
   if(el.dataset.clock){const t=current(),expectedIndex=clockAt(t,timeNow()).index;if(['next','previous'].includes(el.dataset.clock)&&!await confirmApp('Change the current level and reset its countdown?'))return;await commit({type:'clock',tournamentId:t.id,command:el.dataset.clock,expectedIndex});return;}
   if(el.dataset.adjust){await commit({type:'clock',tournamentId:selected,command:'adjust',seconds:Number(el.dataset.adjust)});return;}
-  if(el.dataset.levelDelete!==undefined||el.dataset.levelUp!==undefined||el.dataset.levelDown!==undefined){captureEditor();const l=editor.value.levels;if(el.dataset.levelDelete!==undefined)l.splice(Number(el.dataset.levelDelete),1);else{const i=Number(el.dataset.levelUp??el.dataset.levelDown),j=i+(el.dataset.levelUp!==undefined?-1:1);if(j>=0&&j<l.length)[l[i],l[j]]=[l[j],l[i]];}render();return;}
+  if(el.dataset.levelDelete!==undefined||el.dataset.levelUp!==undefined||el.dataset.levelDown!==undefined){const before=beginEditorHistoryAction();const l=editor.value.levels;if(el.dataset.levelDelete!==undefined)l.splice(Number(el.dataset.levelDelete),1);else{const i=Number(el.dataset.levelUp??el.dataset.levelDown),j=i+(el.dataset.levelUp!==undefined?-1:1);if(j>=0&&j<l.length)[l[i],l[j]]=[l[j],l[i]];}finishEditorHistoryAction(before);render();return;}
   switch(el.dataset.action){
     case 'toggle-move-players':{const restoreScroll=preserveSeatingScroll();
       if(!movePlayersEnabled){seatingContext();if(current()?.status==='completed'){restoreScroll();break;}}
@@ -1020,7 +1040,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
     case 'new-structure':{const value=sampleTemplate();value.name='New tournament structure';for(const key of ['buyIn','dealerToke','startingStack','rebuyAmount','rebuyFeeAmount','rebuyChips','rebuyLastRound','housePercent','houseFlatFee','addonAmount','addonFeeAmount','addonChips','addonLastRound'])value.settings[key]='';value.clockAppearance=clockAppearance(state.clockAppearanceDefaults);editor={value,isNew:true,event:false,version};view='setup';render();break;}
     case 'event-settings':{const t=current();editor={event:true,version,value:{id:t.id,name:t.name,settings:clone(t.settings),levels:clone(t.levels),clockAppearance:clockAppearance(t.clockAppearance)}};view='setup';render();break;}
     case 'close-editor':if(editor?.event){const form=$('#structure-form');if(form&&editor.initialFormSnapshot!==settingsDraftSnapshot(form,editor)){const choice=await confirmApp('Changes have been made. Save them before returning to Tournament Management?','Unsaved Tournament Settings','Return Without Saving','Save Changes & Return');if(choice==='save'){form.requestSubmit();break}if(!choice)break}editor=null;go('manage');}else{editor=null;render();}break;
-    case 'add-level':case 'add-break':captureEditor();editor.value.levels.push({kind:el.dataset.action==='add-break'?'break':'play',minutes:el.dataset.action==='add-break'?10:15,sb:0,bb:0,ante:0,game:el.dataset.action==='add-break'?'':(editor.value.levels.slice().reverse().find(l=>l.kind==='play')?.game||''),chipUp:false});render();break;
+    case 'add-level':case 'add-break':{const before=beginEditorHistoryAction();editor.value.levels.push({kind:el.dataset.action==='add-break'?'break':'play',minutes:el.dataset.action==='add-break'?10:15,sb:0,bb:0,ante:0,game:el.dataset.action==='add-break'?'':(editor.value.levels.slice().reverse().find(l=>l.kind==='play')?.game||''),chipUp:false});finishEditorHistoryAction(before);render();break;}
     case 'recalculate-payouts':await recalculatePayouts();break;case 'clock-appearance':appearanceDialog();break;case 'structure-clock-appearance':appearanceDialog();break;case 'restore-clock-appearance':fillAppearance(el.closest('form'),ORIGINAL_CLOCK_APPEARANCE);break;case 'use-clock-defaults':fillAppearance(el.closest('form'),state.clockAppearanceDefaults);break;
     case 'seat-remaining':{const context=seatingContext();await commit({type:'seat-remaining',tournamentId:context.tournamentId,order:randomSeatOrder(current())});break;}
     case 'combine-tables':combineTablesDialog();break;
@@ -1122,7 +1142,7 @@ document.addEventListener('submit',async event=>{event.preventDefault();const fo
     if(event.submitter?.value==='defaults'){
       if(await commit({type:'clock-appearance-defaults',appearance})){editor.version=version;dlg.close();toast('Preferred clock defaults saved.');}return;
     }
-    editor.value.clockAppearance=appearance;dlg.close();render();toast(editor.event?'Clock appearance selected. Save tournament settings to keep it.':'Clock appearance selected. Save structure to keep it.');return;
+    const historyBefore=beginEditorHistoryAction();editor.value.clockAppearance=appearance;finishEditorHistoryAction(historyBefore);dlg.close();render();toast(editor.event?'Clock appearance selected. Save tournament settings to keep it.':'Clock appearance selected. Save structure to keep it.');return;
   }
   if(form.id==='seating-settings-form'){const tournament=current(),capacity=Number(fd.get('seatsPerTable')),affected=active(tournament).filter(e=>e.table!=null&&e.seat>capacity&&active(tournament).filter(v=>v.table===e.table).length>capacity);if(affected.length&&!await confirmApp(`Reducing to ${capacity} seats per table will move ${affected.length} player(s) to Unseated Players. Continue?`,'Change Seats Per Table','Confirm'))return;if(await commit({type:'seating-settings',tournamentId:fd.get('tournamentId'),seatsPerTable:Number(fd.get('seatsPerTable'))})){toast('Seats per table updated.');}return;}
   if(form.id==='icm-form'){
@@ -1189,22 +1209,28 @@ db.auth.onAuthStateChange((event,newSession)=>{authEventSeen=true;setTimeout(()=
 db.auth.getSession().then(({data,error})=>{if(authEventSeen)return;if(error){authReady=true;authError='Could not restore your sign-in. Please sign in again.';render();return;}void acceptSession(data.session);}).catch(()=>{authReady=true;authError='Could not connect to sign-in. Please try again.';render();});
 
 document.addEventListener('change',async event=>{
- const gameInput=event.target;if(gameInput.matches?.('#structure-form [data-level] input[name=game]')){
+ const gameInput=event.target;if(gameInput.matches?.('#structure-form [data-level] input[name=minutes]')){const form=gameInput.form,rows=[...form.querySelectorAll('[data-level]')],row=gameInput.closest('[data-level]'),index=rows.indexOf(row),kind=row?.querySelector('[name=kind]')?.value,ed=editor,versionAtPrompt=version;if(index<0||!kind)return;const following=rows.slice(index+1).filter(next=>next.querySelector('[name=kind]')?.value===kind);if(!following.length)return;const noun=kind==='break'?'break':'round',futureNoun=kind==='break'?'breaks':'rounds',minutes=gameInput.value,detail=kind==='play'?' Only playing rounds will be changed; breaks will stay the same.':'';const choice=await chooseApp(`Apply ${minutes} minutes to this and future ${futureNoun}?${detail}`,`Apply Minutes to Future ${kind==='play'?'Rounds':'Breaks'}`,`This ${noun} only`,`This and all future ${futureNoun}`);if(choice!=='future'||editor!==ed||version!==versionAtPrompt||!gameInput.isConnected||gameInput.value!==minutes)return;for(const next of following)next.querySelector('[name=minutes]').value=minutes;if(editor===ed&&editorHistory.owner===ed)editorHistory.baseline=editorHistorySnapshot();return;}if(gameInput.matches?.('#structure-form [data-level] input[name=game]')){
   const form=gameInput.form,rows=[...form.querySelectorAll('[data-level]')],index=rows.indexOf(gameInput.closest('[data-level]')),following=rows.slice(index+1).filter(row=>row.querySelector('[name=kind]').value==='play'),ed=editor,versionAtPrompt=version,chosen=gameInput.value.trim();
   if(index<0||!following.length||!chosen)return;
-  if(!await confirmApp(`Change all subsequent playing levels to ${chosen}? Choose Cancel to change only this level.`,'Apply Game to Subsequent Levels','Apply to All Subsequent'))return;
+  if(await chooseApp(`Change this round and all future rounds to ${chosen}?`,'Apply Game to Future Rounds','This round only','This and all future rounds')!=='future')return;
   if(editor!==ed||version!==versionAtPrompt||!gameInput.isConnected||gameInput.value.trim()!==chosen)return;
   for(const row of following)row.querySelector('[name=game]').value=chosen;
+  if(editor===ed&&editorHistory.owner===ed)editorHistory.baseline=editorHistorySnapshot();
   return;
  }
  const select=event.target;if(!select.matches?.('#structure-form [data-layout-selector]'))return;
  const form=select.form,rows=[...form.querySelectorAll('[data-level]')],index=rows.indexOf(select.closest('[data-level]')),following=rows.slice(index+1),ed=editor,versionAtPrompt=version,chosen=select.value;
  if(index<0||!following.length)return;
  const label=select.selectedOptions[0]?.textContent||'this layout';
- if(!await confirmApp(`Use ${label} for all subsequent levels and breaks? Choose Cancel to change only this level.`,'Apply Clock Layout','Apply to All Subsequent'))return;
+ if(await chooseApp(`Use ${label} for this and all future levels and breaks?`,'Apply Clock Layout','This level only','This and all future levels and breaks')!=='future')return;
  if(editor!==ed||version!==versionAtPrompt||!select.isConnected||select.value!==chosen)return;
  for(const row of following){const next=row.querySelector('[data-layout-selector]');if(next)next.value=chosen;}
+ if(editor===ed&&editorHistory.owner===ed)editorHistory.baseline=editorHistorySnapshot();
 });
+
+document.addEventListener('focusin',event=>{if(!event.target.closest?.('#structure-form')||!editor)return;initializeEditorHistory();const snapshot=editorHistorySnapshot();editorHistory.baseline=snapshot;});
+document.addEventListener('change',event=>{if(!event.target.closest?.('#structure-form')||!editor)return;initializeEditorHistory();const before=editorHistory.baseline||JSON.stringify(editor.value),after=editorHistorySnapshot();if(after!==before){editorHistory.undo.push(before);editorHistory.redo=[];}editorHistory.baseline=after;updateEditorHistoryButtons();});
+document.addEventListener('click',event=>{if(event.target.closest?.('#structure-form [data-editor-undo]')){event.preventDefault();applyEditorHistory(false);return;}if(event.target.closest?.('#structure-form [data-editor-redo]')){event.preventDefault();applyEditorHistory(true);return;}});
 
 document.addEventListener('click',event=>{if(!event.target.closest?.('[data-action="save-as-structure"]'))return;try{
  const form=document.querySelector('#structure-form');if(!editor?.event||!form||!form.reportValidity())return;captureEditor();editor.structureExportDraft=clone(editor.value);

@@ -30,7 +30,7 @@ jobs:
         run: npm run build
       - name: Check generated JavaScript
         run: |
-          node --check dist/app-0.4.0-reorg.169.js
+          node --check dist/app-0.4.0-reorg.170.js
           find dist/chunks -type f -name '*.js' -print -exec node --check '{}' \;
           test -f dist/app.js
           test -n "$(find dist/chunks -name '*.js' -print -quit)"
