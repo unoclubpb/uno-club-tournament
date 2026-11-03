@@ -877,7 +877,7 @@ function checkSeatSource(source){
   return t;
 }
 function clearSeatPick(){
-  pickedSeat=null;document.querySelectorAll('.seat-player-grip[aria-pressed="true"]').forEach(el=>el.setAttribute('aria-pressed','false'));
+  pickedSeat=null;document.querySelectorAll('[data-seat-grab][aria-pressed="true"]').forEach(el=>el.setAttribute('aria-pressed','false'));
   setText('#seat-move-instructions',seatMoveInstructions());const cancel=$('#cancel-seat-pick');if(cancel)cancel.hidden=true;
 }
 function chooseSeatPlayer(entryId){const restoreScroll=preserveSeatingScroll();try{
@@ -1014,6 +1014,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   if(el.dataset.seatGrab||el.dataset.seatTargetButton||el.dataset.seatUnseatedTarget){
     if(!seatMovesEnabled()||seatDragging?.shouldSuppressClick())return;
     const target=el.closest('[data-seat-target]');
+    if(el.dataset.seatGrab&&target?.dataset.seat==='unseated'){chooseSeatPlayer(el.dataset.seatGrab);return;}
     if(pickedSeat&&(el.dataset.seatGrab!==pickedSeat.entryId||el.dataset.seatUnseatedTarget)){
       const source=pickedSeat;
       if(target?.dataset.seat==='unseated'){
