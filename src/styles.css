@@ -856,3 +856,13 @@ body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
 .unseated-player-grip{display:block;flex:1;min-width:0;text-align:left;background:transparent;border:0;border-radius:8px;color:inherit;font:inherit;font-weight:600;padding:9px 12px;cursor:pointer}
 .unseated-player-grip:hover:not(:disabled),.unseated-player-grip[aria-pressed=true]{background:#d4af3720}
 .unseated-player-grip:disabled{opacity:.55;cursor:default}
+
+/* Player cards: name and elimination control belong to one unambiguous row. */
+.unseated-drop-zone .unseated-player-row{display:flex;align-items:center;gap:16px;width:100%;margin:10px 0 0;padding:12px 16px;min-height:76px;border:1px solid #60717e;border-radius:12px;background:#172733;transition:border-color .15s,background .15s,box-shadow .15s;cursor:pointer}
+.unseated-drop-zone .unseated-player-row:hover{border-color:#8e9ba4;background:#213440}
+.unseated-drop-zone .unseated-player-row:has(.unseated-player-grip[aria-pressed="true"]){border:2px solid #dfb55e;background:#38402e;box-shadow:inset 0 0 0 1px #b68b34}
+.unseated-drop-zone .unseated-player-grip{flex:1;min-width:0;padding:12px 4px;font-size:17px;text-align:left}
+.unseated-drop-zone .unseated-player-actions{flex:0 0 auto;margin-left:auto}
+.unseated-drop-zone .seat-eliminate-button{min-width:112px}
+.unseated-drop-zone .unseated-player-row .seat-eliminate-button{cursor:pointer}
+.unseated-drop-zone .unseated-player-row .seat-eliminate-button:focus-visible{outline-offset:2px}
