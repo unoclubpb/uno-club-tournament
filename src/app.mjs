@@ -1212,7 +1212,7 @@ document.addEventListener('change',async event=>{
  const gameInput=event.target;if(gameInput.matches?.('#structure-form [data-level] input[name=minutes]')){const form=gameInput.form,rows=[...form.querySelectorAll('[data-level]')],row=gameInput.closest('[data-level]'),index=rows.indexOf(row),kind=row?.querySelector('[name=kind]')?.value,ed=editor,versionAtPrompt=version;if(index<0||!kind)return;const following=rows.slice(index+1).filter(next=>next.querySelector('[name=kind]')?.value===kind);if(!following.length)return;const noun=kind==='break'?'break':'round',futureNoun=kind==='break'?'breaks':'rounds',minutes=gameInput.value,detail=kind==='play'?' Only playing rounds will be changed; breaks will stay the same.':'';const choice=await chooseApp(`Apply ${minutes} minutes to this and future ${futureNoun}?${detail}`,`Apply Minutes to Future ${kind==='play'?'Rounds':'Breaks'}`,`This ${noun} only`,`This and all future ${futureNoun}`);if(choice!=='future'||editor!==ed||version!==versionAtPrompt||!gameInput.isConnected||gameInput.value!==minutes)return;for(const next of following)next.querySelector('[name=minutes]').value=minutes;if(editor===ed&&editorHistory.owner===ed)editorHistory.baseline=editorHistorySnapshot();return;}if(gameInput.matches?.('#structure-form [data-level] input[name=game]')){
   const form=gameInput.form,rows=[...form.querySelectorAll('[data-level]')],index=rows.indexOf(gameInput.closest('[data-level]')),following=rows.slice(index+1).filter(row=>row.querySelector('[name=kind]').value==='play'),ed=editor,versionAtPrompt=version,chosen=gameInput.value.trim();
   if(index<0||!following.length||!chosen)return;
-  if(await chooseApp(`Change this round and all future rounds to ${chosen}?`,'Apply Game to Future Rounds','This round only','This and all future rounds')!=='future')return;
+  if(!await confirmApp(`Change all subsequent playing levels to ${chosen}? Choose Cancel to change only this level.`,'Apply Game to Subsequent Levels','Apply to All Subsequent'))return;
   if(editor!==ed||version!==versionAtPrompt||!gameInput.isConnected||gameInput.value.trim()!==chosen)return;
   for(const row of following)row.querySelector('[name=game]').value=chosen;
   if(editor===ed&&editorHistory.owner===ed)editorHistory.baseline=editorHistorySnapshot();
@@ -1222,7 +1222,7 @@ document.addEventListener('change',async event=>{
  const form=select.form,rows=[...form.querySelectorAll('[data-level]')],index=rows.indexOf(select.closest('[data-level]')),following=rows.slice(index+1),ed=editor,versionAtPrompt=version,chosen=select.value;
  if(index<0||!following.length)return;
  const label=select.selectedOptions[0]?.textContent||'this layout';
- if(await chooseApp(`Use ${label} for this and all future levels and breaks?`,'Apply Clock Layout','This level only','This and all future levels and breaks')!=='future')return;
+ if(!await confirmApp(`Use ${label} for all subsequent levels and breaks? Choose Cancel to change only this level.`,'Apply Clock Layout','Apply to All Subsequent'))return;
  if(editor!==ed||version!==versionAtPrompt||!select.isConnected||select.value!==chosen)return;
  for(const row of following){const next=row.querySelector('[data-layout-selector]');if(next)next.value=chosen;}
  if(editor===ed&&editorHistory.owner===ed)editorHistory.baseline=editorHistorySnapshot();
