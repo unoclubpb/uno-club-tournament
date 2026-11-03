@@ -2164,3 +2164,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 .unseated-drop-zone .seat-eliminate-button{min-width:112px}
 .unseated-drop-zone .unseated-player-row .seat-eliminate-button{cursor:pointer}
 .unseated-drop-zone .unseated-player-row .seat-eliminate-button:focus-visible{outline-offset:2px}
+
+/* Stack player cards vertically instead of inheriting the legacy horizontal drop-zone layout. */
+.unseated-drop-zone,.remote-seating .unseated-drop-zone{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0}
+.unseated-drop-zone .unseated-area-label{align-self:center;width:100%}
