@@ -2138,3 +2138,8 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 .sticky-save .editor-history-controls>button:not(:disabled):hover{background:#1d4ed8!important}
 .sticky-save .editor-history-controls>button:disabled{background:#fff!important;color:#203330!important;-webkit-text-fill-color:#203330!important;opacity:.55!important}
 @media(max-width:560px){.sticky-save .editor-history-controls{margin-left:auto;flex-basis:132px;min-width:132px}.sticky-save .editor-history-controls>button{padding:6px 8px!important}}
+
+/* Propagation prompts use two equal transparent choices without preselecting either. */
+#confirmation-dialog .propagation-choice{flex:1 1 175px;min-width:0;min-height:44px;padding:10px 12px;background:transparent!important;color:var(--ink)!important;-webkit-text-fill-color:var(--ink)!important;border:1px solid var(--line)!important;line-height:1.25;white-space:normal;text-align:center}
+#confirmation-dialog .propagation-choice:hover{background:transparent!important;border-color:var(--gold)!important}
+#confirmation-dialog .propagation-choice:focus-visible{outline:3px solid #d2a449;outline-offset:3px}

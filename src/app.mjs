@@ -19,6 +19,14 @@ function initializeEditorHistory(ed=editor){if(!ed)return;if(editorHistory.owner
 function beginEditorHistoryAction(){if(!editor)return null;initializeEditorHistory();const before=editorHistorySnapshot();editorHistory.baseline=before;return before;}
 function finishEditorHistoryAction(before){if(!editor||before===null)return;const after=JSON.stringify(editor.value);if(after!==before){editorHistory.undo.push(before);editorHistory.redo=[];}editorHistory.baseline=after;updateEditorHistoryButtons();}
 function applyEditorHistory(redo=false){if(!editor||editorHistory.owner!==editor)return;const source=redo?editorHistory.redo:editorHistory.undo,destination=redo?editorHistory.undo:editorHistory.redo;if(!source.length)return;const currentState=editorHistorySnapshot();destination.push(currentState);editor.value=JSON.parse(source.pop());editorHistory.baseline=JSON.stringify(editor.value);render();}
+function isEditorPromptField(field){return !!field?.matches?.('#structure-form [data-level] input[name="minutes"],#structure-form [data-level] input[name="game"],#structure-form [data-layout-selector]');}
+function editorPromptOriginalValue(field){if(editorFieldOrigins.has(field))return editorFieldOrigins.get(field);const row=field.closest('[data-level]'),rows=[...field.form.querySelectorAll('[data-level]')],index=rows.indexOf(row),key=field.name==='layoutId'?'layoutId':field.name,baseline=editorHistory.baseline?JSON.parse(editorHistory.baseline):editor.value;return String(baseline.levels?.[index]?.[key]??'');}
+async function chooseEditorPropagation(field,message,title,currentLabel,futureLabel){
+  initializeEditorHistory();const before=editorHistory.baseline||JSON.stringify(editor.value),undoLength=editorHistory.undo.length,redoBefore=editorHistory.redo.slice(),original=editorPromptOriginalValue(field);pendingEditorPromptFields.add(field);
+  let choice;try{choice=await chooseApp(message,title,currentLabel,futureLabel);}finally{pendingEditorPromptFields.delete(field);}
+  if(choice===null){if(field.isConnected){field.value=original;captureEditor();}const restored=JSON.stringify(editor.value);if(editorHistory.owner===editor){if(editorHistory.undo.length>undoLength&&editorHistory.undo.at(-1)===before)editorHistory.undo.pop();editorHistory.redo=redoBefore;editorHistory.baseline=restored;updateEditorHistoryButtons();}editorFieldOrigins.set(field,original);return null;}
+  editorFieldOrigins.set(field,field.value);return choice;
+}
 function configureTournamentSettingsUI(){
  const ed=editor,editing=view==='setup'&&ed?.event,form=document.querySelector('#structure-form');if(view==='setup'&&ed&&form)initializeEditorHistory(ed);
  document.body.classList.toggle('tournament-settings-page',view==='setup'&&!!ed);
@@ -69,7 +77,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.170 · Reorganization';
+const APP_VERSION='0.4.0-reorg.171 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -95,6 +103,7 @@ const legacyKey='uno-tournament-practice-v1',migrationKey='uno-tournament-browse
 let state=initialState(),version=0,session=null,authReady=false,authError='',connectedUser='',legacyError='';
 let legacy=readBrowserData(),legacyPending=!!legacy&&!localStorage.getItem(migrationKey);
 let busy=false,channel=null,online=false,serverSample=null,lastSync=null,remoteError='',clockTimer,editor=null,setupLibraryTab='structures',layoutDraft=null,editorHistory={owner:null,undo:[],redo:[],baseline:null};
+const editorFieldOrigins=new WeakMap(),pendingEditorPromptFields=new WeakSet();
 let selected=localStorage.getItem('uno-tournament-selected')||'',view=new URLSearchParams(location.search).get('view')||'home';
 const tvWindow=createTvWindowController();
 const automaticTvLaunch=new URLSearchParams(location.search).get('autotv')==='1';let tvLaunchAttempted=false;
@@ -755,12 +764,12 @@ async function chooseApp(message,title,currentLabel,futureLabel){
   let box=$('#confirmation-dialog');if(box?.open)return null;
   if(!box){box=document.createElement('dialog');box.id='confirmation-dialog';document.body.append(box);}
   const context={version,selected,user:session?.user.id};
-  box.setAttribute('aria-labelledby','confirmation-title');box.setAttribute('aria-describedby','confirmation-message');
-  box.innerHTML=`<div class="modal-heading"><h2 id="confirmation-title">${esc(title)}</h2></div><p id="confirmation-message">${esc(message)}</p><div class="button-row"><button type="button" class="button secondary" data-choice="current">${esc(currentLabel)}</button><button type="button" class="button primary" data-choice="future">${esc(futureLabel)}</button></div>`;
+  box.setAttribute('aria-labelledby','confirmation-title');box.setAttribute('aria-describedby','confirmation-message');box.setAttribute('tabindex','-1');
+  box.innerHTML=`<div class="modal-heading"><h2 id="confirmation-title">${esc(title)}</h2></div><p id="confirmation-message">${esc(message)}</p><div class="button-row"><button type="button" class="button outline-light propagation-choice" data-choice="current" data-confirm-answer="no">${esc(currentLabel)}</button><button type="button" class="button outline-light propagation-choice" data-choice="future" data-confirm-answer="yes">${esc(futureLabel)}</button></div>`;
   const answer=await new Promise(resolve=>{
     const finish=value=>{box.removeEventListener('click',click);box.removeEventListener('cancel',cancel);box.removeEventListener('close',cancel);if(box.open)box.close();resolve(value);};
     const click=event=>{const button=event.target.closest('[data-choice]');if(button){event.stopPropagation();finish(button.dataset.choice);}};
-    const cancel=event=>{event?.preventDefault();finish(null);};box.addEventListener('click',click);box.addEventListener('cancel',cancel);box.addEventListener('close',cancel);box.showModal();
+    const cancel=event=>{event?.preventDefault();finish(null);};box.addEventListener('click',click);box.addEventListener('cancel',cancel);box.addEventListener('close',cancel);box.showModal();box.focus({preventScroll:true});
   });
   if(answer==='future'&&(context.version!==version||context.selected!==selected||context.user!==session?.user.id))throw new Error('Tournament changed. Review the latest information and try again.');
   return answer;
@@ -1209,27 +1218,39 @@ db.auth.onAuthStateChange((event,newSession)=>{authEventSeen=true;setTimeout(()=
 db.auth.getSession().then(({data,error})=>{if(authEventSeen)return;if(error){authReady=true;authError='Could not restore your sign-in. Please sign in again.';render();return;}void acceptSession(data.session);}).catch(()=>{authReady=true;authError='Could not connect to sign-in. Please try again.';render();});
 
 document.addEventListener('change',async event=>{
- const gameInput=event.target;if(gameInput.matches?.('#structure-form [data-level] input[name=minutes]')){const form=gameInput.form,rows=[...form.querySelectorAll('[data-level]')],row=gameInput.closest('[data-level]'),index=rows.indexOf(row),kind=row?.querySelector('[name=kind]')?.value,ed=editor,versionAtPrompt=version;if(index<0||!kind)return;const following=rows.slice(index+1).filter(next=>next.querySelector('[name=kind]')?.value===kind);if(!following.length)return;const noun=kind==='break'?'break':'round',futureNoun=kind==='break'?'breaks':'rounds',minutes=gameInput.value,detail=kind==='play'?' Only playing rounds will be changed; breaks will stay the same.':'';const choice=await chooseApp(`Apply ${minutes} minutes to this and future ${futureNoun}?${detail}`,`Apply Minutes to Future ${kind==='play'?'Rounds':'Breaks'}`,`This ${noun} only`,`This and all future ${futureNoun}`);if(choice!=='future'||editor!==ed||version!==versionAtPrompt||!gameInput.isConnected||gameInput.value!==minutes)return;for(const next of following)next.querySelector('[name=minutes]').value=minutes;if(editor===ed&&editorHistory.owner===ed)editorHistory.baseline=editorHistorySnapshot();return;}if(gameInput.matches?.('#structure-form [data-level] input[name=game]')){
-  const form=gameInput.form,rows=[...form.querySelectorAll('[data-level]')],index=rows.indexOf(gameInput.closest('[data-level]')),following=rows.slice(index+1).filter(row=>row.querySelector('[name=kind]').value==='play'),ed=editor,versionAtPrompt=version,chosen=gameInput.value.trim();
-  if(index<0||!following.length||!chosen)return;
-  if(!await confirmApp(`Change all subsequent playing levels to ${chosen}? Choose Cancel to change only this level.`,'Apply Game to Subsequent Levels','Apply to All Subsequent'))return;
-  if(editor!==ed||version!==versionAtPrompt||!gameInput.isConnected||gameInput.value.trim()!==chosen)return;
-  for(const row of following)row.querySelector('[name=game]').value=chosen;
-  if(editor===ed&&editorHistory.owner===ed)editorHistory.baseline=editorHistorySnapshot();
+ const field=event.target;
+ if(field.matches?.('#structure-form [data-level] input[name=minutes]')){
+  const form=field.form,rows=[...form.querySelectorAll('[data-level]')],row=field.closest('[data-level]'),index=rows.indexOf(row),kind=row?.querySelector('[name=kind]')?.value,ed=editor,versionAtPrompt=version;
+  if(index<0||!kind)return;
+  const following=rows.slice(index+1).filter(next=>next.querySelector('[name=kind]')?.value===kind);
+  if(!following.length)return;
+  const ordinal=rows.slice(0,index+1).filter(next=>next.querySelector('[name=kind]')?.value===kind).length,label=(kind==='break'?'Break ':'Round ')+ordinal,minutes=field.value;
+  const message=kind==='break'?'Only breaks will change. Playing rounds will stay the same.':'Only playing rounds will change. Breaks will stay the same.';
+  const choice=await chooseEditorPropagation(field,message,'Apply '+minutes+' minutes to…',label+' only',label+' and future '+(kind==='break'?'breaks':'rounds'));
+  if(!choice||editor!==ed||version!==versionAtPrompt||!field.isConnected||field.value!==minutes)return;
+  if(choice==='future'){for(const next of following)next.querySelector('[name=minutes]').value=minutes;if(editor===ed&&editorHistory.owner===ed)editorHistory.baseline=editorHistorySnapshot();}
   return;
  }
- const select=event.target;if(!select.matches?.('#structure-form [data-layout-selector]'))return;
- const form=select.form,rows=[...form.querySelectorAll('[data-level]')],index=rows.indexOf(select.closest('[data-level]')),following=rows.slice(index+1),ed=editor,versionAtPrompt=version,chosen=select.value;
+ if(field.matches?.('#structure-form [data-level] input[name=game]')){
+  const form=field.form,rows=[...form.querySelectorAll('[data-level]')],row=field.closest('[data-level]'),index=rows.indexOf(row),following=rows.slice(index+1).filter(next=>next.querySelector('[name=kind]').value==='play'),ed=editor,versionAtPrompt=version,chosen=field.value.trim();
+  if(index<0||!following.length||!chosen)return;
+  const ordinal=rows.slice(0,index+1).filter(next=>next.querySelector('[name=kind]').value==='play').length,label='Round '+ordinal;
+  const choice=await chooseEditorPropagation(field,'Use '+chosen+' for this and future playing rounds?','Apply game to…',label+' only',label+' and future rounds');
+  if(!choice||editor!==ed||version!==versionAtPrompt||!field.isConnected||field.value.trim()!==chosen)return;
+  if(choice==='future'){for(const next of following)next.querySelector('[name=game]').value=chosen;if(editor===ed&&editorHistory.owner===ed)editorHistory.baseline=editorHistorySnapshot();}
+  return;
+ }
+ const select=field;if(!select.matches?.('#structure-form [data-layout-selector]'))return;
+ const form=select.form,rows=[...form.querySelectorAll('[data-level]')],row=select.closest('[data-level]'),index=rows.indexOf(row),following=rows.slice(index+1),ed=editor,versionAtPrompt=version,chosen=select.value,kind=row?.querySelector('[name=kind]')?.value;
  if(index<0||!following.length)return;
- const label=select.selectedOptions[0]?.textContent||'this layout';
- if(!await confirmApp(`Use ${label} for all subsequent levels and breaks? Choose Cancel to change only this level.`,'Apply Clock Layout','Apply to All Subsequent'))return;
- if(editor!==ed||version!==versionAtPrompt||!select.isConnected||select.value!==chosen)return;
- for(const row of following){const next=row.querySelector('[data-layout-selector]');if(next)next.value=chosen;}
- if(editor===ed&&editorHistory.owner===ed)editorHistory.baseline=editorHistorySnapshot();
+ const ordinal=rows.slice(0,index+1).filter(next=>next.querySelector('[name=kind]')?.value===kind).length,itemLabel=(kind==='break'?'Break ':'Round ')+ordinal,label=select.selectedOptions[0]?.textContent||'this layout';
+ const choice=await chooseEditorPropagation(select,'Use '+label+' for all subsequent levels and breaks?','Apply layout to…',itemLabel+' only',itemLabel+' and all future levels and breaks');
+ if(!choice||editor!==ed||version!==versionAtPrompt||!select.isConnected||select.value!==chosen)return;
+ if(choice==='future'){for(const nextRow of following){const next=nextRow.querySelector('[data-layout-selector]');if(next)next.value=chosen;}if(editor===ed&&editorHistory.owner===ed)editorHistory.baseline=editorHistorySnapshot();}
 });
 
-document.addEventListener('focusin',event=>{if(!event.target.closest?.('#structure-form')||!editor)return;initializeEditorHistory();const snapshot=editorHistorySnapshot();editorHistory.baseline=snapshot;});
-document.addEventListener('change',event=>{if(!event.target.closest?.('#structure-form')||!editor)return;initializeEditorHistory();const before=editorHistory.baseline||JSON.stringify(editor.value),after=editorHistorySnapshot();if(after!==before){editorHistory.undo.push(before);editorHistory.redo=[];}editorHistory.baseline=after;updateEditorHistoryButtons();});
+document.addEventListener('focusin',event=>{if(!event.target.closest?.('#structure-form')||!editor)return;initializeEditorHistory();const snapshot=editorHistorySnapshot();editorHistory.baseline=snapshot;if(isEditorPromptField(event.target))editorFieldOrigins.set(event.target,event.target.value);});
+document.addEventListener('change',event=>{if(!event.target.closest?.('#structure-form')||!editor)return;initializeEditorHistory();const before=editorHistory.baseline||JSON.stringify(editor.value),after=editorHistorySnapshot();if(after!==before){editorHistory.undo.push(before);editorHistory.redo=[];}editorHistory.baseline=after;if(isEditorPromptField(event.target)&&!pendingEditorPromptFields.has(event.target))editorFieldOrigins.set(event.target,event.target.value);updateEditorHistoryButtons();});
 document.addEventListener('click',event=>{if(event.target.closest?.('#structure-form [data-editor-undo]')){event.preventDefault();applyEditorHistory(false);return;}if(event.target.closest?.('#structure-form [data-editor-redo]')){event.preventDefault();applyEditorHistory(true);return;}});
 
 document.addEventListener('click',event=>{if(!event.target.closest?.('[data-action="save-as-structure"]'))return;try{
