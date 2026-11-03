@@ -848,3 +848,11 @@ body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
 
 /* Separate the rebuy count from its confirmation action. */
 #payment-form .rebuy-recorded-count{margin:18px 0 30px!important}
+
+/* Reorganization: subdued drop-zone label and spacious player controls. */
+.unseated-drop-zone .unseated-area-label{font-size:clamp(23px,2.5vw,32px);font-weight:750;letter-spacing:.035em;color:#89949e;opacity:.46;line-height:1.2;margin:10px 0 22px;text-align:center;pointer-events:none}
+.unseated-player-row{min-height:66px;gap:18px;padding-block:14px}
+.unseated-player-row+.unseated-player-row{margin-top:10px}
+.unseated-player-grip{display:block;flex:1;min-width:0;text-align:left;background:transparent;border:0;border-radius:8px;color:inherit;font:inherit;font-weight:600;padding:9px 12px;cursor:pointer}
+.unseated-player-grip:hover:not(:disabled),.unseated-player-grip[aria-pressed=true]{background:#d4af3720}
+.unseated-player-grip:disabled{opacity:.55;cursor:default}
