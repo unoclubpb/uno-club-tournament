@@ -77,7 +77,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.178e · Reorganization';
+const APP_VERSION='0.4.0-reorg.179 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -591,9 +591,15 @@ function shuffleSeatsDialog(){
 function seatMovesEnabled(){return view==='remote'?remotePanel==='tables'&&current()?.status!=='completed':current()?.status!=='completed';}
 function seatMoveInstructions(remote=view==='remote'){return remote?'Tap a player, then tap the destination seat.':'Tap a player, then tap a seat or Unseated Players. Enable Move Players to drag players.';}
 function seatEliminateButton(t,entry){return `<button type="button" class="seat-eliminate-button" data-eliminate="${entry.id}" aria-label="Eliminate ${esc(pName(entry))} from the tournament" ${t.status==='completed'||entry.pendingElimination||active(t).length<=1?'disabled':''}>Eliminate</button>`;}
+function seatRebuyButton(t,entry){
+  if(!t.settings.rebuyEnabled||(t.settings.rebuyTracking||'total')!=='player')return '';
+  const rebuyMax=t.settings.rebuyMax||0,rebuyCount=entryRebuyCount(entry),clock=clockAt(t,timeNow());
+  const canRebuy=t.status!=='completed'&&tournamentStarted(t)&&!entry.eliminatedAt&&!entry.pendingElimination&&purchaseOpen(t,clock,'rebuy')&&(!rebuyMax||rebuyCount<rebuyMax);
+  return `<button type="button" class="seat-rebuy-button" data-rebuy="${entry.id}" aria-label="Rebuy for ${esc(pName(entry))}" ${canRebuy?'':'disabled'}>${rebuyMax&&rebuyCount>=rebuyMax?'Rebuy Limit of '+rebuyMax:'Rebuy'}</button>`;
+}
 function seatRow(t,table,seat,entry,remote=false){
   const disabled=t.status==='completed'?'disabled':'',moveDisabled=disabled||(entry?.seatLocked||entry?.pendingElimination?'disabled':'');
-  return `<div class="seat-row ${entry?.seatLocked?'seat-locked':''}" data-seat-target data-table="${table}" data-seat="${seat}">${entry?`<button type="button" class="seat-player-grip" data-seat-grab="${entry.id}" aria-pressed="false" aria-label="Move ${esc(pName(entry))} from Table ${table}, Seat ${seat}" title="${remote?'Tap this player, then tap the destination seat':'Drag to another seat, or select then choose a seat'}" ${moveDisabled}><span class="seat-number" aria-hidden="true">${seat}</span><span class="seat-player-name">${esc(pName(entry))}</span>${remote?'':'<span class="seat-grab-icon" aria-hidden="true">⠿</span>'}</button><div class="seat-player-actions"><button type="button" class="seat-lock-button ${entry.seatLocked?'is-locked':''}" data-seat-lock="${entry.id}" aria-pressed="${!!entry.seatLocked}" aria-label="${entry.seatLocked?'Unlock':'Lock'} ${esc(pName(entry))} at Table ${table}, Seat ${seat}" ${disabled}>${entry.seatLocked?'Locked':'Lock in seat'}</button>${remote?'':seatEliminateButton(t,entry)}</div>`:`<button type="button" class="seat-empty" data-seat-target-button="true" aria-label="Table ${table}, Seat ${seat}, empty" ${disabled}><span class="seat-number" aria-hidden="true">${seat}</span><span class="muted">Empty</span></button>`}</div>`;
+  return `<div class="seat-row ${entry?.seatLocked?'seat-locked':''}" data-seat-target data-table="${table}" data-seat="${seat}">${entry?`<button type="button" class="seat-player-grip" data-seat-grab="${entry.id}" aria-pressed="false" aria-label="Move ${esc(pName(entry))} from Table ${table}, Seat ${seat}" title="${remote?'Tap this player, then tap the destination seat':'Drag to another seat, or select then choose a seat'}" ${moveDisabled}><span class="seat-number" aria-hidden="true">${seat}</span><span class="seat-player-name">${esc(pName(entry))}</span>${remote?'':'<span class="seat-grab-icon" aria-hidden="true">⠿</span>'}</button><div class="seat-player-actions"><button type="button" class="seat-lock-button ${entry.seatLocked?'is-locked':''}" data-seat-lock="${entry.id}" aria-pressed="${!!entry.seatLocked}" aria-label="${entry.seatLocked?'Unlock':'Lock'} ${esc(pName(entry))} at Table ${table}, Seat ${seat}" ${disabled}>${entry.seatLocked?'Locked':'Lock in seat'}</button>${remote?'':seatRebuyButton(t,entry)+seatEliminateButton(t,entry)}</div>`:`<button type="button" class="seat-empty" data-seat-target-button="true" aria-label="Table ${table}, Seat ${seat}, empty" ${disabled}><span class="seat-number" aria-hidden="true">${seat}</span><span class="muted">Empty</span></button>`}</div>`;
 }
 function ordinal(n){return n+(n%100>=11&&n%100<=13?'th':({1:'st',2:'nd',3:'rd'})[n%10]||'th');}
 function clockSidebar(t,c){
