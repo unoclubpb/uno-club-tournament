@@ -2657,3 +2657,18 @@ dialog:has(#icm-form){font-family:"DM Sans",system-ui,sans-serif}
   box-shadow: none !important;
   background-clip: padding-box;
 }
+
+/* v187c: avoid iPad/Safari fieldset border overpainting; draw one inset 1px edge. */
+#structure-form .rebuy-tracking-settings fieldset,
+#structure-form .rebuy-tracking-settings fieldset:focus,
+#structure-form .rebuy-tracking-settings fieldset:focus-within,
+#structure-form .rebuy-tracking-settings fieldset:focus-visible {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: inset 0 0 0 1px #d8ded6 !important;
+  border-radius: 7px !important;
+  background: transparent !important;
+  background-clip: padding-box !important;
+}
