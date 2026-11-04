@@ -2710,3 +2710,8 @@ dialog:has(#icm-form){font-family:"DM Sans",system-ui,sans-serif}
   margin: 0;
   accent-color: auto;
 }
+
+/* v188a: match the disabled Rebuy Tracking box to the dimmed Max Rebuys input. */
+#structure-form .rebuy-tracking-settings .rebuy-tracking-box:has(input[name="rebuyTracking"]:disabled) {
+  opacity: .55 !important;
+}
