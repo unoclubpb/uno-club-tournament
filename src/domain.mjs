@@ -216,7 +216,7 @@ export function validateTemplate(template,{requireRebuyBreak=true}={}){
 // Locks belong to this tournament entry and protect the exact table and seat.
 function requireUnlocked(entry){check(!entry.pendingElimination,'Pending elimination: that player and seat are reserved until Undo expires.');check(!entry.seatLocked,`Unlock the player at Table ${entry.table}, Seat ${entry.seat} first.`);}
 export function canCombineTables(t){const remaining=t.entries.filter(e=>!e.eliminatedAt),count=tablesRequired(t);return count>0&&remaining.some(e=>e.table)&&(remaining.some(e=>!e.table||e.table>count)||Array.from({length:count},(_,i)=>remaining.filter(e=>e.table===i+1).length!==Math.floor(remaining.length/count)+(i<remaining.length%count?1:0)).some(Boolean));}
-export function planTableSeating(t,{mode='remaining',order=[]}={}){
+export function planTableSeating(t,{mode='remaining',order=[],keepLocked=true}={}){
   check(t&&t.status!=='completed','Completed tournament is locked.');
   check(['remaining','combine','redraw','legacy-redraw','shuffle'].includes(mode),'Choose a valid seating action.');
   const active=t.entries.filter(e=>!e.eliminatedAt),capacity=t.settings.seatsPerTable;
@@ -225,25 +225,29 @@ export function planTableSeating(t,{mode='remaining',order=[]}={}){
   if(mode==='shuffle')check(!canCombineTables(t),'Balance or combine tables before shuffling seats.');
   if(mode==='redraw')check(count===1,'Redraw is only available when forming the final table.');
   const redraw=mode==='redraw'||mode==='legacy-redraw'||mode==='shuffle';
-  const moving=active.filter(e=>redraw?!e.seatLocked:!e.table||(mode==='combine'&&e.table>count));
+  const moving=active.filter(e=>redraw?(!keepLocked||!e.seatLocked):!e.table||(mode==='combine'&&e.table>count));
   const targets=Array.from({length:count},(_,i)=>Math.floor(active.length/count)+(i<active.length%count?1:0));
   // Refuse to close a locked player's table before planning any changes.
-  for(const entry of active.filter(e=>e.seatLocked)){
+  for(const entry of active.filter(e=>keepLocked&&e.seatLocked)){
     check(entry.table>=1&&entry.table<=count&&entry.seat>=1&&entry.seat<=capacity,`Unlock the player at Table ${entry.table}, Seat ${entry.seat} before combining tables.`);
   }
-  const rank=new Map(order.map((entryId,i)=>[entryId,i]));
+  // Randomize any caller that did not supply its own randomized order.
+  const randomizedOrder=order.length?order.slice():active.map(e=>e.id);
+  if(!order.length)for(let i=randomizedOrder.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[randomizedOrder[i],randomizedOrder[j]]=[randomizedOrder[j],randomizedOrder[i]];}
+  const rank=new Map(randomizedOrder.map((entryId,i)=>[entryId,i]));
   if(mode==='combine')for(let table=1;table<=count;table++){
     const occupants=active.filter(e=>e.table===table),excess=occupants.length-targets[table-1];
-    const candidates=occupants.filter(e=>!e.seatLocked&&!e.pendingElimination).sort((a,b)=>order.length?(rank.get(a.id)??order.length)-(rank.get(b.id)??order.length):b.seat-a.seat);
+    const candidates=occupants.filter(e=>(!keepLocked||!e.seatLocked)&&!e.pendingElimination).sort((a,b)=>(rank.get(a.id)??randomizedOrder.length)-(rank.get(b.id)??randomizedOrder.length));
     check(excess<=candidates.length,occupants.some(e=>e.pendingElimination)?'Wait for pending eliminations before balancing this table.':`Unlock a player at Table ${table} before balancing tables.`);
     if(excess>0)moving.push(...candidates.slice(0,excess));
   }
   const movingIds=new Set(moving.map(e=>e.id)),occupied=new Set(),loads=Array(count).fill(0);
   for(const entry of active.filter(e=>!movingIds.has(e.id))){occupied.add(`${entry.table}/${entry.seat}`);loads[entry.table-1]++;}
-  if(mode==='remaining'||redraw||mode==='combine'&&order.length)moving.sort((a,b)=>(rank.get(a.id)??order.length)-(rank.get(b.id)??order.length));
+  if(mode==='remaining'||redraw||mode==='combine')moving.sort((a,b)=>(rank.get(a.id)??randomizedOrder.length)-(rank.get(b.id)??randomizedOrder.length));
   const updates=[];
   for(const entry of moving){
-    requireUnlocked(entry);
+    check(!entry.pendingElimination,'Pending elimination: that player and seat are reserved until Undo expires.');
+    if(keepLocked)requireUnlocked(entry);
     let table=0;
     const least=Math.min(...loads.map((load,i)=>load<(mode==='combine'||mode==='shuffle'?targets[i]:capacity)?load:Infinity));
     const tableChoices=loads.map((load,i)=>({load,index:i})).filter(v=>v.load===least).map(v=>v.index+1);
@@ -470,7 +474,7 @@ if(a.type==='points-season-start'){startPointsSeason(s,a,now);return s;}
   if(a.type==='seat-remaining'||a.type==='combine-tables'||a.type==='auto-seat'){
     const mode=a.type==='seat-remaining'?'remaining':a.type==='auto-seat'?'legacy-redraw':a.mode;
     check(a.type!=='combine-tables'||['combine','redraw','shuffle'].includes(mode),'Choose how to combine, balance, or shuffle seats.');
-    applySeats(t,planTableSeating(t,{mode,order:a.order}));return s;
+    applySeats(t,planTableSeating(t,{mode,order:a.order,keepLocked:a.keepLocked!==false}));return s;
   }
   const e=t.entries.find(e=>e.id===a.entryId);
   if(['payment','eliminate','seat','seat-lock'].includes(a.type))check(e,'Player entry not found.');
