@@ -1166,3 +1166,6 @@ dialog.rebuy-limit-dialog .modal-heading{display:block;flex:0 1 auto;margin:0;te
 dialog.rebuy-limit-dialog .modal-heading h2{width:auto;white-space:nowrap;font-size:18px}
 dialog.rebuy-limit-dialog .rebuy-limit-actions{display:flex;flex:0 0 auto;justify-content:flex-end}
 dialog.rebuy-limit-dialog .rebuy-limit-actions>.button{min-width:62px}
+
+/* v183c: align clock status value with other tournament metrics. */
+.metrics #status-metric{padding-top:0}
