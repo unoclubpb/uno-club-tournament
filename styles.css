@@ -2211,3 +2211,17 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 .management-panel .seat-player-actions>.seat-rebuy-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 90px;width:90px;min-width:90px;max-width:90px;height:35px;min-height:35px;max-height:35px;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;background:#111f2e;color:var(--ink);font:inherit;font-size:11px;font-weight:700;line-height:1.1;padding:4px 6px;text-align:center;cursor:pointer}
 .management-panel .seat-player-actions>.seat-rebuy-button:disabled{opacity:.45;cursor:not-allowed}
 .management-panel .seat-player-actions>.seat-rebuy-button:hover:not(:disabled){background:#203246}
+
+/* v0.4.0-reorg.180: keep the seat number, player and three equally-sized controls in one row. */
+.management-panel .seat-table>.seat-row{display:flex!important;flex-wrap:nowrap!important;align-items:center!important}
+.management-panel .seat-table>.seat-row>.seat-player-grip{flex:1 1 0!important;min-width:0!important;grid-column:auto!important}
+.management-panel .seat-table>.seat-row>.seat-player-actions{display:flex!important;flex:0 0 auto!important;flex-wrap:nowrap!important;gap:6px!important;align-items:center!important;margin-left:0!important}
+.management-panel .seat-row .seat-player-actions>.seat-lock-button,
+.management-panel .seat-row .seat-player-actions>.seat-rebuy-button,
+.management-panel .seat-row .seat-player-actions>.seat-eliminate-button{box-sizing:border-box!important;flex:0 0 90px!important;width:90px!important;min-width:90px!important;max-width:90px!important;height:35px!important;min-height:35px!important;max-height:35px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;padding:4px 6px!important;font-size:11px!important;line-height:1.1!important;text-align:center!important;white-space:nowrap!important}
+@media(max-width:700px){
+ .management-panel .seat-row .seat-player-actions>.seat-lock-button,
+ .management-panel .seat-row .seat-player-actions>.seat-rebuy-button,
+ .management-panel .seat-row .seat-player-actions>.seat-eliminate-button{flex-basis:70px!important;width:70px!important;min-width:70px!important;max-width:70px!important;font-size:10px!important}
+ .management-panel .seat-table>.seat-row>.seat-player-actions{gap:4px!important}
+}
