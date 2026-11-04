@@ -3074,3 +3074,37 @@ body:has(.management-clock-panel) .management-clock-panel>.control-panel>.manage
     grid-template-columns:repeat(2,minmax(0,1fr))!important;
   }
 }
+
+
+/* Reorganization v198: fit every Tournament Management clock control above the fold. */
+.management-clock-panel>.control-panel{gap:8px!important;padding:8px!important}
+.management-clock-panel>.control-panel .clock-controls{gap:4px!important}
+.management-clock-panel>.control-panel .clock-controls>.button,
+.management-clock-panel>.control-panel .clock-controls>#record-rebuys,
+.management-clock-panel>.control-panel .clock-controls>#record-addons{
+  height:34px!important;min-height:34px!important;padding:3px 5px!important;
+  font-size:clamp(9px,1vw,12px)!important;line-height:1.05!important;
+}
+.management-clock-panel>.control-panel .clock-controls>#clock-main{
+  height:38px!important;min-height:38px!important;padding:3px 7px!important;
+  white-space:normal!important;overflow-wrap:anywhere!important;
+}
+.management-clock-panel>.control-panel .clock-controls>.rebuy-control-button,
+.management-clock-panel>.control-panel .clock-controls>.addon-control-button{
+  white-space:normal!important;overflow-wrap:anywhere!important;
+}
+@media(max-height:800px){
+  .management-clock-panel>.metrics{padding:5px 0!important}
+  .management-clock-panel>.metrics span{margin-bottom:3px!important}
+  .management-clock-panel>.control-panel{padding:6px!important;gap:6px!important}
+  .management-clock-panel>.control-panel .clock-controls{gap:3px!important}
+  .management-clock-panel>.control-panel .clock-controls>.button,
+  .management-clock-panel>.control-panel .clock-controls>#record-rebuys,
+  .management-clock-panel>.control-panel .clock-controls>#record-addons{
+    height:31px!important;min-height:31px!important;padding:2px 4px!important;
+    font-size:clamp(9px,.95vw,11px)!important;
+  }
+  .management-clock-panel>.control-panel .clock-controls>#clock-main{
+    height:35px!important;min-height:35px!important;
+  }
+}
