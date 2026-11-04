@@ -2467,3 +2467,36 @@ dialog.rebuy-limit-dialog .rebuy-limit-actions>.button{min-width:62px}
 
 /* v183c: align clock status value with other tournament metrics. */
 .metrics #status-metric{padding-top:0}
+
+/* v183d: wider Manual Chop dialog with stable rows, single-line truncated names. */
+dialog:has(#manual-chop-form){width:min(1100px,calc(100vw - 36px));max-width:1100px;box-sizing:border-box}
+#manual-chop-form .manual-chop-players{max-height:48dvh;overflow-y:auto;overflow-x:hidden}
+#manual-chop-form .manual-chop-players label{
+  display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1.5fr) 170px;
+  align-items:center;column-gap:20px;min-width:0;margin:0;padding:8px 0;
+}
+#manual-chop-form .manual-chop-player-name{
+  display:block;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  font-size:17px;font-weight:700;line-height:1.3;color:var(--ink);
+}
+#manual-chop-form .manual-chop-players label>small{
+  display:block;min-width:0;line-height:1.3;
+}
+#manual-chop-form .manual-chop-players .input-wrap{
+  width:170px;min-width:170px;max-width:170px;height:48px;min-height:48px;
+  box-sizing:border-box;margin:0;align-self:center;
+}
+#manual-chop-form .manual-chop-players .input-wrap input{
+  width:100%;min-width:0;height:100%;box-sizing:border-box;
+}
+#manual-chop-feedback{font-size:17px;font-weight:700;line-height:1.35}
+@media(max-width:700px){
+  dialog:has(#manual-chop-form){width:calc(100vw - 20px);padding:18px}
+  #manual-chop-form .manual-chop-players label{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) 110px;gap:8px;
+  }
+  #manual-chop-form .manual-chop-players .input-wrap{
+    width:110px;min-width:110px;max-width:110px;height:44px;min-height:44px;
+  }
+  #manual-chop-form .manual-chop-player-name,#manual-chop-feedback{font-size:16px}
+}
