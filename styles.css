@@ -2238,3 +2238,23 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
  .management-panel .seat-row .seat-player-actions>.seat-rebuy-button,
  .management-panel .seat-row .seat-player-actions>.seat-eliminate-button{flex-basis:58px!important;width:58px!important;min-width:58px!important;max-width:58px!important;padding:2px 1px!important;font-size:10px!important}
 }
+
+/* v0.4.0-reorg.180b: registration has two equally sized, independently scrolling panels on tablets/desktop. */
+@media(min-width:701px){
+ .registration-page .signup-layout{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:minmax(0,1fr);
+  column-gap:22px;
+ }
+ .registration-page .signup-layout>.registration-find{
+  grid-column:1;
+  grid-row:1;
+  min-width:0;
+ }
+ .registration-page .signup-layout>.registration-enrolled{
+  grid-column:2;
+  grid-row:1;
+  min-width:0;
+ }
+}
