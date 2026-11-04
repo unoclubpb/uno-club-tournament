@@ -77,7 +77,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.183f · Reorganization';
+const APP_VERSION='0.4.0-reorg.184 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -860,6 +860,7 @@ function icmDialog(){
   modal('ICM Chop',`<form id="icm-form"><input type="hidden" name="version" value="${version}"><input type="hidden" name="tournamentId" value="${selected}"><div class="icm-player-list">${remaining.map(e=>`<div class="icm-player" data-icm-entry="${e.id}"><strong class="icm-player-name" title="${esc(pName(e))}">${esc(pName(e))}</strong><span class="icm-points" title="Expected tournament points, including play" aria-label="${expectedPoints} expected points">${expectedPoints}</span><label>Chip count<input type="text" inputmode="numeric" data-chips="true" data-icm-chips aria-label="Chip count for ${esc(pName(e))}" value="" autocomplete="off" required></label><label>Proposed payout ($)<input type="text" inputmode="numeric" data-money="true" data-icm-payout aria-label="Proposed payout for ${esc(pName(e))}" disabled></label></div>`).join('')}</div><p id="icm-feedback" class="payout-allocation" role="status"></p><button type="button" class="button secondary" data-action="icm-calculate">Calculate ICM</button><button class="button primary full" id="icm-accept" disabled>Accept ICM Chop & End Tournament</button></form>`);
 }
 function calculateIcm(){
+  $('#icm-feedback')?.removeAttribute('data-validation-error');
   const form=$('#icm-form'),context={version:Number(form.elements.version.value),tournamentId:form.elements.tournamentId.value};checkIcmContext(context);
   const proposal=icmProposal(current(),icmRows());icmReview={...context,proposal};
   for(const result of proposal.participants){const row=[...form.querySelectorAll('[data-icm-entry]')].find(row=>row.dataset.icmEntry===result.entryId),input=row.querySelector('[data-icm-payout]');input.disabled=false;input.value=num(result.payout/100);input.required=true;}
@@ -1048,7 +1049,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
       render();$('[data-action=toggle-move-players]')?.focus({preventScroll:true});restoreScroll();break;
     }
     case 'icm-chop':icmDialog();break;
-    case 'icm-calculate':calculateIcm();break;
+    case 'icm-calculate':try{calculateIcm();}catch(error){icmReview=null;const accept=$('#icm-accept');if(accept)accept.disabled=true;setText('#icm-feedback',error.message||'Enter a positive whole chip count for every player.');$('#icm-feedback')?.setAttribute('data-validation-error','true');}break;
     case 'rebuy-count':await rebuyCountDialog();break;case 'addon-count':await addonCountDialog();break;
     case 'cancel-seat-pick':clearSeatPick();break;case 'account':showAccount();break;case 'close-modal':seatMoveChoice=null;tableCombineChoice=null;dlg.close();break;case 'new-tournament':if(state.tournaments.some(t=>!t.archivedAt)){toast('You must archive the current tournament before creating a new one.',true);break;}newTournament();break;case 'add-player':await newPlayer();break;
     case 'players-back':playerDetail=null;render();break;case 'open-clock':openClock();break;case 'refresh':await refresh();if(online&&version===0)await saveInitialWorkspace();break;
