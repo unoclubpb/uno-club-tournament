@@ -2672,3 +2672,41 @@ dialog:has(#icm-form){font-family:"DM Sans",system-ui,sans-serif}
   background: transparent !important;
   background-clip: padding-box !important;
 }
+
+/* v188: Rebuy Tracking is now a plain div, matching the adjacent input border. */
+#structure-form .rebuy-tracking-settings .rebuy-tracking-box {
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  width: 100% !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  margin: 0 !important;
+  padding: 0 10px !important;
+  background: transparent !important;
+  border: 1px solid #d8ded6 !important;
+  border-radius: 7px !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+#structure-form .rebuy-tracking-settings .rebuy-tracking-box label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+}
+#structure-form .rebuy-tracking-settings .rebuy-tracking-box input[type="radio"] {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  min-height: 14px;
+  padding: 0;
+  margin: 0;
+  accent-color: auto;
+}
