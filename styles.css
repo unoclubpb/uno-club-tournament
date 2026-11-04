@@ -2715,3 +2715,16 @@ dialog:has(#icm-form){font-family:"DM Sans",system-ui,sans-serif}
 #structure-form .rebuy-tracking-settings .rebuy-tracking-box:has(input[name="rebuyTracking"]:disabled) {
   opacity: .55 !important;
 }
+
+/* v188b: match the active rebuy controls to the normal editable input border. */
+#structure-form .rebuy-tracking-settings .rebuy-tracking-box:not(:has(input[name="rebuyTracking"]:disabled)),
+#structure-form .rebuy-tracking-settings .rebuy-max-setting input:not(:disabled) {
+  border: 1px solid #586471 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+#structure-form .rebuy-tracking-settings .rebuy-tracking-box:not(:has(input[name="rebuyTracking"]:disabled)):focus-within {
+  border-color: #586471 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
