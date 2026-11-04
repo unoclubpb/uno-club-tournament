@@ -1295,5 +1295,5 @@ document.addEventListener('submit',async event=>{if(event.target.id!=='tournamen
 
 // Reveal the amount field for the selected settlement fee type without discarding either value.
 document.addEventListener('change',event=>{if(event.target.name!=='houseFeeMode')return;const form=event.target.form,flat=event.target.value==='flat';form.querySelector('[data-fee-percent]').hidden=flat;form.querySelector('[data-fee-flat]').hidden=!flat;});
-document.addEventListener('change',event=>{if(event.target.name!=='rebuyTracking')return;const form=event.target.form,input=form.querySelector('[name="rebuyMax"]'),fieldset=form.querySelector('fieldset');if(input)input.disabled=event.target.value!=='player'||!!fieldset?.disabled;});
+document.addEventListener('change',event=>{if(event.target.name!=='rebuyTracking')return;const form=event.target.form,input=form.querySelector('[name="rebuyMax"]'),tracking=form.querySelector('.rebuy-tracking-box');if(input)input.disabled=event.target.value!=='player'||!!tracking?.querySelector('input[name="rebuyTracking"]')?.disabled;});
 document.addEventListener('change',event=>{if(event.target.name==='entryFeeType')refreshEntrySplit(event.target.form);});
