@@ -1240,3 +1240,6 @@ dialog:has(#icm-form){width:min(1100px,calc(100vw - 36px));max-width:1100px;box-
   #icm-form .icm-player>label>input{height:44px;min-height:44px;max-height:44px}
   #icm-feedback{font-size:16px}
 }
+
+/* v183f: separate ICM calculation from the final acceptance action. */
+#icm-form > #icm-accept{margin-top:12px}
