@@ -2225,3 +2225,16 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
  .management-panel .seat-row .seat-player-actions>.seat-eliminate-button{flex-basis:70px!important;width:70px!important;min-width:70px!important;max-width:70px!important;font-size:10px!important}
  .management-panel .seat-table>.seat-row>.seat-player-actions{gap:4px!important}
 }
+
+/* v0.4.0-reorg.180a: preserve readable names by removing excess button width and padding. */
+.management-panel .seat-table>.seat-row>.seat-player-grip{min-width:0!important;flex:1 1 auto!important}
+.management-panel .seat-table>.seat-row .seat-player-name{min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;overflow-wrap:normal!important;word-break:normal!important}
+.management-panel .seat-table>.seat-row>.seat-player-actions{gap:4px!important}
+.management-panel .seat-row .seat-player-actions>.seat-lock-button,
+.management-panel .seat-row .seat-player-actions>.seat-rebuy-button,
+.management-panel .seat-row .seat-player-actions>.seat-eliminate-button{flex:0 0 64px!important;width:64px!important;min-width:64px!important;max-width:64px!important;padding:3px 2px!important}
+@media(max-width:700px){
+ .management-panel .seat-row .seat-player-actions>.seat-lock-button,
+ .management-panel .seat-row .seat-player-actions>.seat-rebuy-button,
+ .management-panel .seat-row .seat-player-actions>.seat-eliminate-button{flex-basis:58px!important;width:58px!important;min-width:58px!important;max-width:58px!important;padding:2px 1px!important;font-size:10px!important}
+}
