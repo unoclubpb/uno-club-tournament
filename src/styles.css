@@ -1077,3 +1077,48 @@ body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
   max-width:90px;
  }
 }
+
+/* v0.4.0-reorg.181: standardize eliminated and undo action footprints. */
+.registration-page .registered-list .entry-row .entry-actions>.pill.light{
+  box-sizing:border-box;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 104px;
+  width:104px;
+  min-width:104px;
+  max-width:104px;
+  height:35px;
+  min-height:35px;
+  max-height:35px;
+  border-radius:30px;
+  padding:3px 6px;
+  font-size:11px;
+  letter-spacing:normal;
+  text-align:center;
+  white-space:nowrap;
+}
+.management-panel .entry-row .entry-actions>button[data-undo-elimination]{
+  box-sizing:border-box;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 187px;
+  width:187px;
+  min-width:187px;
+  max-width:187px;
+  height:35px;
+  min-height:35px;
+  max-height:35px;
+  white-space:nowrap;
+}
+.management-panel .seat-row .seat-player-actions>.seat-rebuy-button{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap!important;
+}
+@media(max-width:700px){
+  .registration-page .registered-list .entry-row .entry-actions>.pill.light{
+    flex-basis:90px;width:90px;min-width:90px;max-width:90px;
+  }
+}
