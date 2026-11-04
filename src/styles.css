@@ -902,3 +902,6 @@ body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
 .management-panel .entry-row .entry-actions button[data-rebuy],
 .management-panel .entry-row .entry-actions button[data-eliminate]{width:90px;min-width:90px;max-width:90px}
 .management-panel .entry-row .entry-actions button[data-rebuy]{white-space:normal;line-height:1.1}
+
+/* v0.4.0-reorg.178d: Player Database View Player label on full-width layouts. Keep the compact arrow-only layout unchanged. */
+@media(min-width:701px){.players-page .player-row>span:last-child{font-size:15px}}
