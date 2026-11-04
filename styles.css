@@ -2939,3 +2939,14 @@ body:has(.management-layout) .management-layout > .management-panel {
 body:has(.management-layout) #app > .workspace > .content {
   padding-top: 12px !important;
 }
+
+/* v191a: suppress iPad rubber-band pull at Management's fixed navigation stop.
+   The top-level Management scroll ends firmly; panel contents still scroll. */
+body:has(.management-layout) #app > .workspace > .content,
+body:has(.management-layout) .management-layout > .management-sidebar {
+  overscroll-behavior-y: none !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+body:has(.management-layout) .management-layout > .management-panel {
+  overscroll-behavior-y: none !important;
+}
