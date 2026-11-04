@@ -77,7 +77,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.180c · Reorganization';
+const APP_VERSION='0.4.0-reorg.181 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -595,7 +595,7 @@ function seatRebuyButton(t,entry){
   if(!t.settings.rebuyEnabled||(t.settings.rebuyTracking||'total')!=='player')return '';
   const rebuyMax=t.settings.rebuyMax||0,rebuyCount=entryRebuyCount(entry),clock=clockAt(t,timeNow());
   const canRebuy=t.status!=='completed'&&tournamentStarted(t)&&!entry.eliminatedAt&&!entry.pendingElimination&&purchaseOpen(t,clock,'rebuy')&&(!rebuyMax||rebuyCount<rebuyMax);
-  return `<button type="button" class="seat-rebuy-button" data-rebuy="${entry.id}" aria-label="Rebuy for ${esc(pName(entry))}" ${canRebuy?'':'disabled'}>${rebuyMax&&rebuyCount>=rebuyMax?'Rebuy Limit of '+rebuyMax:'Rebuy'}</button>`;
+  return `<button type="button" class="seat-rebuy-button" data-rebuy="${entry.id}" aria-label="Rebuy for ${esc(pName(entry))}" ${canRebuy?'':'disabled'}>${rebuyMax&&rebuyCount>=rebuyMax?'Limit '+rebuyMax:'Rebuy'}</button>`;
 }
 function seatRow(t,table,seat,entry,remote=false){
   const disabled=t.status==='completed'?'disabled':'',moveDisabled=disabled||(entry?.seatLocked||entry?.pendingElimination?'disabled':'');
