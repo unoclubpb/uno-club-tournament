@@ -960,3 +960,120 @@ body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
   min-width:0;
  }
 }
+
+/* v0.4.0-reorg.180c: matching registration actions and single-line registered player rows. */
+.registration-page .registration-list .register-row{
+  min-width:0;
+  gap:10px;
+  padding:7px 4px;
+  min-height:49px;
+  text-align:left;
+}
+.registration-page .registration-list .register-row>span:first-child{
+  flex:1 1 0;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.registration-page .registration-list .register-row>strong{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 104px;
+  box-sizing:border-box;
+  width:104px;
+  min-width:104px;
+  max-width:104px;
+  height:35px;
+  min-height:35px;
+  max-height:35px;
+  padding:3px 6px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#203246;
+  color:var(--ink);
+  font:inherit;
+  font-size:11px;
+  font-weight:700;
+  line-height:1.1;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.registration-page .registration-list .register-row:hover:not(:disabled)>strong{background:#2b435e}
+.registration-page .registered-list .entry-row{
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  flex-wrap:nowrap;
+  justify-content:space-between;
+  gap:10px;
+  min-height:49px;
+  padding:7px 4px;
+  box-sizing:border-box;
+}
+.registration-page .registered-list .entry-row>div:first-child{
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  gap:8px;
+  flex:1 1 0;
+  min-width:0;
+  overflow:hidden;
+}
+.registration-page .registered-list .entry-row>div:first-child>strong{
+  flex:0 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.registration-page .registered-list .entry-row>div:first-child>small{
+  flex:0 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:11px;
+  color:var(--muted);
+}
+.registration-page .registered-list .entry-row>.entry-actions{
+  flex:0 0 104px;
+  width:104px;
+  min-width:104px;
+  max-width:104px;
+  display:flex;
+  flex-direction:row;
+  flex-wrap:nowrap;
+  align-items:center;
+  justify-content:flex-end;
+  margin:0;
+}
+.registration-page .registered-list .entry-row .entry-actions>button[data-unregister]{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 104px;
+  box-sizing:border-box;
+  width:104px;
+  min-width:104px;
+  max-width:104px;
+  height:35px;
+  min-height:35px;
+  max-height:35px;
+  padding:3px 6px;
+  border-radius:8px;
+  font-size:11px;
+  line-height:1.1;
+  white-space:nowrap;
+}
+@media(max-width:700px){
+ .registration-page .registration-list .register-row>strong,
+ .registration-page .registered-list .entry-row>.entry-actions,
+ .registration-page .registered-list .entry-row .entry-actions>button[data-unregister]{
+  flex-basis:90px;
+  width:90px;
+  min-width:90px;
+  max-width:90px;
+ }
+}
