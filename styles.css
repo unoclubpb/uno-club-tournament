@@ -2450,3 +2450,10 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
   content:"";position:absolute;left:10%;right:10%;top:50%;height:2px;
   background:#f2d17e;transform:rotate(-24deg);pointer-events:none;
 }
+
+/* v183a: Rebuy limit notice uses a centered heading and lower-right OK only. */
+dialog.rebuy-limit-dialog{width:min(390px,calc(100vw - 30px));padding:26px 26px 22px}
+dialog.rebuy-limit-dialog .modal-heading{justify-content:center;text-align:center;margin-bottom:27px}
+dialog.rebuy-limit-dialog .modal-heading h2{width:100%;font-size:20px}
+dialog.rebuy-limit-dialog .rebuy-limit-actions{display:flex;justify-content:flex-end}
+dialog.rebuy-limit-dialog .rebuy-limit-actions>.button{min-width:74px}
