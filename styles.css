@@ -3108,3 +3108,23 @@ body:has(.management-clock-panel) .management-clock-panel>.control-panel>.manage
     height:35px!important;min-height:35px!important;
   }
 }
+
+
+/* Reorganization v199: combine registration and the live player roster in one Players view. */
+.management-panel .management-registration-embedded .signup-layout.management-players-combined{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;
+  gap:14px!important;margin:0!important;
+}
+.management-panel .management-registration-embedded .signup-layout.management-players-combined>.panel{
+  min-height:0!important;height:auto!important;overflow:visible!important;
+}
+.management-panel .management-registration-embedded .management-players-combined .section-label{
+  flex-direction:row!important;align-items:center!important;flex-wrap:wrap!important;
+}
+.management-panel .management-registration-embedded .management-players-combined .registration-list{
+  flex:0 1 auto!important;min-height:100px!important;max-height:220px!important;
+  overflow-y:auto!important;
+}
+.management-panel .management-registration-embedded .management-players-combined .registered-list{
+  flex:none!important;min-height:0!important;max-height:none!important;overflow:visible!important;
+}
