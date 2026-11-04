@@ -940,13 +940,26 @@ function randomSeatOrder(t){
   for(let i=order.length-1;i>0;i--){const j=crypto.getRandomValues(new Uint32Array(1))[0]%(i+1);[order[i],order[j]]=[order[j],order[i]];}
   return order;
 }
-function combineTablesDialog(){
+async function combineTablesDialog(){
   const context=seatingContext(),t=current(),count=tablesRequired(t),reducing=tablesInUse(t)>count,label=tableActionName(t),finalTable=reducing&&count===1;
-  try{planTableSeating(t,{mode:'combine'});}catch(error){modal(reducing?'Cannot combine tables':'Cannot balance tables',`<p class="seat-move-error" role="alert">${esc(error.message)}</p><p>Unlock the indicated player, then try ${label} again. No seats have changed.</p><button class="button secondary" data-action="close-modal">Close</button>`);return;}
-  tableCombineChoice={...context,randomBalance:view==='remote'&&!reducing};
+  const hasLocked=active(t).some(e=>e.seatLocked);
+  const order=randomSeatOrder(t);
+  // Balancing without seat locks is a one-click action, reversible with Undo Last Move.
+  if(!reducing&&!hasLocked){
+    try{planTableSeating(t,{mode:'combine',order});}
+    catch(error){modal('Cannot balance tables',`<p class="seat-move-error" role="alert">${esc(error.message)}</p><button class="button secondary" data-action="close-modal">Close</button>`);return;}
+    if(await commit({type:'combine-tables',tournamentId:context.tournamentId,mode:'combine',order}))toast('Tables balanced.');
+    return;
+  }
+  if(!hasLocked){
+    try{planTableSeating(t,{mode:'combine',order});}
+    catch(error){modal('Cannot combine tables',`<p class="seat-move-error" role="alert">${esc(error.message)}</p><button class="button secondary" data-action="close-modal">Close</button>`);return;}
+  }
+  tableCombineChoice={...context,randomBalance:!reducing,hasLocked};
   const buttons=finalTable?'<button class="button primary" data-combine-mode="combine">Keep existing seats</button><button class="button secondary" data-combine-mode="redraw">Redraw all seats</button>':`<button class="button primary" data-combine-mode="combine">${label}</button>`;
-  const detail=finalTable?'The final table will be Table 1. Keep its existing seats and fill empty seats, or redraw everyone except its locked players.':reducing?`Keep Tables 1–${count} open and close the extra tables. Distribute remaining players evenly into available seats. Table 1 receives the extra player when the total is odd.`:(view==='remote'?'Keep the current tables open. Randomly select unlocked players to move into open seats until the tables are balanced. Table 1 receives the extra player when the total is odd.':'Keep the current tables open and distribute players evenly into available seats. Table 1 receives the extra player when the total is odd.');
-  modal(finalTable?'Form the final table':label,`<p>${detail}</p><p class="muted">Locked players keep their exact table and seat.</p><div class="button-row">${buttons}<button class="button secondary" data-action="close-modal">Cancel</button></div>`);
+  const detail=finalTable?'The final table will be Table 1. Keep existing seats and fill empty seats, or redraw everyone.':reducing?`Keep Tables 1–${count} open and close the extra tables. Distribute remaining players evenly into available seats. Table 1 receives the extra player when the total is odd.`:'Randomly select players to move into random available seats until the tables are balanced. Table 1 receives the extra player when the total is odd.';
+  const lockChoice=hasLocked?'<label class="checkbox-row"><input type="checkbox" id="keep-locked-balance" checked> Keep locked players in their current seat</label>':'';
+  modal(finalTable?'Form the final table':label,`<p>${detail}</p>${lockChoice}<div class="button-row">${buttons}<button class="button secondary" data-action="close-modal">Cancel</button></div>`);
 }
 
 async function tryTvFullscreen(feedback=true){const result=await tvWindow.fullscreen({automatic:!feedback});const fallback=$('.tv-launch-fallback');if(fallback)fallback.hidden=!!document.fullscreenElement;if(feedback&&!result.ok)toast(result.reason||'Use the TV window’s Full Screen button.',true);return result;}
@@ -1020,7 +1033,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   }
   if(el.dataset.combineMode){
     if(dlg.open&&tableCombineChoice){const context=tableCombineChoice,label=context.mode==='shuffle'?'Shuffle Seats':tableActionName(current());checkSeatingContext(context);
-      if(await commit({type:'combine-tables',tournamentId:context.tournamentId,mode:el.dataset.combineMode,order:['redraw','shuffle'].includes(el.dataset.combineMode)||context.randomBalance?randomSeatOrder(current()):[]})){tableCombineChoice=null;dlg.close();toast(label==='Combine Tables'?'Tables combined.':label==='Shuffle Seats'?'Seats shuffled.':'Tables balanced.');}
+      if(await commit({type:'combine-tables',tournamentId:context.tournamentId,mode:el.dataset.combineMode,keepLocked:$('#keep-locked-balance')?.checked!==false,order:randomSeatOrder(current())})){tableCombineChoice=null;dlg.close();toast(label==='Combine Tables'?'Tables combined.':label==='Shuffle Seats'?'Seats shuffled.':'Tables balanced.');}
     }return;
   }
   if(el.dataset.seatMoveMode){if(dlg.open&&seatMoveChoice){const {source,table,seat}=seatMoveChoice;await saveSeatMove(source,table,seat,el.dataset.seatMoveMode);}return;}
@@ -1069,7 +1082,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
     case 'add-level':case 'add-break':{const before=beginEditorHistoryAction();editor.value.levels.push({kind:el.dataset.action==='add-break'?'break':'play',minutes:el.dataset.action==='add-break'?10:15,sb:0,bb:0,ante:0,game:el.dataset.action==='add-break'?'':(editor.value.levels.slice().reverse().find(l=>l.kind==='play')?.game||''),chipUp:false});finishEditorHistoryAction(before);render();break;}
     case 'recalculate-payouts':await recalculatePayouts();break;case 'clock-appearance':appearanceDialog();break;case 'structure-clock-appearance':appearanceDialog();break;case 'restore-clock-appearance':fillAppearance(el.closest('form'),ORIGINAL_CLOCK_APPEARANCE);break;case 'use-clock-defaults':fillAppearance(el.closest('form'),state.clockAppearanceDefaults);break;
     case 'seat-remaining':{const context=seatingContext();await commit({type:'seat-remaining',tournamentId:context.tournamentId,order:randomSeatOrder(current())});break;}
-    case 'combine-tables':combineTablesDialog();break;
+    case 'combine-tables':await combineTablesDialog();break;
     case 'shuffle-seats':shuffleSeatsDialog();break;
     case 'unseat-all':unseatAllDialog();break;
     case 'undo-seating':{const index=seatingUndo.map(item=>item.tournamentId).lastIndexOf(selected),item=seatingUndo[index];if(!item)break;const context=seatingContext();if(await commit({type:'seating-restore',tournamentId:context.tournamentId,positions:item.positions})){seatingUndo.splice(index,1);toast('Previous seating restored.');}break;}
