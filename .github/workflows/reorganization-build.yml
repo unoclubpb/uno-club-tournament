@@ -1,0 +1,38 @@
+name: Reorganization Release Build
+on:
+  push:
+    branches: [Reorganization]
+    paths-ignore:
+      - 'app.js'
+      - 'app-*.js'
+      - 'chunks/**'
+      - 'index.html'
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Update website version references
+        run: sed -i 's/0.4.0-reorg.186a/0.4.0-reorg.187/g' index.html
+      - run: npm run build
+      - run: node --check app.js
+      - name: Publish generated site files to branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html app.js app-0.4.0-reorg.187.js chunks/
+          if ! git diff --cached --quiet; then
+            git commit -m "Build tournament director version 187"
+            git push
+          fi
