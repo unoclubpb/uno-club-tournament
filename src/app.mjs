@@ -77,7 +77,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.183c · Reorganization';
+const APP_VERSION='0.4.0-reorg.183d · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -181,7 +181,7 @@ function manualChopDialog(){
   if(!online||busy||renderedWorkspaceVersion!==version)throw new Error('Tournament changed or disconnected. Refresh before opening a manual chop.');
   const t=current(),remaining=active(t),schedule=prizes(t);manualChopReview=null;
   manualChopProposal(t,remaining.map((e,i)=>({entryId:e.id,payout:schedule[i]||0})));
-  modal('Manual Chop',`<form id="manual-chop-form"><input type="hidden" name="version" value="${version}"><input type="hidden" name="tournamentId" value="${t.id}"><p>Enter each remaining player’s agreed payout. Previously eliminated players keep their payouts and points.</p><div class="manual-chop-players">${remaining.map((e,i)=>`<label>${esc(pName(e))}<small class="muted">${chopPointsBreakdown(remaining.length)}</small><div class="input-wrap"><span>$</span><input type="text" inputmode="numeric" data-money="true" data-manual-payout="${e.id}" value="${num((schedule[i]||0)/100)}" required></div></label>`).join('')}</div><p id="manual-chop-feedback" role="status"></p><button class="button primary full">Review Manual Chop</button></form>`);updateManualChop();
+  modal('Manual Chop',`<form id="manual-chop-form"><input type="hidden" name="version" value="${version}"><input type="hidden" name="tournamentId" value="${t.id}"><p>Enter each remaining player’s agreed payout. Previously eliminated players keep their payouts and points.</p><div class="manual-chop-players">${remaining.map((e,i)=>`<label><span class="manual-chop-player-name" title="${esc(pName(e))}">${esc(pName(e))}</span><small class="muted">${chopPointsBreakdown(remaining.length)}</small><div class="input-wrap"><span>$</span><input type="text" inputmode="numeric" data-money="true" data-manual-payout="${e.id}" value="${num((schedule[i]||0)/100)}" required></div></label>`).join('')}</div><p id="manual-chop-feedback" role="status"></p><button class="button primary full">Review Manual Chop</button></form>`);updateManualChop();
 }
 function manualRows(){return [...$('#manual-chop-form').querySelectorAll('[data-manual-payout]')].map(input=>({entryId:input.dataset.manualPayout,payout:wholeDollars(input.value)*100}));}
 function updateManualChop(){try{const proposal=manualChopProposal(current(),manualRows());setText('#manual-chop-feedback',`All ${money(proposal.chopPool)} allocated.${proposal.reservedPayouts.length?' Earlier payouts remain reserved.':''}`);}catch(error){setText('#manual-chop-feedback',error.message);}}
