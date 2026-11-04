@@ -2806,3 +2806,121 @@ body:has(.management-chrome) .management-layout > .management-panel {
 body:has(.management-chrome) .management-registration-embedded .signup-layout > .panel {
   min-height: 0;
 }
+
+/* v191: Management/Archives are true viewport workspaces with a stationary footer.
+   The large sections scroll inside fixed-height panels instead of growing the page. */
+body:has(#app > .management-chrome) {
+  height: var(--app-height, 100dvh) !important;
+  overflow: hidden !important;
+}
+body:has(#app > .management-chrome) #app {
+  height: var(--app-height, 100dvh) !important;
+  max-height: var(--app-height, 100dvh) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+body:has(#app > .management-chrome) #app > .management-chrome {
+  position: relative !important;
+  top: auto !important;
+  flex: 0 0 auto !important;
+  z-index: 60 !important;
+}
+body:has(#app > .management-chrome) #app > .workspace {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+body:has(#app > .management-chrome) #app > .workspace > .app-footer {
+  flex: 0 0 auto !important;
+  margin-top: auto !important;
+  position: relative !important;
+  bottom: auto !important;
+  z-index: 20 !important;
+  background: var(--bg) !important;
+}
+/* Management: top metrics/clock can scroll away. Sidebar and panel then pin
+   together immediately under the navigation; the panel fills down to the footer. */
+body:has(.management-layout) #app > .workspace > .content {
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior-y: contain !important;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0 !important;
+}
+body:has(.management-layout) .management-layout {
+  position: relative !important;
+  display: grid !important;
+  align-items: start !important;
+  height: var(--management-panel-height, 65dvh) !important;
+  min-height: var(--management-panel-height, 65dvh) !important;
+  padding: 0 !important;
+  margin-bottom: 0 !important;
+  overflow: visible !important;
+}
+body:has(.management-layout) .management-layout > .management-sidebar,
+body:has(.management-layout) .management-layout > .management-panel {
+  position: sticky !important;
+  top: 0 !important;
+  align-self: start !important;
+  min-height: 0 !important;
+  max-height: var(--management-panel-height, 65dvh) !important;
+}
+body:has(.management-layout) .management-layout > .management-sidebar {
+  height: max-content !important;
+  max-height: var(--management-panel-height, 65dvh) !important;
+  overflow-y: auto !important;
+}
+body:has(.management-layout) .management-layout > .management-panel {
+  height: var(--management-panel-height, 65dvh) !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  margin-top: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior-y: contain !important;
+  -webkit-overflow-scrolling: touch;
+}
+/* Archives: the archive panel itself fills the area between menu and footer;
+   only the archive results (or archive-detail content) scroll. */
+body:has(.archive-list, .archive-detail) #app > .workspace > .content {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  padding-bottom: 8px !important;
+}
+body:has(.archive-list, .archive-detail) .content > .archive-list,
+body:has(.archive-list, .archive-detail) .content > .archive-detail {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  margin-top: 0 !important;
+  overflow: hidden !important;
+}
+body:has(.archive-list) .archive-list > .section-label,
+body:has(.archive-list) .archive-list > #archive-filter {
+  flex: 0 0 auto !important;
+}
+body:has(.archive-list) .archive-list > .archive-results {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain !important;
+  -webkit-overflow-scrolling: touch;
+}
+body:has(.archive-detail) .archive-detail {
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain !important;
+  -webkit-overflow-scrolling: touch;
+}
