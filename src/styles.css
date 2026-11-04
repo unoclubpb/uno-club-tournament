@@ -1264,3 +1264,20 @@ dialog:has(#icm-form){width:min(1100px,calc(100vw - 36px));max-width:1100px;box-
     flex:1 1 170px;text-align:center;font-size:13px;
   }
 }
+
+/* v185a: consistent tournament-management player names and descriptions. */
+.management-panel .entry-row>div:first-child>strong,
+.management-panel .seat-row .seat-player-name,
+.management-panel .icm-results .result-row>span,
+.management-panel .summary-prizes .result-row>span,
+.management-panel .tournament-points .result-row>span,
+#manual-chop-form .manual-chop-player-name,
+#icm-form .icm-player>.icm-player-name{
+  font-size:15px;font-weight:700;
+}
+.management-panel .entry-row>div:first-child>small,
+.management-panel .icm-results .result-row>span>small,
+.management-panel .summary-prizes .result-row>span>small,
+.management-panel .tournament-points .result-row>span>small{
+  font-size:12px;font-weight:400;
+}
