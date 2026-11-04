@@ -869,7 +869,7 @@ function calculateIcm(){
   updateIcmReview();form.querySelector('.icm-player-list').scrollTop=0;
 }
 function updateIcmReview(target){
-  if(target?.hasAttribute('data-icm-chips')){icmReview=null;$('#icm-accept').disabled=true;setText('#icm-feedback','Calculate ICM again.');return;}
+  if(target?.hasAttribute('data-icm-chips')){icmReview=null;$('#icm-accept').disabled=true;if($('#icm-feedback')?.getAttribute('data-validation-error')!=='true')setText('#icm-feedback','Calculate ICM again.');return;}
   if(!icmReview)return;
   try{checkIcmContext(icmReview);const rows=icmRows();if(!rows.every(v=>Number.isSafeInteger(v.payout)&&v.payout>=0))throw new Error('Enter every proposed payout as whole dollars.');const total=rows.reduce((n,v)=>n+v.payout,0),pool=icmReview.proposal.chopPool;$('#icm-accept').disabled=total!==pool;setText('#icm-feedback',allocationFeedback(pool,total));}catch(error){$('#icm-accept').disabled=true;setText('#icm-feedback',error.message);}
 }
