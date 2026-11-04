@@ -1344,3 +1344,72 @@ dialog:has(#icm-form){font-family:"DM Sans",system-ui,sans-serif}
 
 /* v192: let Management and Archives use the full screen width. */
 .workspace:has(.management-layout),.workspace:has(.archive-list),.workspace:has(.archive-detail){max-width:none;width:100%;margin-left:0;margin-right:0;padding-left:0;padding-right:0}
+
+/* v193: Management navigation stays fixed; each selected panel owns its scroll. */
+body:has(.management-layout) #app > .workspace > .content{
+  display:block!important;flex:1 1 0!important;min-height:0!important;height:auto!important;
+  overflow:hidden!important;padding:8px 0!important;
+}
+body:has(.management-layout) .management-layout{
+  position:relative!important;display:grid!important;
+  grid-template-columns:180px minmax(0,1fr)!important;gap:18px!important;
+  align-items:stretch!important;height:100%!important;min-height:0!important;
+  margin:0!important;overflow:hidden!important;
+}
+body:has(.management-layout) .management-layout>.management-sidebar{
+  position:relative!important;top:auto!important;align-self:stretch!important;
+  height:100%!important;max-height:none!important;overflow:visible!important;z-index:auto!important;
+}
+body:has(.management-layout) .management-layout>.management-panel{
+  position:relative!important;top:auto!important;align-self:stretch!important;
+  height:100%!important;max-height:none!important;min-height:0!important;margin:0!important;
+  overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;
+  -webkit-overflow-scrolling:touch;
+}
+body:has(.management-layout) .management-layout>.management-clock-panel{
+  display:flex!important;flex-direction:column!important;gap:10px!important;
+  overflow:hidden!important;padding:12px!important;
+}
+.management-clock-panel>.metrics{
+  flex:0 0 auto!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  min-width:0!important;margin:0!important;padding:10px 0!important;
+}
+.management-clock-panel>.metrics>div{min-width:0!important;padding:0 8px!important}
+.management-clock-panel>.metrics span{font-size:10px!important;line-height:1.2!important;margin-bottom:6px!important}
+.management-clock-panel>.metrics strong{font-size:clamp(14px,1.7vw,22px)!important;line-height:1.1!important;overflow-wrap:anywhere}
+.management-clock-panel>.metrics .status-value{font-size:clamp(11px,1.35vw,17px)!important}
+.management-clock-panel>.table-balance-alert{flex:0 0 auto!important;margin:0!important}
+.management-clock-panel>.control-panel{
+  flex:1 1 auto!important;min-height:0!important;margin:0!important;padding:12px!important;
+  grid-template-columns:minmax(180px,.8fr) minmax(0,1.5fr)!important;gap:14px!important;
+  overflow:hidden!important;
+}
+.management-clock-panel>.control-panel>.mini-clock{min-width:0!important;padding:0 12px 0 0!important}
+.management-clock-panel>.control-panel>.mini-clock>strong{font-size:clamp(32px,5vw,70px)!important}
+.management-clock-panel>.control-panel .clock-controls{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;
+}
+.management-clock-panel>.control-panel .clock-controls>.button{
+  min-width:0!important;width:100%!important;padding:7px 6px!important;
+  font-size:clamp(10px,1.15vw,13px)!important;line-height:1.2!important;
+}
+.management-clock-panel>.control-panel .clock-controls>#clock-main{grid-column:1/-1}
+@media(max-width:1000px){
+  body:has(.management-layout) .management-layout{grid-template-columns:150px minmax(0,1fr)!important;gap:12px!important}
+  .management-clock-panel>.control-panel{grid-template-columns:minmax(150px,.7fr) minmax(0,1.5fr)!important;gap:10px!important}
+  .management-clock-panel>.metrics>div{padding:0 5px!important}
+}
+@media(max-width:700px){
+  body:has(.management-layout) .management-layout{grid-template-columns:90px minmax(0,1fr)!important;gap:8px!important}
+  .management-clock-panel>.control-panel{grid-template-columns:minmax(110px,.65fr) minmax(0,1.35fr)!important;gap:8px!important;padding:8px!important}
+  .management-clock-panel>.metrics{padding:8px 0!important}
+  .management-clock-panel>.metrics span{font-size:9px!important}
+  .management-clock-panel>.metrics>div{padding:0 3px!important}
+  .management-clock-panel>.control-panel>.mini-clock>strong{font-size:clamp(26px,6vw,42px)!important}
+  .management-clock-panel>.control-panel .clock-controls{gap:5px!important}
+}
+@media(max-height:700px){
+  .management-clock-panel>.metrics{padding:6px 0!important}
+  .management-clock-panel>.control-panel{padding:8px!important;gap:8px!important}
+  .management-clock-panel>.control-panel>.mini-clock>strong{font-size:clamp(30px,4.8vw,62px)!important}
+}
