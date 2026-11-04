@@ -2773,3 +2773,36 @@ dialog:has(#icm-form){font-family:"DM Sans",system-ui,sans-serif}
   .management-panel .management-registration-embedded .registration-list,
   .management-panel .management-registration-embedded .registered-list { max-height: 320px; }
 }
+
+/* v190: Management tabs and panel travel to the same sticky stop beneath navigation.
+   The panel stays put once there; its own content scrolls instead of passing under the header. */
+body:has(.management-chrome) .management-layout {
+  align-items: start !important;
+  overflow: visible !important;
+  padding-bottom: clamp(260px, 42vh, 480px);
+}
+body:has(.management-chrome) .management-layout > .management-sidebar,
+body:has(.management-chrome) .management-layout > .management-panel {
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: var(--management-sticky-top, 110px) !important;
+  align-self: start !important;
+  max-height: calc(100dvh - var(--management-sticky-top, 110px) - 8px) !important;
+}
+body:has(.management-chrome) .management-layout > .management-sidebar {
+  height: max-content !important;
+  overflow-y: auto !important;
+}
+body:has(.management-chrome) .management-layout > .management-panel {
+  box-sizing: border-box;
+  height: auto;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: auto;
+}
+/* Keep the registration sections independently scrollable inside the pinned Players panel. */
+body:has(.management-chrome) .management-registration-embedded .signup-layout > .panel {
+  min-height: 0;
+}
