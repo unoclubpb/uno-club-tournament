@@ -2457,3 +2457,10 @@ dialog.rebuy-limit-dialog .modal-heading{justify-content:center;text-align:cente
 dialog.rebuy-limit-dialog .modal-heading h2{width:100%;font-size:20px}
 dialog.rebuy-limit-dialog .rebuy-limit-actions{display:flex;justify-content:flex-end}
 dialog.rebuy-limit-dialog .rebuy-limit-actions>.button{min-width:74px}
+
+/* v183b: single-row rebuy limit notice. */
+dialog.rebuy-limit-dialog[open]{display:flex;align-items:center;justify-content:space-between;gap:20px;width:max-content;max-width:calc(100vw - 30px);padding:20px 24px}
+dialog.rebuy-limit-dialog .modal-heading{display:block;flex:0 1 auto;margin:0;text-align:left}
+dialog.rebuy-limit-dialog .modal-heading h2{width:auto;white-space:nowrap;font-size:18px}
+dialog.rebuy-limit-dialog .rebuy-limit-actions{display:flex;flex:0 0 auto;justify-content:flex-end}
+dialog.rebuy-limit-dialog .rebuy-limit-actions>.button{min-width:62px}
