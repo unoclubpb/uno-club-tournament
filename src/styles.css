@@ -908,3 +908,8 @@ body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
 
 /* v0.4.0-reorg.178e: finish action matches the combined 90px + 7px + 90px player action widths. */
 .management-panel .section-label button[data-action="finish"]{width:187px;min-width:187px;max-width:187px;box-sizing:border-box;flex:0 0 187px}
+
+/* v0.4.0-reorg.179: seating-table Rebuy action mirrors the Players-tab 90 x 35px control. */
+.management-panel .seat-player-actions>.seat-rebuy-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 90px;width:90px;min-width:90px;max-width:90px;height:35px;min-height:35px;max-height:35px;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;background:#111f2e;color:var(--ink);font:inherit;font-size:11px;font-weight:700;line-height:1.1;padding:4px 6px;text-align:center;cursor:pointer}
+.management-panel .seat-player-actions>.seat-rebuy-button:disabled{opacity:.45;cursor:not-allowed}
+.management-panel .seat-player-actions>.seat-rebuy-button:hover:not(:disabled){background:#203246}
