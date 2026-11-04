@@ -905,3 +905,6 @@ body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
 
 /* v0.4.0-reorg.178d: Player Database View Player label on full-width layouts. Keep the compact arrow-only layout unchanged. */
 @media(min-width:701px){.players-page .player-row>span:last-child{font-size:15px}}
+
+/* v0.4.0-reorg.178e: finish action matches the combined 90px + 7px + 90px player action widths. */
+.management-panel .section-label button[data-action="finish"]{width:187px;min-width:187px;max-width:187px;box-sizing:border-box;flex:0 0 187px}
