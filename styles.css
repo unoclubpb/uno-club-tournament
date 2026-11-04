@@ -2646,3 +2646,14 @@ dialog:has(#icm-form){font-family:"DM Sans",system-ui,sans-serif}
   border:1px solid #6d7886 !important;
   box-shadow:none !important;
 }
+
+/* v187b: match Rebuy Tracking box outline to the other Edit This Tournament fields. */
+#structure-form .rebuy-tracking-settings fieldset,
+#structure-form .rebuy-tracking-settings fieldset:focus,
+#structure-form .rebuy-tracking-settings fieldset:focus-within,
+#structure-form .rebuy-tracking-settings fieldset:focus-visible {
+  border: 1px solid #d8ded6 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-clip: padding-box;
+}
