@@ -2639,3 +2639,10 @@ dialog:has(#icm-form){font-family:"DM Sans",system-ui,sans-serif}
 .management-panel .button:not(.tiny):not(.seat-lock-button):not(.seat-rebuy-button):not(.seat-eliminate-button){
   font-family:"DM Sans",system-ui,sans-serif;font-size:12px;font-weight:700;
 }
+
+/* v187a: Seat Remaining Players and Unseat All Players share an identical 1px outline. */
+.management-panel .management-table-actions button[data-action="seat-remaining"],
+.management-panel .management-table-actions button[data-action="unseat-all"]{
+  border:1px solid #6d7886 !important;
+  box-shadow:none !important;
+}
