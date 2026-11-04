@@ -2950,3 +2950,6 @@ body:has(.management-layout) .management-layout > .management-sidebar {
 body:has(.management-layout) .management-layout > .management-panel {
   overscroll-behavior-y: none !important;
 }
+
+/* v192: let Management and Archives use the full screen width. */
+.workspace:has(.management-layout),.workspace:has(.archive-list),.workspace:has(.archive-detail){max-width:none;width:100%;margin-left:0;margin-right:0;padding-left:0;padding-right:0}

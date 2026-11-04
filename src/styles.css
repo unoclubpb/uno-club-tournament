@@ -1341,3 +1341,6 @@ dialog:has(#icm-form){font-family:"DM Sans",system-ui,sans-serif}
 .management-panel .button:not(.tiny):not(.seat-lock-button):not(.seat-rebuy-button):not(.seat-eliminate-button){
   font-family:"DM Sans",system-ui,sans-serif;font-size:12px;font-weight:700;
 }
+
+/* v192: let Management and Archives use the full screen width. */
+.workspace:has(.management-layout),.workspace:has(.archive-list),.workspace:has(.archive-detail){max-width:none;width:100%;margin-left:0;margin-right:0;padding-left:0;padding-right:0}
