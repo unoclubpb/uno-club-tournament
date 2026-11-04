@@ -2187,3 +2187,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 /* v178: sidebar stays below actual sticky management navigation, including iPad. */
 .management-chrome{z-index:60!important}
 .management-layout>.management-sidebar{top:var(--management-sticky-top,110px)!important;max-height:calc(100dvh - var(--management-sticky-top,110px) - 8px)!important;z-index:5!important}
+
+/* v0.4.0-reorg.178a: Tournament Management player list typography. */
+.management-panel .entry-row strong{font-size:15px}
+.management-panel .entry-row small{font-size:14px}
