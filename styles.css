@@ -2579,3 +2579,63 @@ dialog:has(#icm-form){width:min(1100px,calc(100vw - 36px));max-width:1100px;box-
 .management-panel .tournament-points .result-row>span>small{
   font-size:12px;font-weight:400;
 }
+
+/* v186a: consistent DM Sans typography in tournament management and registration.
+   Preserve compact controls and the tournament clock/branding. */
+.management-panel,
+.registration-page .registration-list,
+.registration-page .registered-list,
+dialog:has(#manual-chop-form),
+dialog:has(#icm-form){font-family:"DM Sans",system-ui,sans-serif}
+
+/* Registration: real player names rather than the status/actions column. */
+.registration-page .registration-list .register-row>span:first-child,
+.registration-page .registered-list .entry-row>div:first-child>strong{
+  font-family:"DM Sans",system-ui,sans-serif;font-size:15px;font-weight:700;
+}
+.registration-page .registered-list .entry-row>div:first-child>small{
+  font-family:"DM Sans",system-ui,sans-serif;font-size:12px;font-weight:400;
+}
+
+/* Seats: use uniform compact action text without changing button footprints. */
+.management-panel .seat-row .seat-player-actions>.seat-lock-button,
+.management-panel .seat-row .seat-player-actions>.seat-rebuy-button,
+.management-panel .seat-row .seat-player-actions>.seat-eliminate-button{
+  font-family:"DM Sans",system-ui,sans-serif;font-size:11px!important;font-weight:700!important;
+}
+.management-panel .seating-inline-fields label span,
+.management-panel .seating-second-row .seat-count-entry span,
+.management-panel .seating-heading-settings .seat-count-entry span,
+.management-panel .seating-header .seat-count-entry span{
+  font-family:"DM Sans",system-ui,sans-serif;font-size:12px!important;font-weight:400;
+}
+
+/* Chop windows: points and allocation status follow supporting-text standards. */
+#icm-form .icm-player>.icm-points{
+  font-family:"DM Sans",system-ui,sans-serif;font-size:13px;font-weight:400;
+}
+#manual-chop-feedback{
+  font-family:"DM Sans",system-ui,sans-serif;font-size:15px;font-weight:700;
+}
+
+/* Summary financial labels and money columns. */
+.management-panel .financial-summary>div>.summary-name{
+  font-family:"DM Sans",system-ui,sans-serif;font-size:17px;font-weight:700;
+}
+.management-panel .financial-summary>div>.summary-calculation{
+  font-family:"DM Sans",system-ui,sans-serif;font-size:13px;font-weight:400;
+}
+.management-panel .financial-summary>div>strong{
+  font-family:"DM Sans",system-ui,sans-serif;font-size:20px;font-weight:700;
+}
+
+/* Section headings and standard buttons, except miniature seating controls. */
+.management-panel .section-label h2,
+.management-panel .payout-places-column>h2,
+.management-panel .summary-prizes>h3,
+.management-panel .tournament-points>h3{
+  font-family:"DM Sans",system-ui,sans-serif;font-size:18px;font-weight:700;
+}
+.management-panel .button:not(.tiny):not(.seat-lock-button):not(.seat-rebuy-button):not(.seat-eliminate-button){
+  font-family:"DM Sans",system-ui,sans-serif;font-size:12px;font-weight:700;
+}
