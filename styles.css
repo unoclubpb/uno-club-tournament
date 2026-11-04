@@ -2924,3 +2924,18 @@ body:has(.archive-detail) .archive-detail {
   overscroll-behavior-y: contain !important;
   -webkit-overflow-scrolling: touch;
 }
+
+/* Pin the entire pair as one unit, not two sticky children constrained by the grid. */
+body:has(.management-layout) .management-layout {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+body:has(.management-layout) .management-layout > .management-sidebar,
+body:has(.management-layout) .management-layout > .management-panel {
+  position: relative !important;
+  top: auto !important;
+}
+body:has(.management-layout) #app > .workspace > .content {
+  padding-top: 12px !important;
+}
