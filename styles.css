@@ -2195,3 +2195,8 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
 /* v0.4.0-reorg.178b: equal-height Rebuy and Eliminate actions in Management Players. */
 .management-panel .entry-row .entry-actions button[data-rebuy],
 .management-panel .entry-row .entry-actions button[data-eliminate]{height:35px;min-height:35px;max-height:35px;box-sizing:border-box;width:auto;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+
+/* v0.4.0-reorg.178c: Rebuy and Eliminate share the Eliminate button footprint. */
+.management-panel .entry-row .entry-actions button[data-rebuy],
+.management-panel .entry-row .entry-actions button[data-eliminate]{width:90px;min-width:90px;max-width:90px}
+.management-panel .entry-row .entry-actions button[data-rebuy]{white-space:normal;line-height:1.1}
