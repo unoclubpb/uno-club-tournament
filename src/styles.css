@@ -1141,3 +1141,14 @@ body:not(.fixed-workspace) .management-layout>.management-panel{min-height:100%}
   transform-origin:center;
   pointer-events:none;
 }
+
+/* v0.4.0-reorg.183: capped rebuys look disabled but remain clickable for explanation. */
+.management-panel .entry-actions>.button.is-rebuy-limit,
+.management-panel .seat-player-actions>.seat-rebuy-button.is-rebuy-limit{
+  position:relative;opacity:.55;cursor:pointer;
+}
+.management-panel .entry-actions>.button.is-rebuy-limit::after,
+.management-panel .seat-player-actions>.seat-rebuy-button.is-rebuy-limit::after{
+  content:"";position:absolute;left:10%;right:10%;top:50%;height:2px;
+  background:#f2d17e;transform:rotate(-24deg);pointer-events:none;
+}
