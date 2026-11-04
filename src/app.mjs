@@ -77,7 +77,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.183 · Reorganization';
+const APP_VERSION='0.4.0-reorg.183a · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -791,7 +791,7 @@ async function registrationPermission(t=current(),creating=false){
   if(registrationOpen(t,clockAt(t,timeNow())))return {allowed:true,overrideCutoff:false};
   const allowed=await confirmApp(creating?'Registration is closed. Override and add a new player?':'Registration is closed. Override and register this player?','Registration Closed','Override');return {allowed,overrideCutoff:allowed};
 }
-function modal(title,body){dlg.removeAttribute('aria-labelledby');dlg.removeAttribute('aria-describedby');dlg.innerHTML=`<div class="modal-heading"><h2>${title}</h2><button type="button" class="icon-button" data-action="close-modal" aria-label="Close dialog">×</button></div>${body}`;if(!dlg.open)dlg.showModal();}
+function modal(title,body){dlg.classList.remove('rebuy-limit-dialog');dlg.removeAttribute('aria-labelledby');dlg.removeAttribute('aria-describedby');dlg.innerHTML=`<div class="modal-heading"><h2>${title}</h2><button type="button" class="icon-button" data-action="close-modal" aria-label="Close dialog">×</button></div>${body}`;if(!dlg.open)dlg.showModal();}
 function eliminationDialog(entryId){
   const t=current(),entry=t?.entries.find(e=>e.id===entryId&&!e.eliminatedAt),place=t?active(t).length:0;
   if(!entry||t.status==='completed')throw new Error('Choose an active player to eliminate.');
@@ -1003,7 +1003,7 @@ document.addEventListener('click',async event=>{const el=event.target.closest('b
   if(el.dataset.register){const t=current(),permission=await registrationPermission(t);if(!permission.allowed)return;if(await commit({type:'register',tournamentId:t.id,playerId:el.dataset.register,overrideCutoff:permission.overrideCutoff})){signupSearch='';render();toast('Player registered.');}return;}
   if(el.dataset.unregister){const t=current(),e=t?.entries.find(e=>e.id===el.dataset.unregister);if(!e)throw new Error('Player is no longer registered.');const expected=version,refund=(e.payments||[]).filter(p=>p.kind!=='rebuy').reduce((sum,p)=>sum+paymentTotal(p),0);if(!await confirmApp(`Are you sure you want to unregister ${pName(e)}? Their entry, seat, buy-in, selected Dealer Toke or Admin Fee, and any add-on payments will be removed from this tournament. Recorded payments to refund: ${money(refund)}. Their Player Database record will be kept.`,'Unregister Player','Unregister'))return;if(version!==expected||current()?.id!==t.id)throw new Error('Tournament changed. Review the player and try again.');if(await commit({type:'unregister',tournamentId:t.id,entryId:e.id}))toast('Player unregistered.');return;}
   if(el.dataset.addon){paymentDialog(el.dataset.addon);return;}
-  if(el.dataset.rebuy){const t=current(),entry=t?.entries.find(e=>e.id===el.dataset.rebuy),limit=Number(t?.settings.rebuyMax||0);if(entry&&limit>0&&entryRebuyCount(entry)>=limit){modal('Rebuy Limit of '+limit,'<button type="button" class="button primary full" data-action="close-modal">OK</button>');return;}paymentDialog(el.dataset.rebuy,'rebuy');return;}
+  if(el.dataset.rebuy){const t=current(),entry=t?.entries.find(e=>e.id===el.dataset.rebuy),limit=Number(t?.settings.rebuyMax||0);if(entry&&limit>0&&entryRebuyCount(entry)>=limit){modal('Rebuy Limit of '+limit,'<div class="rebuy-limit-actions"><button type="button" class="button primary" data-action="close-modal">OK</button></div>');dlg.classList.add('rebuy-limit-dialog');dlg.querySelector('.modal-heading .icon-button')?.remove();return;}paymentDialog(el.dataset.rebuy,'rebuy');return;}
   if(el.dataset.tvDisplay){if(await commit({type:'tv-display',tournamentId:selected,mode:el.dataset.tvDisplay}))toast('TV display updated.');return;}
   if(el.dataset.payoutStep){const form=el.closest('form'),input=form.elements.paidPlaces;if(input.disabled)return;markPayoutChanged(form);input.value=String(Math.max(1,Math.min(20,(Number(input.value)||1)+Number(el.dataset.payoutStep))));refreshPayoutPreview(form);return;}
   if(el.dataset.countStep){const input=document.getElementById(el.dataset.countKind+'-entry-'+el.dataset.entryId),value=Number(input?.value);if(input){input.value=String(Math.max(Number(input.min||0),Math.min(Number(input.max||Number.MAX_SAFE_INTEGER),(Number.isSafeInteger(value)?value:0)+Number(el.dataset.countStep))));}return;}if(el.dataset.rebuyStep){const input=$('#rebuy-count'),value=Number(input.value);input.value=String(Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,(Number.isSafeInteger(value)?value:0)+Number(el.dataset.rebuyStep))));return;}
