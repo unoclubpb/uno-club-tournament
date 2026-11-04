@@ -14,6 +14,19 @@ test('registration is open before starting and through the final rebuy break, th
  for(const index of [0,7,8]){const next=at(s,index);assert.equal(registrationOpen(next.tournaments[0],next.tournaments[0].clock),true);assert.equal(act(next,{type:'register',playerId:'p4'}).tournaments[0].entries.length,4);}
  const late=at(s,9),before=clone(late);assert.equal(registrationOpen(late.tournaments[0],late.tournaments[0].clock),false);assert.throws(()=>act(late,{type:'register',playerId:'p4'}),/Registration is closed/);assert.deepEqual(late,before);const saved=act(late,{type:'register',playerId:'p4',overrideCutoff:true});assert.equal(saved.tournaments[0].entries.length,4);assert.equal(saved.tournaments[0].cutoffOverrides[0].kind,'registration');assert.equal(saved.tournaments[0].cutoffOverrides[0].playerId,'p4');assert.equal(registrationOpen(saved.tournaments[0],saved.tournaments[0].clock),false);assert.throws(()=>act(saved,{type:'register',playerId:'p4',overrideCutoff:true}),/already registered/);
 });
+test('registration follows the add-on cutoff when add-ons are allowed, otherwise the rebuy cutoff',()=>{
+ let state=fixture(),t=state.tournaments[0];
+ t.levels.splice(4,0,{kind:'break',minutes:5,sb:0,bb:0,ante:0,game:'',chipUp:false});
+ t.settings.addonEnabled=true;t.settings.addonLastRound=4;t.settings.rebuyLastRound=8;
+ for(const index of [3,4])assert.equal(registrationOpen(at(state,index).tournaments[0],at(state,index).tournaments[0].clock),true);
+ const afterAddOn=at(state,5);assert.equal(registrationOpen(afterAddOn.tournaments[0],afterAddOn.tournaments[0].clock),false);
+ assert.throws(()=>act(afterAddOn,{type:'register',playerId:'p4'}),/Override/);
+ assert.equal(act(afterAddOn,{type:'register',playerId:'p4',overrideCutoff:true}).tournaments[0].entries.length,4);
+ t.settings.addonEnabled=false;t.settings.rebuyEnabled=false;
+ for(const index of [8,9])assert.equal(registrationOpen(at(state,index).tournaments[0],at(state,index).tournaments[0].clock),true);
+ const afterRebuys=at(state,10);assert.equal(registrationOpen(afterRebuys.tournaments[0],afterRebuys.tournaments[0].clock),false);
+ assert.equal(act(afterRebuys,{type:'register',playerId:'p4',overrideCutoff:true}).tournaments[0].entries.length,4);
+});
 test('registration creation checks the tournament at Save; the standalone player database remains usable',()=>{
  const late=at(fixture(),9),action={type:'player-save',id:'new',name:'Late Player',registrationTournamentId:'t'};assert.throws(()=>execute(late,action,now),/Registration is closed/);assert.equal(execute(late,{...action,overrideCutoff:true},now).players.length,5);assert.equal(execute(late,{type:'player-save',id:'new',name:'Database Player'},now).players.length,5);
 });

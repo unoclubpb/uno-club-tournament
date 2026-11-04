@@ -49,11 +49,15 @@ export const rebuyOpen=(t,c)=>purchaseOpen(t,c,'rebuy');
 export const addonAvailable=(t,c)=>{if(!t?.settings?.addonEnabled||!tournamentStarted(t)||t.status==='completed'||c.status==='ended')return false;const round=roundAt(t,c.index),last=t.settings.addonLastRound;return round>last||round===last&&t.levels[c.index]?.kind==='break';};
 export const canRecordRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&rebuyPhase(t,c)==='final-break';
 export const canEditRebuys=(t,c)=>t.status!=='completed'&&!t.archivedAt&&t.settings.rebuyEnabled&&c.status!=='ready'&&(canRecordRebuys(t,c)||!rebuyOpen(t,c));
+function registrationCutoffOpen(t,c,kind){
+  const last=t.settings[kind+'LastRound'],round=roundAt(t,c.index);
+  if(round!==last)return round<last;
+  return t.levels[c.index]?.kind==='play'||t.levels[c.index-1]?.kind==='play';
+}
 export const registrationOpen=(t,c)=>{
   if(t.status==='completed'||t.archivedAt||c.status==='ended')return false;
   if(c.status==='ready')return true;
-  if(t.settings.addonEnabled)return roundAt(t,c.index)<=t.settings.addonLastRound;
-  return !t.settings.rebuyEnabled||rebuyOpen(t,c);
+  return registrationCutoffOpen(t,c,t.settings.addonEnabled?'addon':'rebuy');
 };
 function requireRegistration(t,action,now){
   check(t&&t.status!=='completed'&&!t.archivedAt,'This tournament is finished.');
