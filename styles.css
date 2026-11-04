@@ -2420,3 +2420,22 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type=
     flex-basis:90px;width:90px;min-width:90px;max-width:90px;
   }
 }
+
+/* v0.4.0-reorg.182: only a reached per-player limit crosses out Rebuy. */
+.management-panel .seat-row .seat-player-actions>.seat-rebuy-button.is-rebuy-limit{
+  position:relative;
+  opacity:.7;
+  cursor:not-allowed;
+}
+.management-panel .seat-row .seat-player-actions>.seat-rebuy-button.is-rebuy-limit::after{
+  content:"";
+  position:absolute;
+  left:8%;
+  right:8%;
+  top:50%;
+  height:2px;
+  background:#f2d17e;
+  transform:rotate(-24deg);
+  transform-origin:center;
+  pointer-events:none;
+}
