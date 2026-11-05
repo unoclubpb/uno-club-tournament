@@ -1542,3 +1542,30 @@ body:has(.management-layout) .management-layout>.management-panel{
   body:has(.management-layout) .management-layout>.management-sidebar>button{min-height:40px!important;padding:7px 6px!important;font-size:11px!important}
   body:has(.management-layout) .management-context{padding:10px!important}
 }
+
+
+/* v0.4.0-reorg.206a: Align Design's library rail with Management's sidebar. */
+.setup-page .setup-library-layout{
+  grid-template-columns:180px minmax(0,1fr)!important;
+  column-gap:18px!important;
+}
+.setup-page .setup-library-layout>nav[aria-label="Setup library"]{
+  width:100%!important;min-width:0!important;gap:8px!important;
+}
+.setup-page .setup-library-layout>nav[aria-label="Setup library"]>button{
+  box-sizing:border-box!important;width:100%!important;min-height:44px!important;
+  height:auto!important;padding:9px 10px!important;text-align:left!important;
+  white-space:normal!important;line-height:1.35!important;overflow-wrap:anywhere!important;
+}
+/* Keep the navigation row's geometry the same when switching screens. */
+.navigation-chrome .workspace:has(>.nav),
+.management-chrome .workspace:has(>.nav){width:100%!important;box-sizing:border-box!important;}
+.nav,.management-global-nav{width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;}
+@media(max-width:1000px){
+ .setup-page .setup-library-layout{grid-template-columns:150px minmax(0,1fr)!important;column-gap:16px!important;}
+}
+@media(max-width:700px){
+ .setup-page .setup-library-layout{grid-template-columns:90px minmax(0,1fr)!important;column-gap:10px!important;}
+ .setup-page .setup-library-layout>nav[aria-label="Setup library"]{gap:5px!important;}
+ .setup-page .setup-library-layout>nav[aria-label="Setup library"]>button{min-height:40px!important;padding:7px 6px!important;font-size:11px!important;}
+}
