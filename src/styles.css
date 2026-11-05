@@ -1639,3 +1639,17 @@ body.setup-page .setup-library-layout>nav[aria-label="Setup library"]>button.but
 body.setup-page .setup-library-layout>nav[aria-label="Setup library"]>button.button:hover:not(:disabled) {
   background:#d4af3714!important;
 }
+
+/* v208b: Design library buttons use Management sidebar typography. */
+body.setup-page .setup-library-layout>nav[aria-label="Setup library"]>button.button {
+  font-family:inherit!important;
+  font-size:15px!important;
+  font-weight:600!important;
+  line-height:1.35!important;
+  letter-spacing:normal!important;
+}
+@media(max-width:700px) {
+  body.setup-page .setup-library-layout>nav[aria-label="Setup library"]>button.button {
+    font-size:11px!important;
+  }
+}
