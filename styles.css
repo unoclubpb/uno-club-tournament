@@ -3286,3 +3286,19 @@ body:has(.management-layout) .management-layout>.management-panel {
    column-gap:10px!important;
  }
 }
+
+/* v208a: Tournament Design library selection matches Management tabs. */
+body.setup-page .setup-library-layout>nav[aria-label="Setup library"]>button.button {
+  background:transparent!important;
+  color:var(--ink)!important;
+  border:1px solid #6d7886!important;
+  box-shadow:none!important;
+}
+body.setup-page .setup-library-layout>nav[aria-label="Setup library"]>button.button.primary {
+  background:#d4af3714!important;
+  color:var(--gold)!important;
+  border-color:var(--gold)!important;
+}
+body.setup-page .setup-library-layout>nav[aria-label="Setup library"]>button.button:hover:not(:disabled) {
+  background:#d4af3714!important;
+}
