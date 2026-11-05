@@ -338,6 +338,7 @@ body.saving .seat-lock-button{pointer-events:none;opacity:.6}
 
 /* Keep the management banner, tournament bar and navigation together above the scrolling page. */
 .management-chrome{position:sticky;top:0;z-index:30;background:var(--bg);isolation:isolate}
+.navigation-chrome{position:sticky;top:0;z-index:30;background:var(--bg);isolation:isolate}
 
 /* Clock controls disappear with inactivity even when the pointer rests on the TV display. */
 .tv-shell .tv-toolbar{opacity:1;transform:none;visibility:visible;transition:opacity .2s,visibility .2s}
@@ -1472,7 +1473,7 @@ body:has(.management-layout) .management-top-grid{
   grid-template-columns:180px minmax(0,1fr)!important;
   column-gap:22px!important;
   align-items:start!important;
-  padding-top:22px!important;
+  padding-top:6px!important;
 }
 body:has(.management-layout) .management-global-nav{
   grid-column:1/-1!important;
@@ -1535,7 +1536,7 @@ body:has(.management-layout) .management-layout>.management-panel{
   body:has(.management-layout) .management-layout{grid-template-columns:150px minmax(0,1fr)!important}
 }
 @media(max-width:700px){
-  body:has(.management-layout) .management-top-grid{grid-template-columns:90px minmax(0,1fr)!important;column-gap:10px!important;padding-top:12px!important}
+  body:has(.management-layout) .management-top-grid{grid-template-columns:90px minmax(0,1fr)!important;column-gap:10px!important;padding-top:0!important}
   body:has(.management-layout) .management-layout{grid-template-columns:90px minmax(0,1fr)!important;gap:10px!important}
   body:has(.management-layout) .management-layout>.management-sidebar{gap:5px!important}
   body:has(.management-layout) .management-layout>.management-sidebar>button{min-height:40px!important;padding:7px 6px!important;font-size:11px!important}

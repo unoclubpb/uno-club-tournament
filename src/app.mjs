@@ -77,7 +77,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.205 · Reorganization';
+const APP_VERSION='0.4.0-reorg.206 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -670,7 +670,8 @@ function workspaceScreen(){
   const banner=header({includeContext:view!=='manage'})+importNotice(),menu=view==='home'?'':nav();
   const content=`<main class="content">${({home,setup,players,signup,manage,archives,leaderboard}[view]||home)()}</main><footer class="app-footer"><span>UNO CLUB · TOURNAMENT DIRECTOR</span><button type="button" class="connection footer-connection" data-action="account"><i class="dot ${online?'green':'red'}"></i>${online?'Connected':'Reconnect'}</button><span>v${APP_VERSION} · ${online?'Saved online':'Connection interrupted'}</span></footer>`;
   if(view==='manage')return `<div class="management-chrome">${banner}<div class="workspace">${menu}</div></div><div class="workspace">${content}</div>`;if(view==='archives')return `<div class="management-chrome">${banner}<div class="workspace">${menu}</div></div><div class="workspace">${content}</div>`;
-  return `${banner}<div class="workspace">${menu}${content}</div>`;
+  if(view==='home')return `${banner}<div class="workspace">${menu}${content}</div>`;
+  return `<div class="navigation-chrome">${banner}<div class="workspace">${menu}</div></div><div class="workspace">${content}</div>`;
 }
 function syncManagementSidebarOffset(){const chrome=document.querySelector('.management-chrome');if(!chrome)return;document.documentElement.style.setProperty('--management-sticky-top',Math.ceil(chrome.getBoundingClientRect().height+4)+'px');const content=document.querySelector('#app > .workspace > .content');if(content&&view==='manage')document.documentElement.style.setProperty('--management-panel-height',Math.max(220,content.clientHeight-12)+'px');}
 window.addEventListener('resize',syncManagementSidebarOffset);
