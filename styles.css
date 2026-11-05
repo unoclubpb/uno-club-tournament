@@ -3232,3 +3232,57 @@ body:has(.management-layout) .management-layout>.management-panel{
  .setup-page .setup-library-layout>nav[aria-label="Setup library"]{gap:5px!important;}
  .setup-page .setup-library-layout>nav[aria-label="Setup library"]>button{min-height:40px!important;padding:7px 6px!important;font-size:11px!important;}
 }
+
+
+/* v208: Tournament Design and Management share identical content geometry. */
+body.setup-page #app > .workspace,
+body:has(.management-layout) #app > .workspace {
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:none!important;
+  margin-inline:0!important;
+  padding-inline:0!important;
+}
+body.setup-page .setup-library-layout,
+body:has(.management-layout) .management-layout {
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  grid-template-columns:180px minmax(0,1fr)!important;
+  column-gap:18px!important;
+}
+body.setup-page .setup-library-layout>nav[aria-label="Setup library"] {
+  justify-self:stretch!important;
+  margin:0!important;
+  padding:0!important;
+}
+body.setup-page .setup-library-layout>nav[aria-label="Setup library"]>button {
+  display:flex!important;
+  justify-content:flex-start!important;
+  align-items:center!important;
+  text-align:left!important;
+  width:100%!important;
+}
+body.setup-page .setup-library-layout>.setup-library-results,
+body:has(.management-layout) .management-layout>.management-panel {
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin-inline:0!important;
+}
+@media(max-width:1000px) {
+ body.setup-page .setup-library-layout,
+ body:has(.management-layout) .management-layout {
+   grid-template-columns:150px minmax(0,1fr)!important;
+   column-gap:16px!important;
+ }
+}
+@media(max-width:700px) {
+ body.setup-page .setup-library-layout,
+ body:has(.management-layout) .management-layout {
+   grid-template-columns:90px minmax(0,1fr)!important;
+   column-gap:10px!important;
+ }
+}
