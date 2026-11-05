@@ -1504,7 +1504,7 @@ body:has(.management-layout) .management-layout>.management-sidebar{
   align-items:stretch!important;
   gap:8px!important;
   position:sticky!important;
-  top:var(--management-sticky-top,110px)!important;
+  top:0!important;
   align-self:start!important;
   width:100%!important;
   height:max-content!important;
