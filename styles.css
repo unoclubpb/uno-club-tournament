@@ -3128,3 +3128,62 @@ body:has(.management-clock-panel) .management-clock-panel>.control-panel>.manage
 .management-panel .management-registration-embedded .management-players-combined .registered-list{
   flex:none!important;min-height:0!important;max-height:none!important;overflow:visible!important;
 }
+
+/* v202: Put the Management tabs below the main navigation and align the
+   tournament status banner with the Management content column. */
+body:has(.management-layout) .management-top-grid{
+  display:grid!important;
+  grid-template-columns:180px minmax(0,1fr)!important;
+  column-gap:22px!important;
+  align-items:start!important;
+  padding-top:22px!important;
+}
+body:has(.management-layout) .management-global-nav{
+  grid-column:1/-1!important;
+  display:flex!important;
+  flex-wrap:wrap!important;
+  min-width:0!important;
+  padding:0!important;
+  gap:7px!important;
+}
+body:has(.management-layout) .management-sidebar{
+  grid-column:1/-1!important;
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:wrap!important;
+  align-items:center!important;
+  gap:8px!important;
+  position:static!important;
+  width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+body:has(.management-layout) .management-sidebar>button{
+  width:auto!important;
+  min-height:40px!important;
+  padding:8px 13px!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+}
+body:has(.management-layout) .management-context{
+  grid-column:2!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:14px 18px!important;
+}
+body:has(.management-layout) .management-layout{
+  grid-template-columns:180px minmax(0,1fr)!important;
+}
+@media(max-width:1000px){
+  body:has(.management-layout) .management-top-grid{grid-template-columns:150px minmax(0,1fr)!important;column-gap:16px!important}
+  body:has(.management-layout) .management-layout{grid-template-columns:150px minmax(0,1fr)!important}
+}
+@media(max-width:700px){
+  body:has(.management-layout) .management-top-grid{grid-template-columns:90px minmax(0,1fr)!important;column-gap:10px!important;padding-top:12px!important}
+  body:has(.management-layout) .management-sidebar{gap:5px!important}
+  body:has(.management-layout) .management-sidebar>button{min-height:34px!important;padding:6px 8px!important;font-size:10px!important}
+  body:has(.management-layout) .management-context{padding:10px!important}
+  body:has(.management-layout) .management-layout{grid-template-columns:90px minmax(0,1fr)!important;gap:10px!important}
+}
