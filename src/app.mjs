@@ -77,7 +77,7 @@ import {SUPABASE_URL,SUPABASE_KEY} from './config.mjs';
 import {registerScreen,loadScreen} from '../modules/screen-loader.js';
 
 const db=createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.209 · Reorganization';
+const APP_VERSION='0.4.0-reorg.210 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -721,12 +721,34 @@ async function commit(action){if(busy)return false;const user=session?.user.id;b
     render();return true;
   }catch(error){toast(error.message||'Could not save. Please retry.',true);return false;}finally{busy=false;document.body.classList.remove('saving');tick();}}
 async function synchronizeTime(){if(!session)return;const user=session.user.id,before=performance.now();const {data,error}=await db.rpc('td_server_time');if(!error&&session?.user.id===user)serverSample={epoch:Date.parse(data),mono:(before+performance.now())/2};}
-async function refresh(force=false){if(!session||(busy&&!force))return;const user=session.user.id;try{
-    const {data,error}=await db.from('td_workspaces').select('state,version,updated_at').eq('owner_id',session.user.id).maybeSingle();if(session?.user.id!==user)return;if(error)throw error;
-    let changed=false;if(data&&Number(data.version)>version){state=upgradeState(data.state);version=Number(data.version);changed=true;}
+let refreshInFlight=false,refreshQueued=false;
+async function refresh(force=false,checkVersionOnly=false){
+  if(!session||(busy&&!force))return;
+  if(refreshInFlight){if(!checkVersionOnly)refreshQueued=true;return;}
+  refreshInFlight=true;
+  const user=session.user.id;
+  try{
+    let {data,error}=await db.from('td_workspaces').select(checkVersionOnly?'version':'state,version,updated_at').eq('owner_id',user).maybeSingle();
+    if(session?.user.id!==user)return;
+    if(error)throw error;
+    if(checkVersionOnly&&data&&Number(data.version)>version){
+      ({data,error}=await db.from('td_workspaces').select('state,version,updated_at').eq('owner_id',user).maybeSingle());
+      if(session?.user.id!==user)return;
+      if(error)throw error;
+    }
+    let changed=false;
+    if(data?.state&&Number(data.version)>version){state=upgradeState(data.state);version=Number(data.version);changed=true;}
     const wasOffline=!online;online=true;remoteError='';lastSync=Date.now();
     if((changed||wasOffline)&&!dlg.open&&!$('#confirmation-dialog')?.open&&!editor&&!$('#payout-form')?.dataset.rulesDirty&&!$('#payout-form')?.dataset.payoutChanged&&!pointsEditor&&(view==='signup'&&(!current()||current()?.archivedAt||current()?.status==='completed')||!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)))render();
-  }catch(e){if(session?.user.id!==user)return;const changed=online;online=false;remoteError=e.message||'Could not reach Supabase.';if(changed&&!dlg.open&&!$('#confirmation-dialog')?.open&&!editor)render();}}
+  }catch(e){
+    if(session?.user.id!==user)return;
+    const wasOnline=online;online=false;remoteError=e.message||'Could not reach Supabase.';
+    if(wasOnline&&!dlg.open&&!$('#confirmation-dialog')?.open&&!editor)render();
+  }finally{
+    refreshInFlight=false;
+    if(refreshQueued){refreshQueued=false;if(session?.user.id===user)void refresh();}
+  }
+}
 function markBrowserImported(){legacyPending=false;legacyError='';try{localStorage.setItem(migrationKey,session.user.id);}catch{}}
 async function saveInitialWorkspace(){
   if(!session||!online||version!==0)return;
@@ -1220,7 +1242,7 @@ window.addEventListener('online',()=>refresh());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){synchronizeTimeIfSignedIn();refresh();tick();}});
 function synchronizeTimeIfSignedIn(){if(session)synchronizeTime();}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&session){void synchronizeTime();void refresh();}});window.addEventListener('online',()=>{if(session){void synchronizeTime();void refresh();}});
-setInterval(()=>refresh(),2500);setInterval(synchronizeTimeIfSignedIn,60000);
+setInterval(()=>{if(session&&!document.hidden)void refresh(false,true);},30000);setInterval(synchronizeTimeIfSignedIn,60000);
 void tvWindow.prime();
 window.addEventListener('message',event=>{if(event.origin===location.origin&&event.source===window.opener&&event.data?.type==='uno-tv-fullscreen'&&view==='clock')void tryTvFullscreen(false);});
 window.addEventListener('resize',refreshSavedLayoutPreviews);
