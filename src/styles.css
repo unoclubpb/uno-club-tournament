@@ -1926,3 +1926,19 @@ body.tv .dev-mode-strip{position:fixed;top:0;left:0;right:0;pointer-events:none}
   .management-chrome .management-tournament-header>.metrics strong{font-size:11px!important;}
   .management-chrome .management-tournament-header>.metrics .status-value{font-size:10px!important;}
 }
+
+
+/* Reorganization 217: 50/50 management registration layout */
+.management-panel .management-registration-embedded .signup-layout.management-players-combined{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:auto!important;align-items:start!important;gap:12px!important}
+.management-panel .management-registration-embedded .management-players-combined>.panel{grid-column:auto!important;grid-row:auto!important;min-width:0!important;overflow:visible!important;padding:12px!important}
+.management-panel .management-registration-embedded .management-players-combined .registration-list,.management-panel .management-registration-embedded .management-players-combined .registered-list{flex:none!important;max-height:none!important;min-height:0!important;overflow:visible!important}
+.management-panel .management-registration-embedded .registration-search-heading{display:flex;align-items:center;gap:10px;min-width:0}
+.management-panel .management-registration-embedded .registration-search-heading h2{flex-shrink:0;font-size:16px}
+.management-panel .management-registration-embedded .registration-search-heading input{flex:1;min-width:0;width:100%;margin:0}
+.management-panel .management-registration-embedded .compact-registered-player{border-bottom:1px solid var(--line)}
+.management-panel .management-registration-embedded .compact-registered-player summary{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 0;list-style:none;cursor:pointer;font-weight:600;font-size:13px}
+.management-panel .management-registration-embedded .compact-registered-player summary::-webkit-details-marker{display:none}
+.management-panel .management-registration-embedded .compact-registered-player[open] summary span:last-child{transform:rotate(180deg)}
+.management-panel .management-registration-embedded .compact-registered-details{padding:0 0 8px 8px}
+.management-panel .management-registration-embedded .compact-registered-details .entry-row{padding:6px 0;border:0}
+@media(max-width:700px){.management-panel .management-registration-embedded .management-players-combined>.panel{padding:8px!important}.management-panel .management-registration-embedded .registration-search-heading{flex-wrap:wrap}.management-panel .management-registration-embedded .registration-search-heading input{flex-basis:100%}}
