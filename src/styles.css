@@ -1947,3 +1947,13 @@ body.tv .dev-mode-strip{position:fixed;top:0;left:0;right:0;pointer-events:none}
 .management-panel .management-registration-embedded #registration-enrolled-heading{font-size:16px!important;font-weight:700!important;line-height:1.3!important}
 .registration-find [data-action="add-player"][hidden]{display:none!important}
 @media(max-width:700px){.management-panel .management-registration-embedded #registration-enrolled-heading{font-size:13px!important}}
+
+/* Reorganization 219: headings and search stay fixed; only name lists scroll */
+.management-panel .management-registration-embedded .signup-layout.management-players-combined{align-items:stretch!important;gap:14px!important}
+.management-panel .management-registration-embedded .signup-layout.management-players-combined>.panel{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;border-radius:0!important;display:flex!important;flex-direction:column!important;min-height:0!important}
+.management-panel .management-registration-embedded .registration-search-heading,.management-panel .management-registration-embedded .registration-enrolled>.section-label{flex:none!important;min-height:48px!important;margin:0 0 10px!important}
+.management-panel .management-registration-embedded .registration-list,.management-panel .management-registration-embedded .registered-list{flex:1 1 auto!important;min-height:0!important;max-height:350px!important;overflow-y:auto!important;overscroll-behavior:contain!important;scrollbar-gutter:stable!important;border:1px solid var(--line)!important;border-radius:8px!important;padding:6px 10px!important;background:var(--panel,transparent)!important;margin:0!important}
+.management-panel .management-registration-embedded .registration-find>[data-action="add-player"]{flex:none!important;margin-top:8px!important}
+.management-panel .management-registration-embedded .registered-name-row{padding:10px 4px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600}
+.management-panel .management-registration-embedded .registered-name-row:last-child{border-bottom:0}
+@media(max-width:700px){.management-panel .management-registration-embedded .registration-search-heading,.management-panel .management-registration-embedded .registration-enrolled>.section-label{min-height:60px!important;align-content:start}.management-panel .management-registration-embedded .registration-list,.management-panel .management-registration-embedded .registered-list{max-height:300px!important}}
