@@ -1840,3 +1840,89 @@ body.tv .dev-mode-strip{position:fixed;top:0;left:0;right:0;pointer-events:none}
   .management-chrome .management-tournament-header>.metrics strong{font-size:14px!important;}
   .management-chrome .management-tournament-header>.metrics .status-value{font-size:12px!important;}
 }
+
+/* v216 — Compact, always-visible Management summary. The five tab buttons and their layout remain untouched. */
+.management-chrome .management-tournament-header{
+  grid-template-columns:minmax(135px,1fr) minmax(0,5fr)!important;
+  gap:6px!important;
+  margin:1px 0 0!important;
+  padding:3px 10px!important;
+  min-height:0!important;
+  align-items:center!important;
+}
+.management-chrome .management-tournament-header>.management-tournament-identity{
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  gap:1px!important;
+  line-height:1.1!important;
+}
+.management-chrome .management-tournament-header .eyebrow{
+  font-size:8px!important;
+  line-height:1!important;
+  letter-spacing:.04em!important;
+  margin:0!important;
+}
+.management-chrome .management-tournament-header .current-tournament-name{
+  font-size:clamp(12px,1.1vw,16px)!important;
+  line-height:1.15!important;
+  margin:0!important;
+}
+.management-chrome .management-tournament-header>.metrics{
+  align-items:center!important;
+  gap:0!important;
+  margin:0!important;
+  padding:0!important;
+  min-height:0!important;
+}
+.management-chrome .management-tournament-header>.metrics>div{
+  padding:1px 6px!important;
+  min-height:0!important;
+}
+.management-chrome .management-tournament-header>.metrics span{
+  margin:0 0 2px!important;
+  font-size:9px!important;
+  line-height:1.1!important;
+}
+.management-chrome .management-tournament-header>.metrics strong{
+  font-size:clamp(12px,1.15vw,16px)!important;
+  line-height:1.1!important;
+  letter-spacing:0!important;
+}
+.management-chrome .management-tournament-header>.metrics .status-value{
+  font-size:clamp(10px,1.05vw,14px)!important;
+  line-height:1.1!important;
+}
+@media(max-width:950px){
+  .management-chrome .management-tournament-header{
+    grid-template-columns:minmax(125px,1fr) minmax(0,5fr)!important;
+    gap:4px!important;
+    padding:3px 7px!important;
+  }
+}
+@media(max-width:700px){
+  .management-chrome .management-tournament-header{
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:2px!important;
+    margin-top:0!important;
+    padding:3px 7px!important;
+  }
+  .management-chrome .management-tournament-header>.management-tournament-identity{
+    flex-direction:row!important;
+    gap:6px!important;
+    align-items:baseline!important;
+    justify-content:flex-start!important;
+  }
+  .management-chrome .management-tournament-header>.metrics{
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    row-gap:0!important;
+  }
+  .management-chrome .management-tournament-header>.metrics>div{padding:1px 3px!important;}
+  .management-chrome .management-tournament-header>.metrics span{
+    font-size:8px!important;
+    line-height:1.05!important;
+    margin-bottom:2px!important;
+  }
+  .management-chrome .management-tournament-header>.metrics strong{font-size:11px!important;}
+  .management-chrome .management-tournament-header>.metrics .status-value{font-size:10px!important;}
+}
