@@ -1942,3 +1942,8 @@ body.tv .dev-mode-strip{position:fixed;top:0;left:0;right:0;pointer-events:none}
 .management-panel .management-registration-embedded .compact-registered-details{padding:0 0 8px 8px}
 .management-panel .management-registration-embedded .compact-registered-details .entry-row{padding:6px 0;border:0}
 @media(max-width:700px){.management-panel .management-registration-embedded .management-players-combined>.panel{padding:8px!important}.management-panel .management-registration-embedded .registration-search-heading{flex-wrap:wrap}.management-panel .management-registration-embedded .registration-search-heading input{flex-basis:100%}}
+
+/* Reorg 218: equal registration headings; honor conditional add-player visibility */
+.management-panel .management-registration-embedded #registration-enrolled-heading{font-size:16px!important;font-weight:700!important;line-height:1.3!important}
+.registration-find [data-action="add-player"][hidden]{display:none!important}
+@media(max-width:700px){.management-panel .management-registration-embedded #registration-enrolled-heading{font-size:13px!important}}
