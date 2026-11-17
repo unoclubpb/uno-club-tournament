@@ -3620,3 +3620,58 @@ body.tv .dev-mode-strip{position:fixed;top:0;left:0;right:0;pointer-events:none}
 .management-panel .management-registration-embedded .registered-name-row{padding:10px 4px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600}
 .management-panel .management-registration-embedded .registered-name-row:last-child{border-bottom:0}
 @media(max-width:700px){.management-panel .management-registration-embedded .registration-search-heading,.management-panel .management-registration-embedded .registration-enrolled>.section-label{min-height:60px!important;align-content:start}.management-panel .management-registration-embedded .registration-list,.management-panel .management-registration-embedded .registered-list{max-height:300px!important}}
+
+/* Reorganization 220: lock both headings to a shared top baseline, with independent list scrolling */
+body:has(.management-registration-embedded) .management-panel{align-self:start!important}
+.management-panel .management-registration-embedded .signup-layout.management-players-combined{
+ display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+ grid-template-rows:minmax(0,1fr)!important;align-items:stretch!important;
+ gap:14px!important;margin:0!important;min-height:0!important;
+}
+.management-panel .management-registration-embedded .signup-layout.management-players-combined>.panel{
+ display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+ grid-template-rows:54px minmax(0,1fr) auto!important;
+ align-items:stretch!important;min-height:0!important;height:410px!important;
+ max-height:calc(100dvh - 220px)!important;
+}
+.management-panel .management-registration-embedded .registration-search-heading,
+.management-panel .management-registration-embedded .registration-enrolled>.section-label{
+ grid-row:1!important;align-self:start!important;display:flex!important;
+ align-items:center!important;flex-wrap:nowrap!important;
+ height:54px!important;min-height:54px!important;max-height:54px!important;
+ margin:0!important;padding:0 0 8px!important;
+}
+.management-panel .management-registration-embedded .registration-search-heading h2,
+.management-panel .management-registration-embedded .registration-enrolled>.section-label h2{
+ font-size:16px!important;line-height:1.25!important;margin:0!important;white-space:nowrap!important;
+}
+.management-panel .management-registration-embedded .registration-search-heading input{
+ flex:1 1 0!important;min-width:0!important;width:0!important;margin:0!important;
+}
+.management-panel .management-registration-embedded .registration-list,
+.management-panel .management-registration-embedded .registered-list{
+ grid-row:2!important;align-self:stretch!important;
+ min-height:0!important;max-height:none!important;height:100%!important;
+ overflow-y:auto!important;overflow-x:hidden!important;
+ -webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;
+}
+.management-panel .management-registration-embedded .registration-find>[data-action="add-player"]{
+ grid-row:3!important;margin-top:8px!important;
+}
+@media(max-width:700px){
+ .management-panel .management-registration-embedded .signup-layout.management-players-combined>.panel{
+  grid-template-rows:54px minmax(0,1fr) auto!important;height:360px!important;
+  max-height:calc(100dvh - 190px)!important;
+ }
+ .management-panel .management-registration-embedded .registration-search-heading,
+ .management-panel .management-registration-embedded .registration-enrolled>.section-label{
+  flex-wrap:nowrap!important;min-height:54px!important;max-height:54px!important;
+ }
+ .management-panel .management-registration-embedded .registration-search-heading h2,
+ .management-panel .management-registration-embedded .registration-enrolled>.section-label h2{
+  font-size:12px!important;white-space:normal!important;flex-shrink:0!important;
+ }
+ .management-panel .management-registration-embedded .registration-search-heading input{
+  flex-basis:0!important;min-width:0!important;
+ }
+}
