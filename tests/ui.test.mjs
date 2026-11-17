@@ -8,15 +8,16 @@ const flush=()=>new Promise(resolve=>setTimeout(resolve,15));
 const key='uno-tournament-practice-v1';
 async function boot(base,seed,view='home',selected='',options={}){
  const html=await readFile(new URL('../src/index.html',import.meta.url),'utf8');
- const dom=new JSDOM(html,{url:base+'?view='+view+(selected?'&tournament='+selected:''),runScripts:'outside-only'}),w=dom.window;
+ const dom=new JSDOM(html,{url:base+'?view='+view+(selected?'&tournament='+selected:'')+(options.dev?'&mode=dev':''),runScripts:'outside-only'}),w=dom.window;
  w.__remoteModel=(s,a,now)=>applyRemoteElimination(s,a,now);w.__finalizeModel=(s,now)=>finalizePendingEliminations(s,now);w.structuredClone=structuredClone;w.confirm=()=>{throw new Error('Native browser confirmations are forbidden');};w.__confirmResponse=()=>true;let opened='';w.open=url=>{opened=url;return {focus(){}};};
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
  const confirmObserver=new w.MutationObserver(()=>{const box=w.document.querySelector('#confirmation-dialog[open]'),button=box?.querySelector('[data-confirm-answer=yes]');if(!button||button.dataset.fixtureAnswered||options.manualConfirm)return;button.dataset.fixtureAnswered='true';const answer=w.__confirmResponse(box.querySelector('#confirmation-message').textContent);queueMicrotask(()=>box.querySelector(`[data-confirm-answer=${answer?'yes':'no'}]`)?.click());});confirmObserver.observe(w.document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open']});
  if(options.legacy)w.localStorage.setItem(key,JSON.stringify(options.legacy));
- w.__fixture={state:seed?structuredClone(seed):null,version:seed?1:0,session:options.signedOut?null:{user:{id:'organizer-1',email:'organizer@example.test'}},saveError:null,readError:null,saves:0};
+ if(options.devRaw)w.localStorage.setItem('uno-tournament-development-workspace-v1',options.devRaw);
+ w.__fixture={state:seed?structuredClone(seed):null,version:seed?1:0,session:options.signedOut?null:{user:{id:'organizer-1',email:'organizer@example.test'}},saveError:null,readError:null,saves:0,clientCreations:0};
  if(options.cloud)w.__fixture.cloud=options.cloud;
  const stub=`export const createClient=()=>{
-  const f=window.__fixture;
+  const f=window.__fixture;f.clientCreations++;
   const signIn=async()=>({data:{session:f.session={user:{id:'organizer-1',email:'organizer@example.test'}}}});
   const query={select(){return query;},eq(){return query;},async maybeSingle(){const source=f.cloud||f;return {data:source.state?{state:structuredClone(source.state),version:source.version}:null,error:f.readError};}};
   return {auth:{getSession:async()=>({data:{session:f.session}}),onAuthStateChange:cb=>(f.auth=cb,{data:{subscription:{unsubscribe(){}}}}),signInWithPassword:signIn,signUp:async()=>f.confirmEmail?{data:{session:null}}:signIn(),signOut:async()=>{f.session=null;f.auth('SIGNED_OUT',null);return {error:null};}},from:()=>query,
@@ -1173,4 +1174,29 @@ for(const published of [false,true])test(`registration unregister confirms and r
 for(const published of [false,true])test(`unregister rejects failed saves and stale confirmations (${published?'published':'source'})`,async()=>{
  const seed=manualSeatingFixture(3),ui=await boot('https://example.test/',seed,'signup','t1',{published,manualConfirm:true});
  try{ui.w.__fixture.saveError={message:'Save interrupted'};ui.click('[data-unregister=e1]');ui.click('[data-confirm-answer=yes]');await flush();assert.equal(ui.stored().tournaments[0].entries.length,3);assert.ok(ui.q('[data-unregister=e1]'));ui.w.__fixture.saveError=null;ui.click('[data-unregister=e1]');const remote=ui.stored();remote.tournaments[0].name='Updated on another device';await ui.storage(remote);ui.click('[data-confirm-answer=yes]');await flush();assert.equal(ui.stored().tournaments[0].entries.length,3);assert.equal(ui.stored().tournaments[0].name,'Updated on another device');assert.deepEqual(ui.errors,[]);}finally{ui.close();}
+});
+
+test('Development Mode never creates a Supabase client and persists isolated test data',async()=>{
+ const ui=await boot('https://example.test/',null,'players','',{dev:true});
+ let raw;
+ try{
+  assert.equal(ui.w.__fixture.clientCreations,0);
+  assert.match(ui.w.document.body.textContent,/DEVELOPMENT MODE.*SUPABASE OFF/);
+  ui.click('[data-action=add-player]');
+  const form=ui.q('#player-form');ui.input(form.elements.name,'Sample Tester');
+  await ui.submit(form);
+  raw=ui.w.localStorage.getItem('uno-tournament-development-workspace-v1');
+  assert.ok(raw);
+  assert.equal(JSON.parse(raw).state.players[0].name,'Sample Tester');
+  assert.equal(ui.w.__fixture.clientCreations,0);
+  assert.equal(ui.w.__fixture.saves,0);
+  assert.equal(ui.w.localStorage.getItem('uno-tournament-selected'),null);
+  assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+ const reopened=await boot('https://example.test/',null,'players','',{dev:true,devRaw:raw});
+ try{
+  assert.equal(reopened.w.__fixture.clientCreations,0);
+  assert.match(reopened.q('.player-database-panel').textContent,/Sample Tester/);
+  assert.deepEqual(reopened.errors,[]);
+ }finally{reopened.close();}
 });
