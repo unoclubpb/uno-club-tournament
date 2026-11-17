@@ -24,10 +24,10 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Run all automated tests
-        run: npm test
       - name: Build modular website
         run: npm run build
+      - name: Run all automated tests against current build
+        run: npm test
       - name: Check generated JavaScript
         run: |
           version="$(node -p "require('./package.json').version")"
