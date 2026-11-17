@@ -3362,3 +3362,20 @@ body.setup-page .setup-library-results>#saved-layouts .layout-card-actions>butto
     grid-template-columns:minmax(0,1fr)!important;
   }
 }
+
+/* Development Mode is a separate local browser workspace: never the live club database. */
+.dev-mode-strip{
+  flex:0 0 auto;
+  width:100%;
+  box-sizing:border-box;
+  background:#59451d;
+  color:#ffe3a3;
+  border-bottom:1px solid #d5a74d;
+  font:700 11px/1.35 system-ui,sans-serif;
+  letter-spacing:.09em;
+  text-align:center;
+  padding:5px 8px;
+  position:relative;
+  z-index:70;
+}
+body.tv .dev-mode-strip{position:fixed;top:0;left:0;right:0;pointer-events:none}
