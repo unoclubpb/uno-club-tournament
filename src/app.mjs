@@ -84,7 +84,7 @@ const devStorageKey='uno-tournament-development-workspace-v1';
 const selectedStorageKey=DEV_MODE?'uno-tournament-development-selected':'uno-tournament-selected';
 // Never instantiate Supabase (including its auth/network timers) in Development Mode.
 const db=DEV_MODE?null:createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.216 · Reorganization';
+const APP_VERSION='0.4.0-reorg.217 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
