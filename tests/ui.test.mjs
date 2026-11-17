@@ -706,6 +706,26 @@ test('balance alert appears at a two-player difference and balancing equalizes t
  try{assert.match(ui.q('.table-balance-alert').textContent,/Tables Need Balancing/);ui.click('[data-tab=tables]');assert.equal(ui.q('[data-action=combine-tables]').textContent,'Balance Tables');ui.click('[data-action=combine-tables]');await flush();assert.equal(ui.q('#toast').textContent,'Tables balanced.');assert.deepEqual([...ui.w.document.querySelectorAll('.seat-table h3 small')].map(n=>n.textContent),['7 of 10 Seats Filled','7 of 10 Seats Filled']);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
 });
 
+test('Tournament Management shows one permanent summary banner on all five tabs, keeping the tab rail unchanged',async()=>{
+ const seed=manualSeatingFixture();const ui=await boot('https://example.test/',seed,'manage','t1');
+ try{
+  const tabLabels=['Clock Controls','Players','Tables & Seating','Payouts','Summary'];
+  const banner=()=>ui.q('.management-chrome .management-tournament-header');
+  for(const tab of ['clock','players','tables','payouts','summary']){
+    ui.click('[data-tab='+tab+']');await flush();
+    assert.ok(banner());
+    assert.equal(banner().querySelectorAll('.metrics').length,1);
+    assert.deepEqual([...banner().querySelectorAll('.metrics>div>span')].map(n=>n.textContent),['Players remaining','Prize pool','Rebuys','Add-ons','Clock status']);
+    assert.ok(banner().querySelector('.current-tournament-name'));
+    assert.equal(ui.w.document.querySelectorAll('#status-metric').length,1);
+    assert.equal(ui.q('.management-panel .metrics'),null);
+    assert.deepEqual([...ui.w.document.querySelectorAll('.management-sidebar button')].map(n=>n.textContent),tabLabels);
+    assert.equal(ui.q('.management-sidebar [aria-selected=true]').dataset.tab,tab);
+  }
+  assert.deepEqual(ui.errors,[]);
+ }finally{ui.close();}
+});
+
 test('TV controls are directly before Open Clock in the banner and rebuy/summary layout removes obsolete text',async()=>{
  const seed=manualSeatingFixture();seed.tournaments[0].clock={index:8,status:'paused',remainingMs:300000,deadline:null};const ui=await boot('https://example.test/',seed,'manage','t1');
  try{assert.ok(ui.q('.management-tournament-header'));ui.click('[data-tab=players]');assert.equal(ui.q('.management-tv-toolbar'),null);assert.equal(ui.q('.nav[aria-label="Tournament pages"]').nextElementSibling,ui.q('.management-tournament-header'));assert.equal(ui.q('.management-layout').contains(ui.q('.management-sidebar')),true);assert.equal(ui.q('.management-sidebar').nextElementSibling,ui.q('.management-panel'));assert.equal(ui.q('#record-rebuys'),null);ui.click('[data-tab=clock]');assert.equal(ui.q('.management-tv-toolbar .tv-display-controls').nextElementSibling.dataset.action,'open-clock');assert.equal(ui.q('.management-tv-toolbar').nextElementSibling.classList.contains('control-panel'),true);assert.equal(ui.q('#record-rebuys').classList.contains('rebuy-available'),true);assert.equal(ui.q('#record-rebuys').textContent,'Enter rebuys now');assert.doesNotMatch(ui.q('.content').textContent,/Remote controls require a cloud connection/);ui.click('[data-tab=summary]');assert.equal(ui.q('[data-tab=summary]').textContent,'Summary');assert.equal(ui.q('.management-panel h2').textContent,'Tournament Summary');assert.equal(ui.q('.management-panel>p'),null);assert.deepEqual(ui.errors,[]);}finally{ui.close();}
