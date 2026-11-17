@@ -1716,3 +1716,56 @@ body.setup-page .setup-library-results>#saved-layouts .layout-card-actions>butto
   z-index:70;
 }
 body.tv .dev-mode-strip{position:fixed;top:0;left:0;right:0;pointer-events:none}
+
+/* v214: The current tournament is a persistent, name-only strip under Management navigation. */
+.management-chrome .management-tournament-header{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  flex:0 0 auto!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:8px 0 0!important;
+  padding:10px 16px!important;
+  gap:8px!important;
+}
+.management-chrome .management-tournament-header>div{min-width:0!important;}
+.management-chrome .management-tournament-header .current-tournament-name{
+  display:block!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+/* The TV controls live exclusively in Clock Controls, directly above the timer/actions. */
+.management-clock-panel>.management-tv-toolbar{
+  display:flex!important;
+  flex:0 0 auto!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  flex-wrap:wrap!important;
+  gap:10px!important;
+  min-width:0!important;
+  padding:8px 10px!important;
+  border:1px solid var(--line)!important;
+  border-radius:8px!important;
+}
+.management-tv-toolbar .tv-display-controls{
+  display:flex!important;
+  align-items:center!important;
+  flex-wrap:wrap!important;
+  gap:8px!important;
+  min-width:0!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  background:transparent!important;
+}
+.management-tv-toolbar .tv-display-controls>strong{color:var(--gold)!important;}
+.management-tv-toolbar .tv-display-buttons{display:flex!important;flex-wrap:wrap!important;gap:6px!important;}
+.management-tv-toolbar>[data-action="open-clock"]{flex:0 0 auto!important;}
+@media(max-width:700px){
+  .management-chrome .management-tournament-header{margin-top:5px!important;padding:7px 10px!important;}
+  .management-clock-panel>.management-tv-toolbar{justify-content:flex-start!important;padding:6px!important;gap:6px!important;}
+  .management-tv-toolbar .tv-display-controls{width:100%!important;}
+}
