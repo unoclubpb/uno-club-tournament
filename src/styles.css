@@ -686,3 +686,12 @@ body.registration-page{height:auto;min-height:100dvh;overflow:auto}
 .compact-registered-details{padding:0 0 8px 12px}
 .compact-registered-details .entry-row{padding:7px 0;border:0}
 @media(max-width:700px){.registration-page .compact-signup{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.registration-page .compact-signup>.panel{padding:10px}.registration-search-heading{flex-wrap:wrap;gap:6px}.registration-search-heading input{flex-basis:100%}.registration-search-heading h2{font-size:13px}.compact-registered-player summary{font-size:12px}}
+
+
+.management-player-registration .compact-signup{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+.management-player-registration .compact-signup>.panel{min-width:0;padding:12px;overflow:visible}
+.management-player-registration .registration-list,.management-player-registration .registered-list{max-height:none;min-height:0;overflow:visible}
+.management-player-registration .registration-find,.management-player-registration .registration-enrolled{grid-column:auto;grid-row:auto}
+.management-player-actions{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+.management-player-actions>summary{cursor:pointer;font-weight:600}
+@media(max-width:700px){.management-player-registration .compact-signup{gap:8px}.management-player-registration .compact-signup>.panel{padding:8px}.management-player-registration .registration-search-heading{flex-wrap:wrap}}
