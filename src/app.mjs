@@ -84,7 +84,7 @@ const devStorageKey='uno-tournament-development-workspace-v1';
 const selectedStorageKey=DEV_MODE?'uno-tournament-development-selected':'uno-tournament-selected';
 // Never instantiate Supabase (including its auth/network timers) in Development Mode.
 const db=DEV_MODE?null:createClient(SUPABASE_URL,SUPABASE_KEY);
-const APP_VERSION='0.4.0-reorg.211 · Reorganization';
+const APP_VERSION='0.4.0-reorg.212 · Reorganization';
 let homeModule=null,homeLoadError='';
 registerScreen('home',()=>import('./home-screen.mjs'));
 registerScreen('players',()=>import('./player-database-screen.mjs'));
@@ -722,6 +722,63 @@ function persistDevelopmentWorkspace(next,nextVersion){
   // An unsuccessful browser write must never be treated as a successful save.
   localStorage.setItem(devStorageKey,JSON.stringify({version:nextVersion,state:next}));
 }
+/* An explicitly requested one-time copy of ONLY design records from the live account.
+   This path is never called by ordinary Development Mode and never saves to Supabase. */
+async function importLiveDesignsOnce(){
+  if(!DEV_MODE||new URLSearchParams(location.search).get('import')!=='designs')return;
+  const url=new URL(location.href);url.searchParams.delete('import');
+  history.replaceState({},'',url.pathname+url.search+url.hash); // A refresh never repeats the import.
+  let cloud=null;
+  try{
+    cloud=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{autoRefreshToken:false,detectSessionInUrl:false,persistSession:true}});
+    let {data:{session:cloudSession},error:authError}=await cloud.auth.getSession();
+    if(authError)throw authError;
+    if(!cloudSession){
+      // Temporary import-only sign-in. No permanent menu buttons are added.
+      cloudSession=await new Promise((resolve,reject)=>{
+        modal('Copy your saved designs',`<form id="development-import-signin"><p>Sign in to your existing live Tournament Director account once to copy its Saved Structures and Saved Layouts. Your test data will stay in this browser, and no live records will be changed.</p><label>Email<input type="email" name="email" autocomplete="username" required></label><label>Password<input type="password" name="password" autocomplete="current-password" required></label><p class="muted" id="development-import-error"></p><div class="button-row"><button class="button primary" type="submit">Copy Designs</button><button class="button secondary" type="button" data-action="close-modal">Cancel</button></div></form>`);
+        const form=document.querySelector('#development-import-signin');
+        form.addEventListener('submit',async event=>{
+          event.preventDefault();const button=form.querySelector('[type="submit"]');button.disabled=true;
+          const fd=new FormData(form);
+          try{
+            const {data,error}=await cloud.auth.signInWithPassword({email:String(fd.get('email')),password:String(fd.get('password'))});
+            if(error)throw error;
+            if(!data.session)throw new Error('Sign-in did not complete.');
+            if(dlg.open)dlg.close();resolve(data.session);
+          }catch(e){document.querySelector('#development-import-error').textContent=e.message||'Sign-in failed.';button.disabled=false;}
+        },{once:false});
+        form.querySelector('[data-action="close-modal"]').addEventListener('click',()=>reject(new Error('Import cancelled.')));
+      });
+    }
+    if(!cloudSession?.user?.id)throw new Error('Live sign-in is required to copy designs.');
+    const {data:remote,error}=await cloud.from('td_workspaces')
+      .select('templates:state->templates,clockLayouts:state->clockLayouts')
+      .eq('owner_id',cloudSession.user.id).maybeSingle();
+    if(error)throw error;
+    if(!remote)throw new Error('No live workspace found for this account.');
+    if(!Array.isArray(remote.templates)||!Array.isArray(remote.clockLayouts))throw new Error('Live design data is incomplete. Nothing was imported.');
+    // Keep all local players and tournaments. Prefer the imported designs only for a fresh untouched test workspace.
+    const updated=clone(state);
+    const emptyDefaultOnly=version===0&&updated.players.length===0&&updated.tournaments.length===0&&updated.templates.length===1;
+    if(emptyDefaultOnly)updated.templates=[];
+    const templateIds=new Set(updated.templates.map(t=>t.id));
+    const layoutIds=new Set(updated.clockLayouts.map(l=>l.id));
+    let newStructures=0,newLayouts=0;
+    for(const item of remote.templates)if(item&&typeof item.id==='string'&&!templateIds.has(item.id)){
+      updated.templates.push(clone(item));templateIds.add(item.id);newStructures++;
+    }
+    for(const item of remote.clockLayouts)if(item&&typeof item.id==='string'&&!layoutIds.has(item.id)){
+      updated.clockLayouts.push(clone(item));layoutIds.add(item.id);newLayouts++;
+    }
+    if(updated.templates.length===0)updated.templates=[sampleTemplate()];
+    const ready=upgradeState(updated);
+    persistDevelopmentWorkspace(ready,version+1);
+    state=ready;version++;online=true;setupLibraryTab='structures';view='setup';render();
+    toast(`Copied ${newStructures} saved structures and ${newLayouts} saved layouts. Your live data was not changed.`);
+  }catch(error){toast('Design copy not completed: '+(error.message||'Unknown error'),true);}
+  finally{try{cloud?.auth.stopAutoRefresh();}catch{}}
+}
 async function commit(action){if(busy)return false;const user=session?.user.id;busy=true;document.body.classList.add('saving');try{
     if(!session)throw new Error('Sign in before making changes.');
     if(!online)throw new Error('Reconnect before making changes. The clock will continue.');
@@ -1314,6 +1371,7 @@ if(DEV_MODE){
     session={user:{id:'local-development-only',email:'Development Mode'}};
     connectedUser=session.user.id;authReady=true;online=true;lastSync=Date.now();
     render();
+    void importLiveDesignsOnce();
   }catch(error){
     authReady=true;authError=error.message;session=null;render();
   }
